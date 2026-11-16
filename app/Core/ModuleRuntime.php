@@ -395,7 +395,7 @@ final class ModuleRuntime
         }
         $root=realpath($modules[$moduleId]['_path'].'/assets');
         $file=$root!==false?realpath($root.'/'.$relativePath):false;
-        $allowed=['css','js','svg','png','jpg','jpeg','webp','gif','ico','woff','woff2','ttf','otf'];
+        $allowed=['css','js','svg','png','jpg','jpeg','webp','gif','ico','woff','woff2','ttf','otf','avif'];
         if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)
             ||!in_array(strtolower(pathinfo($file,PATHINFO_EXTENSION)),$allowed,true)) {
             throw new RuntimeException('Modül varlığı bulunamadı veya güvenli bir dosya türü değil.');
