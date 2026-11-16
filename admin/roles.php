@@ -68,7 +68,7 @@ foreach ($users as $user) {
     if ($user['role'] === 'super_admin') {
         $roleCell = $t('admin.roles.protected_account', 'Protected account');
     } else {
-        $roleCell = '<form method="post" class="inline-form">' . CoreCMS\\Core\\Csrf::field()
+        $roleCell = '<form method="post" class="inline-form">' . CoreCMS\Core\Csrf::field()
             . '<input type="hidden" name="action" value="assign_role">'
             . '<input type="hidden" name="user_id" value="' . (int)$user['id'] . '">'
             . '<select name="role">' . $userRoleOptions($user) . '</select>'
