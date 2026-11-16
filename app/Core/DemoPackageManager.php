@@ -43,7 +43,9 @@ final class DemoPackageManager
                 $status = (string)($page['status'] ?? 'published');
                 if ($title === '' || (preg_match_all('/./us', $title) ?: 0) > 255
                     || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)
-                    || strlen($body) > 1000000 || !in_array($status, ['draft','published'], true)) continue;
+                    || strlen($body) > 1000000 || !in_array($status, ['draft','published'], true)
+                    || (preg_match_all('/./us', (string)($page['seo_title'] ?? '')) ?: 0) > 255
+                    || (preg_match_all('/./us', (string)($page['seo_description'] ?? '')) ?: 0) > 320) continue;
                 $validPages[$key] = [
                     'title'=>$title,'slug'=>$slug,'body'=>$body,'status'=>$status,
                     'seo_title'=>trim((string)($page['seo_title'] ?? '')),
@@ -116,6 +118,9 @@ final class DemoPackageManager
             managed_hash CHAR(64) NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (module_id,content_type,content_key)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $check = $this->db->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
+        $check->execute(['core_module_content_registry','managed_hash']);
+        if ((int)$check->fetchColumn() === 0) $this->db->exec('ALTER TABLE core_module_content_registry ADD COLUMN managed_hash CHAR(64) NULL');
         $check = $this->db->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
         $check->execute(['core_module_content_registry','managed_hash']);
         if ((int)$check->fetchColumn() === 0) $this->db->exec('ALTER TABLE core_module_content_registry ADD COLUMN managed_hash CHAR(64) NULL');
