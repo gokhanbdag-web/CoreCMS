@@ -110,8 +110,8 @@ if ($layout !== '' && is_file($layout)) {
     ob_start();
     require $layout;
     $themeHtml = (string)ob_get_clean();
-    $themeCss = '<link rel="stylesheet" href="' . htmlspecialchars(CoreCMS\Core\Url::asset('css/responsive-nav.css'), ENT_QUOTES, 'UTF-8') . '">';
-    $themeJs = '<script src="' . htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') . '" defer></script>';
+    $themeCss = '<link rel="stylesheet" href="' . htmlspecialchars(CoreCMS\Core\Url::asset('css/responsive-nav.css'), ENT_QUOTES, 'UTF-8') . '?v=3">';
+    $themeJs = '<script src="' . htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') . '?v=3" defer></script>';
     if (stripos($themeHtml, '</head>') !== false) $themeHtml = str_ireplace('</head>', $themeCss . '</head>', $themeHtml);
     else $themeHtml = $themeCss . $themeHtml;
     if (stripos($themeHtml, '</body>') !== false) $themeHtml = str_ireplace('</body>', $themeJs . '</body>', $themeHtml);
