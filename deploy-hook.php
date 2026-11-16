@@ -75,19 +75,9 @@ if (!function_exists('exec')) {
     respond(500, 'Background process support is unavailable');
 }
 
-// Run the existing deploy script, then normalize only the public application
-// root directory. This prevents rsync's preserved staging mode (e.g. 0750)
-// from making the whole site return 403 after a successful deployment.
-// The webhook process must own this directory or have chmod permission;
-// failures are written to the deploy log and are not silently ignored.
-$liveRoot = __DIR__;
-$worker = '/bin/bash ' . escapeshellarg(CORECMS_DEPLOY_SCRIPT)
-    . '; deploy_status=$?; '
-    . 'if /bin/chmod 0755 ' . escapeshellarg($liveRoot) . '; then '
-    . 'echo "[CoreCMS deploy] Public root permissions normalized to 0755."; '
-    . 'else echo "[CoreCMS deploy] ERROR: cannot set public root permissions to 0755."; '
-    . 'permission_status=1; fi; '
-    . 'if [ "${deploy_status:-1}" -ne 0 ] || [ "${permission_status:-0}" -ne 0 ]; then exit 1; fi';
+// Preserve the live directory and file permissions exactly as configured.
+// The existing deployment script remains the only deployment mechanism.
+$worker = '/bin/bash ' . escapeshellarg(CORECMS_DEPLOY_SCRIPT);
 $command = 'nohup /bin/bash -c ' . escapeshellarg($worker)
     . ' >> ' . escapeshellarg(CORECMS_DEPLOY_LOG)
     . ' 2>&1 < /dev/null & echo $!';
