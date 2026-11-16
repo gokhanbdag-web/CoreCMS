@@ -7,6 +7,7 @@ return static function (PDO $db): void {
         : 'INSERT IGNORE INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?)';
     $insert = $db->prepare($sql);
     $entries = [
+        "admin.seo.description_placeholder" => ["{title} hakkında detaylı bilgi. {site_name}", "Detailed information about {title}. {site_name}"],
         "admin.common.select" => ["Seç", "Select"],
         "admin.common.page" => ["Sayfa", "Page"],
         "admin.seo.target" => ["Hedef", "Target"],
