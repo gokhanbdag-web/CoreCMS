@@ -36,6 +36,8 @@ jobs:
         run: php tests/module-uninstall.php
       - name: Module runtime tests
         run: php tests/module-runtime.php
+      - name: Demo package lifecycle tests
+        run: php tests/demo-packages.php
       - name: Content manager tests
         run: php tests/content-manager.php
       - name: Theme manager tests
