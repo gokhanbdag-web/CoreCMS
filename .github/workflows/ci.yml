@@ -24,6 +24,8 @@ jobs:
           find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
       - name: CoreCMS smoke test
         run: php tests/smoke.php
+      - name: Installer hardening regression tests
+        run: php tests/installer-hardening.php
       - name: Core foundation tests
         run: php tests/core-foundation.php
       - name: Module lifecycle tests
