@@ -289,7 +289,7 @@ document.getElementById('page-preview-button')?.addEventListener('click',functio
 });
 </script><script>
 (function(){
- const form=document.querySelector('.editor-form'); if(!form)return;
+ const form=document.querySelector('.editor-form'); if(!form || form.dataset.autosaveEnabled==='0')return;
  const status=document.getElementById('autosave-status');
  const pageId=form.querySelector('[name="id"]')?.value||'0';
  const fields=['title','slug','body','seo_title','seo_description','canonical_url','social_image_media_id'];
