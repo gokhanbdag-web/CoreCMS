@@ -50,6 +50,8 @@ try {
     $db->exec('CREATE TABLE core_menus (id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER,source_module TEXT,source_demo TEXT)');
     $db->exec('CREATE TABLE core_page_revisions (id INTEGER PRIMARY KEY AUTOINCREMENT,page_id INTEGER)');
     $db->exec('CREATE TABLE core_page_autosaves (page_id INTEGER,user_id INTEGER)');
+    $db->exec('CREATE TABLE core_demo_installs (module_id TEXT,demo_id TEXT,installed_at TEXT DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(module_id,demo_id))');
+    $db->exec("INSERT INTO core_demo_installs(module_id,demo_id) VALUES ('sample','starter')");
     $db->exec('CREATE TABLE sample_records (id INTEGER PRIMARY KEY AUTOINCREMENT,value TEXT)');
     $db->exec("INSERT INTO sample_records(value) VALUES ('keep this data')");
 
@@ -100,6 +102,7 @@ try {
     $assert((int)$db->query("SELECT COUNT(*) FROM core_menus WHERE url='/sample-terms'")->fetchColumn() === 0, 'untouched menu removed');
     $assert((int)$db->query('SELECT COUNT(*) FROM core_module_installs WHERE module_id="sample"')->fetchColumn() === 0, 'module install registration removed');
     $assert((int)$db->query('SELECT COUNT(*) FROM core_module_migrations WHERE module_id="sample"')->fetchColumn() === 1, 'migration ledger retained to prevent destructive reruns');
+    $assert((int)$db->query('SELECT COUNT(*) FROM core_demo_installs WHERE module_id="sample"')->fetchColumn() === 0, 'module uninstall clears demo package installation records');
     $assert((int)$db->query('SELECT COUNT(*) FROM sample_records')->fetchColumn() === 1, 'module-owned table data preserved');
 
     $manager = new CoreCMS\Core\ModuleManager($db, $root);
