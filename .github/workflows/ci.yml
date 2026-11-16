@@ -44,3 +44,5 @@ jobs:
         run: php tests/page-revisions.php
       - name: Page editor workflow tests
         run: php tests/page-editor-workflow.php
+      - name: Technical SEO tests
+        run: php tests/technical-seo.php
