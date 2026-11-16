@@ -10,5 +10,21 @@
   "routes": [],
   "migrations": "migrations/",
   "provisioning": {"pages": [], "menus": []},
-  "demo_packages": []
+  "demo_packages": [
+    {
+      "id": "coastal",
+      "name": "Sahil Turizmi Demo Paketi",
+      "description": "Turlar, destinasyonlar ve iletişim sayfaları ile örnek turizm sitesi oluşturur.",
+      "pages": {
+        "tours": {"title":"Günlük Turlar","slug":"ornek-gunluk-turlar","body":"Bölgedeki günlük tekne, doğa ve kültür turlarını keşfedin.\n\nTur açıklamalarını ve programlarını yönetim panelinden güncelleyebilirsiniz.","status":"published","seo_title":"Günlük Turlar ve Aktiviteler"},
+        "destinations": {"title":"Destinasyonlar","slug":"ornek-destinasyonlar","body":"Keşfedilecek koyları, plajları ve tarihi noktaları tanıyın.","status":"published"},
+        "contact": {"title":"Rezervasyon ve İletişim","slug":"turizm-rezervasyon-iletisim","body":"Tur ve rezervasyon taleplerinizi bize iletin.","status":"published"}
+      },
+      "menus": {
+        "tours": {"menu_key":"main","label":"Turlar","url":"/ornek-gunluk-turlar","sort_order":10},
+        "destinations": {"menu_key":"main","label":"Destinasyonlar","url":"/ornek-destinasyonlar","sort_order":20},
+        "contact": {"menu_key":"main","label":"Rezervasyon","url":"/turizm-rezervasyon-iletisim","sort_order":30}
+      }
+    }
+  ]
 }

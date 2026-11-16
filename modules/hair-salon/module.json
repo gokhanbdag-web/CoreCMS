@@ -10,5 +10,21 @@
   "routes": [],
   "migrations": "migrations/",
   "provisioning": {"pages": [], "menus": []},
-  "demo_packages": []
+  "demo_packages": [
+    {
+      "id": "salon",
+      "name": "Salon Başlangıç Demo Paketi",
+      "description": "Hizmetler, ekip ve randevu sayfaları ile örnek salon sitesi oluşturur.",
+      "pages": {
+        "services": {"title":"Hizmetlerimiz","slug":"salon-hizmetler","body":"Saç kesimi, renklendirme, bakım ve güzellik hizmetlerimizi inceleyin.","status":"published"},
+        "team": {"title":"Ekibimiz","slug":"salon-ekibimiz","body":"Uzman ekibimizi ve hizmet alanlarımızı tanıyın.","status":"published"},
+        "appointment": {"title":"Randevu Al","slug":"salon-randevu","body":"Size uygun gün ve saat için randevu talebi oluşturun.","status":"published"}
+      },
+      "menus": {
+        "services": {"menu_key":"main","label":"Hizmetler","url":"/salon-hizmetler","sort_order":10},
+        "team": {"menu_key":"main","label":"Ekibimiz","url":"/salon-ekibimiz","sort_order":20},
+        "appointment": {"menu_key":"main","label":"Randevu","url":"/salon-randevu","sort_order":30}
+      }
+    }
+  ]
 }

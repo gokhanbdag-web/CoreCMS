@@ -6,7 +6,7 @@ $required = [
     'index.php', 'app/bootstrap.php', 'app/Core/Database.php',
     'app/Core/Migrator.php', 'app/Core/ModuleManager.php',
     'app/Core/Url.php', 'app/Core/Csrf.php', 'app/Core/Auth.php',
-    'installer/index.php', 'admin/index.php', 'tests/module-uninstall.php', 'database/migrations/0008_module_uninstall_contract.php', 'admin/roles.php', 'app/Core/RoleManager.php', 'database/migrations/0002_role_permissions.php', 'tests/role-manager.php',
+    'installer/index.php', 'admin/index.php', 'app/Core/DemoPackageManager.php', 'database/migrations/0009_demo_package_installs.php', 'tests/demo-packages.php', 'tests/module-uninstall.php', 'database/migrations/0008_module_uninstall_contract.php', 'admin/roles.php', 'app/Core/RoleManager.php', 'database/migrations/0002_role_permissions.php', 'tests/role-manager.php',
     'database/migrations/0001_core_schema.php', 'tests/core-foundation.php'
 ];
 $failed = [];
