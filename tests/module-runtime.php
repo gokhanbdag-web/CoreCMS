@@ -24,13 +24,15 @@ try {
         'pages'=>['about'=>['title'=>'About','slug'=>'sample-about','body'=>'Original text']],
         'menus'=>['about'=>['label'=>'About us','url'=>'/sample-about','menu_key'=>'main']],
         'routes'=>[['path'=>'/sample/item/{slug}','methods'=>['GET'],'handler'=>'Frontend/item.php']],
-        'assets'=>['css/module.css'],
+        'assets'=>['css/module.css','php/payload.php'],
         'templates'=>['card'=>'card.php'],
         'theme'=>['name'=>'Sample Theme','directory'=>'views/theme'],
     ], JSON_THROW_ON_ERROR));
     mkdir($dir . '/views',0700,true); mkdir($dir . '/views/theme',0700,true);
     file_put_contents($dir . '/views/theme/layout.php', '<?php echo $contentHtml;');
+    mkdir($dir . '/assets/php', 0700, true);
     file_put_contents($dir . '/assets/css/module.css', 'body{display:block;}');
+    file_put_contents($dir . '/assets/php/payload.php', '<?php echo "blocked";');
     file_put_contents($dir . '/templates/card.php', "<?php echo '<strong>' . htmlspecialchars((string)\$title, ENT_QUOTES, 'UTF-8') . '</strong>'; ");
     file_put_contents($dir . '/Frontend/item.php', "<?php return static function (PDO \$db, array \$params): string { return 'item:' . \$params['slug']; };");
     $db = new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
@@ -57,6 +59,12 @@ try {
     $traversalBlocked = false;
     try { $runtime->assetUrl('sample','../module.json'); } catch (RuntimeException $e) { $traversalBlocked = true; }
     $assert($traversalBlocked, 'module asset traversal is rejected');
+    $phpAssetBlocked = false;
+    try { $runtime->assetUrl('sample','php/payload.php'); } catch (RuntimeException $e) { $phpAssetBlocked = true; }
+    $assert($phpAssetBlocked, 'executable module assets are rejected');
+    $missingTemplateBlocked = false;
+    try { $runtime->renderTemplate('sample','missing'); } catch (RuntimeException $e) { $missingTemplateBlocked = true; }
+    $assert($missingTemplateBlocked, 'undeclared module templates are rejected');
     $templateHtml = $runtime->renderTemplate('sample','card',['title'=>'Runtime Card']);
     $assert($templateHtml === '<strong>Runtime Card</strong>', 'module template rendered from registered template path');
     echo 'Module runtime checks passed (' . $checks . ').' . PHP_EOL;
