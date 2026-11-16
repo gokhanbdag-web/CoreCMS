@@ -5,6 +5,7 @@ return static function (PDO $db): void {
     $defaults = [
         'site_url' => '',
         'seo_org_name' => '',
+        'seo_logo_url' => '',
         'seo_social_image' => '',
         'search_console_verification' => '',
     ];
