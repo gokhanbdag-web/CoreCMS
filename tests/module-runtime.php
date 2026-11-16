@@ -35,7 +35,7 @@ try {
     $db->exec('CREATE TABLE core_module_migrations (module_id TEXT,migration TEXT,applied_at TEXT DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(module_id,migration))');
     $db->exec("INSERT INTO core_module_installs(module_id,version) VALUES('sample','1.0.0')");
     $db->exec("INSERT INTO core_modules(module_id,version,enabled) VALUES('sample','1.0.0',1)");
-    $runtime = new CoreCMS\\Core\\ModuleRuntime($db,$root);
+    $runtime = new CoreCMS\Core\\ModuleRuntime($db,$root);
     $created = $runtime->syncContent('sample');
     $assert($created === ['pages'=>1,'menus'=>1], 'initial page/menu provisioning');
     $db->exec("UPDATE core_pages SET title='Admin edited title' WHERE slug='sample-about'");
