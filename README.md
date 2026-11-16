@@ -23,6 +23,11 @@ The installer creates `config.php`; keep it private and never commit it.
 - `installer`: browser-based installation flow
 - `admin`: core administration interface
 
+## Administration and permissions
+- Built-in administrator access remains fully compatible.
+- Custom roles can be created and assigned to existing users from the admin role manager.
+- Permissions are checked server-side for dashboard sections, content, menus, media, SEO, modules, themes, settings and user management.
+
 ## Module contract
 Every module has a `module.json` manifest with an ID, version, minimum core version, dependencies, permissions, routes, assets and provisioning metadata. Module-specific schema changes belong in that module's `migrations/` directory. Module-owned content must be tagged with its source module/demo package so removal tools can preserve customer-created data.
 

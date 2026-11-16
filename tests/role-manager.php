@@ -1,0 +1,50 @@
+<?php
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/app/Core/RoleManager.php';
+
+use CoreCMS\Core\RoleManager;
+
+if (!in_array('sqlite', \PDO::getAvailableDrivers(), true)) {
+    echo "Role manager tests skipped: SQLite PDO driver unavailable." . PHP_EOL;
+    exit(0);
+}
+
+$db = new \PDO('sqlite::memory:');
+$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+$db->exec("CREATE TABLE core_roles(id INTEGER PRIMARY KEY AUTOINCREMENT,role_key TEXT UNIQUE,name TEXT,is_system INTEGER DEFAULT 0)");
+$db->exec("CREATE TABLE core_role_permissions(role_id INTEGER,permission_key TEXT,PRIMARY KEY(role_id,permission_key))");
+$db->exec("CREATE TABLE core_users(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,email TEXT,role TEXT)");
+$manager = new RoleManager($db);
+$checks = 0;
+$assert = static function (bool $ok, string $message) use (&$checks): void {
+    $checks++;
+    if (!$ok) throw new RuntimeException('FAIL: ' . $message);
+};
+
+$roleId = $manager->save(null, 'content_editor', 'İçerik Editörü', ['dashboard.view', 'pages.manage', 'invalid.permission']);
+$assert($manager->can('content_editor', 'pages.manage'), 'granted page permission');
+$assert(!$manager->can('content_editor', 'settings.manage'), 'ungranted settings permission');
+$assert(!$manager->can('content_editor', 'unknown.permission'), 'unknown permission denied');
+$assert($manager->can('admin', 'settings.manage'), 'legacy admin retains full access');
+$assert($manager->can('super_admin', 'users.manage'), 'super admin bypass');
+$assert($manager->roleExists('content_editor'), 'custom role exists');
+
+$db->exec("INSERT INTO core_users(name,email,role) VALUES ('Rename','rename@example.test','content_editor')");
+$manager->save($roleId, 'content_writer', 'İçerik Yazarı', ['pages.manage']);
+$assert($manager->roleExists('content_writer'), 'renamed role exists');
+$assert($db->query("SELECT role FROM core_users WHERE email='rename@example.test'")->fetchColumn() === 'content_writer', 'role rename migrates assigned users');
+$manager->save($roleId, 'content_editor', 'İçerik Editörü', ['pages.manage']);
+$db->exec("DELETE FROM core_users WHERE email='rename@example.test'");
+
+$db->exec("INSERT INTO core_users(name,email,role) VALUES ('Editor','editor@example.test','content_editor')");
+$blocked = false;
+try { $manager->delete($roleId); } catch (RuntimeException $e) { $blocked = true; }
+$assert($blocked, 'cannot delete role assigned to a user');
+$editorId = (int)$db->query("SELECT id FROM core_users WHERE email='editor@example.test'")->fetchColumn();
+$manager->assignUser($editorId, 'admin', true);
+$assert($db->query('SELECT role FROM core_users WHERE id=' . $editorId)->fetchColumn() === 'admin', 'assign role to user');
+$manager->delete($roleId);
+$assert(!$manager->roleExists('content_editor'), 'unused custom role deleted');
+
+echo 'Role manager checks passed (' . $checks . ').' . PHP_EOL;

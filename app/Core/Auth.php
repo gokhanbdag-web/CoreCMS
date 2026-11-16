@@ -33,7 +33,8 @@ final class Auth
         $stmt->execute([trim($email)]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$user || !password_verify($password, (string)$user['password_hash'])) return false;
-        if (!in_array($user['role'], ['admin', 'super_admin'], true)) return false;
+        $role = (string)$user['role'];
+        if (!in_array($role, ['admin', 'super_admin'], true) && !(new RoleManager($db))->roleExists($role)) return false;
 
         session_regenerate_id(true);
         unset($_SESSION['_corecms_csrf']);
@@ -46,7 +47,8 @@ final class Auth
     public static function check(): bool
     {
         return !empty($_SESSION['corecms_user_id'])
-            && in_array($_SESSION['corecms_user_role'] ?? '', ['admin', 'super_admin'], true);
+            && is_string($_SESSION['corecms_user_role'] ?? null)
+            && (string)$_SESSION['corecms_user_role'] !== '';
     }
 
     public static function requireAdmin(): void

@@ -7,11 +7,11 @@
 - [x] Versioned core migration runner
 - [x] Manifest-based module discovery and dependency safeguards
 - [x] Secure sessions, CSRF and relocatable routing
-- [ ] Installer hardening and install lock
+- [x] Installer hardening and install lock
 - [ ] Full live database/browser installation verification
 
 ## Core CMS
-- [ ] Roles and granular permissions
+- [x] Roles and granular permissions
 - [ ] Dynamic pages and navigation editor
 - [ ] Media library and safe uploads
 - [ ] SEO metadata and sitemap

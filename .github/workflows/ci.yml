@@ -28,6 +28,8 @@ jobs:
         run: php tests/installer-hardening.php
       - name: Core foundation tests
         run: php tests/core-foundation.php
+      - name: Role and permission tests
+        run: php tests/role-manager.php
       - name: Module lifecycle tests
         run: php tests/module-lifecycle.php
       - name: Module runtime tests
