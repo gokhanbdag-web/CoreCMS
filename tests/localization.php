@@ -9,6 +9,8 @@ $adminTranslations = require dirname(__DIR__) . '/database/migrations/0012_admin
 $adminTranslations($db);
 $adminContentTranslations = require dirname(__DIR__) . '/database/migrations/0013_admin_content_seo_translations.php';
 $adminContentTranslations($db);
+$adminModuleTranslations = require dirname(__DIR__) . '/database/migrations/0014_admin_modules_demos_translations.php';
+$adminModuleTranslations($db);
 $locales = new CoreCMS\Core\LocaleManager($db);
 $assert = static function(bool $condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $assert($locales->defaultCode() === 'tr', 'Turkish must be seeded as default');
@@ -18,6 +20,8 @@ $assert($locales->translate('admin.nav.overview', 'en') === 'Overview', 'admin n
 $assert($locales->translate('admin.roles.heading', 'tr') === 'Kullanıcılar ve roller', 'admin roles Turkish translation');
 $assert($locales->translate('admin.pages.edit', 'en') === 'Edit page', 'page editor English translation');
 $assert($locales->translate('admin.seo.audit_title', 'en') === 'Page SEO audit', 'SEO audit English translation');
+$assert($locales->translate('admin.modules.manager', 'en') === 'Module manager', 'module manager English translation');
+$assert($locales->translate('admin.demos.title', 'en') === 'Demo packages', 'demo packages English translation');
 $locales->saveLanguage('en', 'English');
 $locales->saveLanguage('de', 'Deutsch');
 $locales->saveTranslation('en', 'admin.dashboard.title', 'Dashboard');
@@ -35,4 +39,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (14).\n";
+echo "Localization checks passed (16).\n";
