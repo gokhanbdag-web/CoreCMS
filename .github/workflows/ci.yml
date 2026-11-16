@@ -42,6 +42,8 @@ jobs:
         run: php tests/demo-packages.php
       - name: Content manager tests
         run: php tests/content-manager.php
+      - name: Forms and email template tests
+        run: php tests/forms-email.php
       - name: Theme manager tests
         run: php tests/theme-manager.php
       - name: Site settings tests
