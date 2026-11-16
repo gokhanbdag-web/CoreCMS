@@ -9,7 +9,7 @@ if (!is_file($root . '/config.php')) {
 }
 require $root . '/app/bootstrap.php';
 // Scheduled pages are promoted on the next public/admin request; no server cron is required.
-try { $db->exec("UPDATE core_pages SET status='published',scheduled_at=NULL WHERE status='scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= CURRENT_TIMESTAMP"); }
+try { $publishDue = $db->prepare("UPDATE core_pages SET status='published',scheduled_at=NULL WHERE status='scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= ?"); $publishDue->execute([date('Y-m-d H:i:s')]); }
 catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '.$e->getMessage()); }
 
 $path = CoreCMS\Core\Url::path();
@@ -49,7 +49,7 @@ $homeDescription = (string)($settings['home_description'] ?? 'CoreCMS kurulumu t
 $pageTitle = $page ? (string)(($page['seo_title'] ?? '') !== '' ? $page['seo_title'] : $page['title']) : $siteName;
 $metaDescription = $page ? (string)($page['seo_description'] ?? '') : $homeDescription;
 $canonicalUrl = $page ? (string)($page['canonical_url'] ?? '') : '';
-if ($canonicalUrl !== '' && str_starts_with($canonicalUrl, '/')) $canonicalUrl = rtrim((string)($config['site_url'] ?? ''), '/') . $canonicalUrl;
+
 require_once $root . '/app/Core/MediaLibrary.php';
 require_once $root . '/app/Core/PageBodyRenderer.php';
 $pageBodyHtml = $page ? CoreCMS\Core\PageBodyRenderer::render($db, (string)$page['body'], new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath())) : '';
