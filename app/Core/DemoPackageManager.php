@@ -264,7 +264,9 @@ final class DemoPackageManager
                     $d=$this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
                     $d->execute([$moduleId,$type,$key]); $result['deleted_pages']++;
                 } else {
-                    $d=$this->db->prepare('UPDATE core_pages SET source_module=NULL,source_demo=NULL WHERE id=?'); $d->execute([$id]);
+                    if ((string)($page['source_module']??'')===$moduleId && (string)($page['source_demo']??'')===$demoId) {
+                        $d=$this->db->prepare('UPDATE core_pages SET source_module=NULL,source_demo=NULL WHERE id=?'); $d->execute([$id]);
+                    }
                     $d=$this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
                     $d->execute([$moduleId,$type,$key]); $result['preserved_pages']++;
                 }
@@ -282,7 +284,9 @@ final class DemoPackageManager
                     $d=$this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
                     $d->execute([$moduleId,$type,$key]); $result['deleted_menus']++;
                 } else {
-                    $d=$this->db->prepare('UPDATE core_menus SET source_module=NULL,source_demo=NULL WHERE id=?'); $d->execute([$id]);
+                    if ((string)($menu['source_module']??'')===$moduleId && (string)($menu['source_demo']??'')===$demoId) {
+                        $d=$this->db->prepare('UPDATE core_menus SET source_module=NULL,source_demo=NULL WHERE id=?'); $d->execute([$id]);
+                    }
                     $d=$this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
                     $d->execute([$moduleId,$type,$key]); $result['preserved_menus']++;
                 }
