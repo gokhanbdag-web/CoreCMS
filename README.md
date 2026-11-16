@@ -34,6 +34,8 @@ The installer creates `config.php`; keep it private and never commit it.
 - Legacy callable-only migrations are treated as irreversible. Failed or partial updates are recorded for operator review; rollback is never guessed.
 - Optional manifest `update_hooks` keys: `before_update`, `after_update`, `before_rollback`, `after_rollback`; each path must stay inside the module directory and return a callable.
 
+See the Module update and rollback contract in docs/MODULE-UPDATES.md for migration and hook guidance.
+
 ## Module uninstall safety
 - Modules must be disabled and have no installed dependents before removal.
 - Untouched module-provisioned pages and menus are removed; edited or historically revised content is detached and preserved.
