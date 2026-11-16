@@ -32,6 +32,19 @@ final class ModuleManager
                 || !is_string($data['version'])
                 || !preg_match('/^\d+\.\d+\.\d+(?:[-+][a-zA-Z0-9.-]+)?$/', $data['version'])) continue;
 
+            foreach (['routes','assets','templates'] as $manifestSection) {
+                if (isset($data[$manifestSection]) && !is_array($data[$manifestSection])) { $valid = false; break; }
+            }
+            if (!$valid) continue;
+            foreach (['assets','templates'] as $pathSection) {
+                foreach (($data[$pathSection] ?? []) as $pathKey => $relativePath) {
+                    if (!is_string($relativePath) || $relativePath === '' || str_starts_with($relativePath,'/')
+                        || str_contains($relativePath,'..') || str_contains($relativePath,'\\')) { $valid = false; break 2; }
+                    if ($pathSection === 'templates' && (!is_string($pathKey) || !preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$pathKey))) { $valid = false; break 2; }
+                }
+            }
+            if (!$valid) continue;
+
             $dependencies = $data['dependencies'] ?? [];
             if (!is_array($dependencies)) continue;
             $valid = true;
