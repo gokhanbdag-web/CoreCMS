@@ -36,3 +36,5 @@ jobs:
         run: php tests/theme-manager.php
       - name: Site settings tests
         run: php tests/site-settings.php
+      - name: Media library tests
+        run: php tests/media-library.php
