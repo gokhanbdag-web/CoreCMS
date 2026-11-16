@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $t = static fn(string $key, string $fallback): string => htmlspecialchars($translate($key, $fallback), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 CoreCMS\Core\Auth::startSession();
 CoreCMS\Core\Csrf::requireValidPost();
@@ -37,7 +38,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
     } catch (Throwable $e) {
-        $error = $e->getMessage();
+        $error = CoreCMS\\Core\\AdminErrorTranslator::translate($e->getMessage(), $translate);
     }
 }
 $roles = $manager->roles();
