@@ -48,3 +48,5 @@ jobs:
         run: php tests/technical-seo.php
       - name: SEO management tests
         run: php tests/seo-management.php
+      - name: SEO bulk editor tests
+        run: php tests/seo-bulk-editor.php
