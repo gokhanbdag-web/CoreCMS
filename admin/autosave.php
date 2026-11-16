@@ -24,6 +24,7 @@ if (!CoreCMS\Core\Csrf::verify(isset($_POST['_csrf']) ? (string)$_POST['_csrf'] 
     exit;
 }
 
+require_once dirname(__DIR__).'/app/Core/ContentManager.php';
 $pageId = (int)($_POST['page_id'] ?? 0);
 $userId = (int)($_SESSION['corecms_user_id'] ?? 0);
 $title = trim((string)($_POST['title'] ?? ''));
@@ -33,7 +34,7 @@ $seoTitle = trim((string)($_POST['seo_title'] ?? ''));
 $seoDescription = trim((string)($_POST['seo_description'] ?? ''));
 $canonical = trim((string)($_POST['canonical_url'] ?? ''));
 
-if ($pageId < 1 || $userId < 1 || $title === '' || mb_strlen($title, 'UTF-8') > 255 || strlen($body) > 1000000 || mb_strlen($seoTitle, 'UTF-8') > 255 || mb_strlen($seoDescription, 'UTF-8') > 320 || strlen($canonical) > 500) {
+if ($pageId < 1 || $userId < 1 || $title === '' || (preg_match_all('/./us', $title) ?: 0) > 255 || strlen($body) > 1000000 || (preg_match_all('/./us', $seoTitle) ?: 0) > 255 || (preg_match_all('/./us', $seoDescription) ?: 0) > 320 || strlen($canonical) > 500) {
     http_response_code(422);
     echo json_encode(['ok'=>false,'message'=>'Taslak verileri geçersiz veya çok uzun.']);
     exit;
