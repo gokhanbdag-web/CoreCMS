@@ -15,7 +15,9 @@
 - [x] Dynamic pages and navigation editor
 - [x] Media library and safe uploads
 - [x] SEO metadata and sitemap
-- [ ] Localization and translation editor
+- [x] Locale registry, default-language selection and translation editor foundation
+- [ ] Extract existing admin/frontend UI strings into translation keys
+- [ ] Per-language page/menu content variants
 - [x] Site settings UI
 - [ ] Forms and email templates
 - [x] Theme and template registry
