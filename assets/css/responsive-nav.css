@@ -18,8 +18,8 @@
   .admin-body .site-header>nav a,.admin-body .site-header>nav button{font-size:12px}
   .admin-body .container.admin{width:auto;margin:0;padding:24px 16px 48px}
   .admin-body nav.admin-nav:not(.corecms-nav-open){display:none!important}
-  .admin-body nav.admin-nav.corecms-nav-open{position:fixed;left:12px;top:70px;bottom:12px;width:min(290px,calc(100vw - 24px));height:auto;display:flex!important;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:7px;margin:0;padding:14px;overflow-y:auto;background:#fff;border:1px solid #e3e8f2;border-radius:15px;box-shadow:0 18px 55px #17243d35}
-  .admin-body .corecms-nav-toggle{display:inline-flex;position:fixed;left:14px;top:12px}
+  .admin-body nav.admin-nav.corecms-nav-open{position:fixed;left:12px;top:132px;bottom:12px;width:min(290px,calc(100vw - 24px));height:auto;display:flex!important;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:7px;margin:0;padding:14px;overflow-y:auto;background:#fff;border:1px solid #e3e8f2;border-radius:15px;box-shadow:0 18px 55px #17243d35}
+  .admin-body .corecms-nav-toggle{display:inline-flex;position:fixed;left:14px;top:74px}
   .admin-body .corecms-nav-toggle-label{font-size:13px}
   .admin-body .admin>h1{padding-left:62px;font-size:29px}
   .admin-body .admin>p{padding-left:62px}
