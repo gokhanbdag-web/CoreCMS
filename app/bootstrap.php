@@ -15,6 +15,7 @@ require_once CORECMS_ROOT . '/app/Core/ModuleManager.php';
 require_once CORECMS_ROOT . '/app/Core/ModuleRuntime.php';
 require_once CORECMS_ROOT . '/app/Core/Csrf.php';
 require_once CORECMS_ROOT . '/app/Core/Auth.php';
+require_once CORECMS_ROOT . '/app/Core/RoleManager.php';
 
 $db = CoreCMS\Core\Database::connect($config['database']);
 $settings = [];
