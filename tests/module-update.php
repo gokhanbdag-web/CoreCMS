@@ -31,8 +31,6 @@ $writeManifest=static function(string $version,bool $withHooks=true) use($dir):v
 
 try {
     file_put_contents($dir.'/migrations/001_initial.php', "<?php\nreturn static function (PDO \$db): void {\n    \$db->exec('CREATE TABLE sample_data (value TEXT PRIMARY KEY)');\n    \$db->exec(\"INSERT INTO sample_data(value) VALUES ('base')\");\n};\n");
-    file_put_contents($dir.'/migrations/002_reversible.php', "<?php\nreturn [\n    'up' => static function (PDO \$db): void { \$db->exec(\"INSERT INTO sample_data(value) VALUES ('v2')\"); },\n    'down' => static function (PDO \$db): void { \$db->exec(\"DELETE FROM sample_data WHERE value='v2'\"); },\n];\n");
-    file_put_contents($dir.'/migrations/003_irreversible.php', "<?php\nreturn static function (PDO \$db): void { \$db->exec(\"INSERT INTO sample_data(value) VALUES ('v3')\"); };\n");
     foreach(['before-update','after-update','before-rollback','after-rollback'] as $hook) {
         $event=str_replace('-','_',$hook);
         $hookCode="<?php\nreturn static function (PDO \$db, array \$context, array \$module): void {\n    \$stmt=\$db->prepare('INSERT INTO module_hook_events(event_name) VALUES (?)');\n    \$stmt->execute(['".$event."']);\n};\n";
@@ -52,6 +50,8 @@ try {
     try{$manager->update('sample');}catch(RuntimeException $e){$blocked=str_contains($e->getMessage(),'devre dışı');}
     $assert($blocked,'updates require module to be disabled');
     $manager->disable('sample');
+    file_put_contents($dir.'/migrations/002_reversible.php', "<?php\nreturn [\n    'up' => static function (PDO \$db): void { \$db->exec(\"INSERT INTO sample_data(value) VALUES ('v2')\"); },\n    'down' => static function (PDO \$db): void { \$db->exec(\"DELETE FROM sample_data WHERE value='v2'\"); },\n];\n");
+
 
     $applied=$manager->update('sample');
     $assert($applied===['002_reversible.php'],'reversible update migration applied');
@@ -66,6 +66,7 @@ try {
     $assert((int)$db->query("SELECT COUNT(*) FROM core_module_migrations WHERE migration='002_reversible.php'")->fetchColumn()===0,'rolled back migration removed from applied ledger');
     $assert((int)$db->query("SELECT COUNT(*) FROM module_hook_events WHERE event_name IN ('before_update','after_update','before_rollback','after_rollback')")->fetchColumn()===4,'all update lifecycle hooks executed');
 
+        file_put_contents($dir.'/migrations/003_irreversible.php', "<?php\nreturn static function (PDO \$db): void { \$db->exec(\"INSERT INTO sample_data(value) VALUES ('v3')\"); };\n");
     $writeManifest('1.2.0');
     $applied=$manager->update('sample');
     $assert($applied===['002_reversible.php','003_irreversible.php'],'subsequent update applies new and previously rolled back migrations');
