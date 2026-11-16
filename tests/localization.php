@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/app/Core/LocaleManager.php';
 $db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
 $migration = require dirname(__DIR__) . '/database/migrations/0011_localization.php';
 $migration($db);
-$locales = new CoreCMS\\Core\\LocaleManager($db);
+$locales = new CoreCMS\Core\LocaleManager($db);
 $assert = static function(bool $condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $assert($locales->defaultCode() === 'tr', 'Turkish must be seeded as default');
 $locales->saveLanguage('en', 'English');
