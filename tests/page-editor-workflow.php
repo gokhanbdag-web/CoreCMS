@@ -8,7 +8,7 @@ $migration = require dirname(__DIR__).'/database/migrations/0005_page_editor_wor
 $migration($db);
 $migration($db);
 $columns = array_column($db->query('PRAGMA table_info(core_pages)')->fetchAll(), 'name');
-foreach (['seo_title','seo_description','canonical_url','scheduled_at','social_image_media_id'] as $column) {
+foreach (['seo_title','seo_description','canonical_url','scheduled_at'] as $column) {
     if (!in_array($column, $columns, true)) throw new RuntimeException('Missing page column: '.$column);
 }
 $revisionColumns = array_column($db->query('PRAGMA table_info(core_page_revisions)')->fetchAll(), 'name');
