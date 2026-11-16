@@ -15,6 +15,7 @@ catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '
 
 
 $path = CoreCMS\Core\Url::path();
+require_once $root . '/app/Core/ContentManager.php';
 require_once $root . '/app/Core/TechnicalSeo.php';
 require_once $root . '/app/Core/MediaLibrary.php';
 if ($path === '/sitemap.xml') {
@@ -60,19 +61,17 @@ foreach ($modules as $module) {
 }
 if ($runtime->dispatch($path, (string)($_SERVER['REQUEST_METHOD'] ?? 'GET'))) exit;
 
+$contentRepository = new CoreCMS\Core\ContentManager($db);
 $slug = trim($path, '/');
-$page = null;
-if ($slug !== '') {
-    $stmt = $db->prepare("SELECT p.title,p.body,p.seo_title,p.seo_description,p.canonical_url,p.social_image_media_id,m.file_path AS social_image_path,m.alt_text AS social_image_alt FROM core_pages p LEFT JOIN core_media m ON m.id=p.social_image_media_id WHERE p.slug=? AND p.status='published' LIMIT 1");
-    $stmt->execute([$slug]);
-    $page = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+$page = $slug !== '' ? $contentRepository->publishedPage($slug, $currentLocale) : null;
+$menus = $contentRepository->menusForLocale('main', $currentLocale);
+$languagePaths = [];
+foreach ($availableLocales as $language) {
+    $code = (string)$language['locale_code'];
+    $languagePaths[$code] = $page
+        ? '/' . ($contentRepository->pageSlugForLocale((int)$page['id'], $code) ?? (string)$page['base_slug'])
+        : $path;
 }
-$menus = [];
-try {
-    $stmt = $db->prepare('SELECT label,url FROM core_menus WHERE menu_key=? ORDER BY sort_order,id');
-    $stmt->execute(['main']);
-    $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) { error_log('[CoreCMS] Menu load failed: ' . $e->getMessage()); }
 
 $siteName = (string)($settings['site_name'] ?? 'CoreCMS');
 $homeEyebrow = (string)($settings['home_eyebrow'] ?? 'MODÜLER İÇERİK YÖNETİMİ');
@@ -151,5 +150,5 @@ if ($theme) {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title><?= CoreCMS\Core\TechnicalSeo::head($settings, $pageTitle, $metaDescription, $canonicalUrl, $path === '/') ?><link rel="stylesheet" href="<?= htmlspecialchars(CoreCMS\Core\Url::asset('css/site.css'), ENT_QUOTES, 'UTF-8') ?>"></head>
 <body><header class="site-header"><a class="brand" href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></a><nav>
 <?php foreach ($menus as $menu): ?><a href="<?= htmlspecialchars($menu['url'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($menu['label'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?>
-<a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>"><?= $frontText('frontend.nav.admin', 'Administration') ?></a></nav><div class="language-switcher" aria-label="<?= $frontText('frontend.language_switcher', 'Select language') ?>"><?php foreach ($availableLocales as $language): $languageQuery = $_GET; $languageQuery['lang'] = $language['locale_code']; ?><a href="<?= htmlspecialchars(CoreCMS\Core\Url::to($path) . '?' . http_build_query($languageQuery), ENT_QUOTES, 'UTF-8') ?>" lang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>" hreflang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>"<?= $language['locale_code'] === $currentLocale ? ' aria-current="true"' : '' ?>><?= htmlspecialchars($language['name'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?></div></header>
+<a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>"><?= $frontText('frontend.nav.admin', 'Administration') ?></a></nav><div class="language-switcher" aria-label="<?= $frontText('frontend.language_switcher', 'Select language') ?>"><?php foreach ($availableLocales as $language): $languageQuery = $_GET; $languageQuery['lang'] = $language['locale_code']; ?><a href="<?= htmlspecialchars(CoreCMS\Core\Url::to($languagePaths[$language['locale_code']] ?? $path) . '?' . http_build_query($languageQuery), ENT_QUOTES, 'UTF-8') ?>" lang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>" hreflang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>"<?= $language['locale_code'] === $currentLocale ? ' aria-current="true"' : '' ?>><?= htmlspecialchars($language['name'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?></div></header>
 <main class="container"><?= $contentHtml ?></main><footer><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> · <?= date('Y') ?></footer><script src="<?= htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') ?>?v=3" defer></script></body></html>
