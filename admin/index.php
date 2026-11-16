@@ -20,6 +20,8 @@ require_once dirname(__DIR__).'/app/Core/ThemeManager.php';
 require_once dirname(__DIR__).'/app/Core/SiteSettings.php';
 require_once dirname(__DIR__).'/app/Core/LocaleManager.php';
 require_once dirname(__DIR__).'/app/Core/AdminErrorTranslator.php';
+require_once dirname(__DIR__).'/app/Core/FormManager.php';
+require_once dirname(__DIR__).'/app/Core/EmailTemplateManager.php';
 require_once dirname(__DIR__).'/app/Core/MediaLibrary.php';
 require_once dirname(__DIR__).'/app/Core/PageRevisionManager.php';
 require_once dirname(__DIR__).'/app/Core/PageAutosaveManager.php';
@@ -31,6 +33,8 @@ $content=new CoreCMS\Core\ContentManager($db);
 $themeManager=new CoreCMS\Core\ThemeManager($db,dirname(__DIR__).'/modules');
 $siteSettings=new CoreCMS\Core\SiteSettings($db);
 $localeManager=new CoreCMS\Core\LocaleManager($db);
+$formManager=new CoreCMS\Core\FormManager($db);
+$emailTemplates=new CoreCMS\Core\EmailTemplateManager($db);
 $contentLocale=(string)($_GET['content_locale']??$defaultLocale);
 if(!$localeManager->isEnabled($contentLocale))$contentLocale=$defaultLocale;
 $mediaLibrary=new CoreCMS\Core\MediaLibrary($db,dirname(__DIR__),CoreCMS\Core\Url::basePath());
@@ -41,7 +45,7 @@ $migrator=new CoreCMS\Core\Migrator($db,dirname(__DIR__).'/database/migrations')
 $pending=$migrator->pending(); $notice=$error=null; $action=(string)($_POST['action']??'');
 $roleManager=new CoreCMS\Core\RoleManager($db);
 $role=(string)($_SESSION['corecms_user_role']??'');
-$actionPermissions=['media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','locale_save'=>'settings.manage','locale_default'=>'settings.manage','translation_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage','uninstall'=>'modules.manage','update'=>'modules.manage','rollback'=>'modules.manage','demo_install'=>'demos.manage','demo_reset'=>'demos.manage','demo_remove'=>'demos.manage'];
+$actionPermissions=['media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','locale_save'=>'settings.manage','locale_default'=>'settings.manage','translation_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage','uninstall'=>'modules.manage','update'=>'modules.manage','rollback'=>'modules.manage','demo_install'=>'demos.manage','demo_reset'=>'demos.manage','demo_remove'=>'demos.manage','form_save'=>'forms.manage','form_delete'=>'forms.manage','submission_status'=>'forms.manage','email_template_save'=>'forms.manage'];
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST' && isset($actionPermissions[$action]) && !$roleManager->can($role,$actionPermissions[$action])) { http_response_code(403); exit($translate('admin.access.action_forbidden','You are not allowed to perform this action.')); }
 if($action==='run_core_migrations' && !in_array($role,['admin','super_admin'],true)) { http_response_code(403); exit($translate('admin.access.migrations_admin_only','Only administrators can apply database updates.')); }
 try {
@@ -101,8 +105,8 @@ try {
 if(isset($_POST['module_id'])) { $id=(string)$_POST['module_id']; if($action==='install'){$modules->install($id);$notice=$translate('admin.notice.module_installed','Module installed or updated.');} elseif($action==='enable'){$modules->enable($id);(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->syncContent($id);$notice=$translate('admin.notice.module_enabled','Module enabled and its content synchronized.');} elseif($action==='disable'){$modules->disable($id);$notice=$translate('admin.notice.module_disabled','Module disabled.');} elseif($action==='uninstall'){$result=(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->uninstall($id);$notice=sprintf($translate('admin.notice.module_uninstalled','Module removed. Modified content preserved: %d pages, %d menu items.'),$result['preserved_pages'],$result['preserved_menus']);} elseif($action==='update'){$applied=$modules->update($id);$notice=sprintf($translate('admin.notice.module_updated','Module updated. Applied migrations: %d.'),count($applied));} elseif($action==='rollback'){$rolled=$modules->rollback($id);$notice=sprintf($translate('admin.notice.module_rolled_back','Module rolled back from version %s to %s.'),$rolled['from_version'],$rolled['to_version']);} }
  }
 } catch(Throwable $e){$error=CoreCMS\Core\AdminErrorTranslator::translate($e->getMessage(),$translate);}
-$section=(string)($_GET['section']??'overview'); if(!in_array($section,['overview','pages','menus','media','modules','appearance','settings','localization','seo','redirects','demos'],true))$section='overview';
-$sectionPermissions=['overview'=>'dashboard.view','pages'=>'pages.manage','menus'=>'menus.manage','media'=>'media.manage','modules'=>'modules.manage','appearance'=>'appearance.manage','settings'=>'settings.manage','localization'=>'settings.manage','seo'=>'seo.manage','redirects'=>'seo.manage','demos'=>'demos.manage'];
+$section=(string)($_GET['section']??'overview'); if(!in_array($section,['overview','pages','menus','media','modules','appearance','settings','localization','seo','redirects','demos','forms','submissions','email_templates'],true))$section='overview';
+$sectionPermissions=['overview'=>'dashboard.view','pages'=>'pages.manage','menus'=>'menus.manage','media'=>'media.manage','modules'=>'modules.manage','appearance'=>'appearance.manage','settings'=>'settings.manage','localization'=>'settings.manage','seo'=>'seo.manage','redirects'=>'seo.manage','demos'=>'demos.manage','forms'=>'forms.manage','submissions'=>'forms.manage','email_templates'=>'forms.manage'];
 if(!$roleManager->can($role,$sectionPermissions[$section]??'dashboard.view')) { http_response_code(403); exit($translate('admin.access.section_forbidden','You are not allowed to view this section.')); }
 if(isset($_GET['restored']))$notice=$translate('admin.notice.page_revision_restored','Page revision restored; the previous version was also saved to history.'); if(isset($_GET['uploaded']))$notice=$translate('admin.notice.media_uploaded','Image added to the media library.'); if(isset($_GET['saved']))$notice=$translate('admin.notice.saved','Changes saved.'); if(isset($_GET['deleted']))$notice=$translate('admin.notice.deleted','Record deleted.'); if(isset($_GET['detached']))$notice=$translate('admin.notice.content_detached','Content detached from its module and is now managed independently.');
 $h=static fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
