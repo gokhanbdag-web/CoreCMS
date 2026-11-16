@@ -48,5 +48,9 @@ return static function (PDO $db): void {
         PRIMARY KEY (page_id, user_id)
     )";
     $db->exec($driver === 'mysql' ? $autosaveSql.' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4' : $autosaveSql);
-    if ($driver === 'mysql') $db->exec('CREATE INDEX idx_page_autosaves_saved ON core_page_autosaves (saved_at)');
+    if ($driver === 'mysql') {
+        $index = $db->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND INDEX_NAME=?');
+        $index->execute(['core_page_autosaves','idx_page_autosaves_saved']);
+        if ((int)$index->fetchColumn() === 0) $db->exec('CREATE INDEX idx_page_autosaves_saved ON core_page_autosaves (saved_at)');
+    }
 };
