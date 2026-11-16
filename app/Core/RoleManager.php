@@ -15,6 +15,7 @@ final class RoleManager
         'media.manage' => 'Medya kütüphanesini yönetme',
         'seo.manage' => 'SEO ve yönlendirmeleri yönetme',
         'modules.manage' => 'Modülleri yönetme',
+        'demos.manage' => 'Demo paketlerini yönetme',
         'appearance.manage' => 'Tema ve görünümü yönetme',
         'settings.manage' => 'Site ayarlarını yönetme',
         'users.manage' => 'Kullanıcı ve rolleri yönetme',
