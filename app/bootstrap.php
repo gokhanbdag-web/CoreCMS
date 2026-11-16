@@ -24,3 +24,6 @@ try {
 } catch (Throwable $e) {
     error_log('[CoreCMS] Settings load failed: ' . $e->getMessage());
 }
+if (!empty($settings['timezone']) && in_array($settings['timezone'], DateTimeZone::listIdentifiers(), true)) {
+    date_default_timezone_set($settings['timezone']);
+}
