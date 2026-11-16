@@ -20,7 +20,7 @@ return static function (PDO $db): void {
         'dashboard.view','pages.view','pages.manage','menus.manage','media.manage',
         'seo.manage','modules.manage','appearance.manage','settings.manage','users.manage'
     ];
-    $insertRole = $db->prepare('INSERT IGNORE INTO core_roles (role_key,name,is_system) VALUES (?,?,1)');
+    $insertRole = $db->prepare('INSERT IGNORE INTO core_roles (role_key,name,is_system) VALUES (?,?,0)');
     $insertRole->execute(['editor','Editör']);
     $roleId = $db->prepare('SELECT id FROM core_roles WHERE role_key=?');
     $roleId->execute(['editor']);
