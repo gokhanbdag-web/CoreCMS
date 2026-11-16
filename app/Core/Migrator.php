@@ -45,7 +45,11 @@ final class Migrator
                 $migration($this->db);
                 $stmt = $this->db->prepare('INSERT INTO core_migrations (migration,batch) VALUES (?,?)');
                 $stmt->execute([basename($file), $batch]);
-                $this->db->commit();
+                // MySQL/MariaDB implicitly commit around DDL statements. A migration
+                // containing CREATE/ALTER TABLE may therefore end the transaction
+                // before its migration record is inserted. Commit only when PDO still
+                // reports an active transaction; otherwise the record is autocommitted.
+                if ($this->db->inTransaction()) $this->db->commit();
                 $applied[] = basename($file);
             } catch (Throwable $e) {
                 if ($this->db->inTransaction()) $this->db->rollBack();
