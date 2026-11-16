@@ -28,7 +28,7 @@
 - [x] Explicit non-destructive uninstall contract
 - [x] Page/menu provisioning with ownership tracking
 - [x] Demo package preview/install/reset/remove
-- [ ] Module update hooks and rollback strategy
+- [x] Module update hooks and rollback strategy
 - [ ] Module-owned routes, assets, themes and templates
 
 ## Sector modules
