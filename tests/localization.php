@@ -15,6 +15,8 @@ $adminSettingsTranslations = require dirname(__DIR__) . '/database/migrations/00
 $adminSettingsTranslations($db);
 $adminRolesTranslations = require dirname(__DIR__) . '/database/migrations/0016_admin_roles_permission_translations.php';
 $adminRolesTranslations($db);
+$adminFinalTranslations = require dirname(__DIR__) . '/database/migrations/0017_admin_remaining_ui_translations.php';
+$adminFinalTranslations($db);
 $locales = new CoreCMS\Core\LocaleManager($db);
 $assert = static function(bool $condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $assert($locales->defaultCode() === 'tr', 'Turkish must be seeded as default');
@@ -29,6 +31,8 @@ $assert($locales->translate('admin.demos.title', 'en') === 'Demo packages', 'dem
 $assert($locales->translate('admin.settings.general', 'en') === 'General site settings', 'site settings English translation');
 $assert($locales->translate('admin.localization.add_edit', 'en') === 'Add or edit a language', 'language manager English translation');
 $assert($locales->translate('admin.permission.dashboard_view', 'en') === 'View dashboard', 'role permission English translation');
+$assert($locales->translate('admin.pages.markdown_help', 'en') === 'Formatting marks are rendered as safe HTML on the public site. A blank line creates a new paragraph.', 'page editor help English translation');
+$assert($locales->translate('admin.notice.module_enabled', 'en') === 'Module enabled and its content synchronized.', 'module action notice English translation');
 $locales->saveLanguage('en', 'English');
 $locales->saveLanguage('de', 'Deutsch');
 $locales->saveTranslation('en', 'admin.dashboard.title', 'Dashboard');
@@ -46,4 +50,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (19).\n";
+echo "Localization checks passed (21).\n";
