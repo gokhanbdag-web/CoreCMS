@@ -56,6 +56,17 @@ final class ContentManager
         return (int)$this->db->lastInsertId();
     }
 
+    public function detachPage(int $id): void
+    {
+        $stmt = $this->db->prepare('SELECT source_module FROM core_pages WHERE id=?');
+        $stmt->execute([$id]);
+        $source = $stmt->fetchColumn();
+        if ($source === false) throw new RuntimeException('Sayfa bulunamadı.');
+        if ($source === null || $source === '') throw new RuntimeException('Sayfa zaten yöneticiye ait.');
+        // Keep the module registry key: this prevents a later module sync from recreating the detached item.
+        $this->db->prepare('UPDATE core_pages SET source_module=NULL,source_demo=NULL WHERE id=?')->execute([$id]);
+    }
+
     public function deletePage(int $id): void
     {
         $stmt = $this->db->prepare('SELECT source_module FROM core_pages WHERE id=?');
@@ -85,6 +96,17 @@ final class ContentManager
         $stmt = $this->db->prepare('INSERT INTO core_menus (menu_key,label,url,sort_order,source_module,source_demo) VALUES (?,?,?,?,NULL,NULL)');
         $stmt->execute([$menuKey, $label, $url, $sortOrder]);
         return (int)$this->db->lastInsertId();
+    }
+
+    public function detachMenu(int $id): void
+    {
+        $stmt = $this->db->prepare('SELECT source_module FROM core_menus WHERE id=?');
+        $stmt->execute([$id]);
+        $source = $stmt->fetchColumn();
+        if ($source === false) throw new RuntimeException('Menü öğesi bulunamadı.');
+        if ($source === null || $source === '') throw new RuntimeException('Menü öğesi zaten yöneticiye ait.');
+        // Retain the registry entry so module provisioning remains idempotent after detachment.
+        $this->db->prepare('UPDATE core_menus SET source_module=NULL,source_demo=NULL WHERE id=?')->execute([$id]);
     }
 
     public function deleteMenu(int $id): void
