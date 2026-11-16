@@ -27,6 +27,7 @@ try {
         'pages' => [
             'about' => ['title' => 'About', 'slug' => 'sample-about', 'body' => 'Original about'],
             'terms' => ['title' => 'Terms', 'slug' => 'sample-terms', 'body' => 'Original terms'],
+            'history' => ['title' => 'History', 'slug' => 'sample-history', 'body' => 'Revision-backed content'],
         ],
         'menus' => [
             'about' => ['label' => 'About', 'url' => '/sample-about', 'menu_key' => 'main'],
@@ -70,6 +71,7 @@ try {
 
     $db->exec("UPDATE core_pages SET title='Admin edited about',seo_title='Changed SEO title' WHERE slug='sample-about'");
     $db->exec("UPDATE core_menus SET label='Admin edited menu' WHERE url='/sample-about'");
+    $db->exec("INSERT INTO core_page_revisions(page_id) SELECT id FROM core_pages WHERE slug='sample-history'");
 
     $db->exec("INSERT INTO core_module_installs(module_id,version) VALUES ('dependent','1.0.0')");
     $db->exec("INSERT INTO core_modules(module_id,version,enabled) VALUES ('dependent','1.0.0',0)");
@@ -90,10 +92,11 @@ try {
     $db->exec("UPDATE core_modules SET enabled=0 WHERE module_id='sample'");
 
     $result = $runtime->uninstall('sample');
-    $assert($result === ['deleted_pages' => 1, 'preserved_pages' => 1, 'deleted_menus' => 1, 'preserved_menus' => 1], 'only untouched provisioned content removed');
+    $assert($result === ['deleted_pages' => 1, 'preserved_pages' => 2, 'deleted_menus' => 1, 'preserved_menus' => 1], 'only untouched provisioned content removed');
     $assert((int)$db->query("SELECT COUNT(*) FROM core_pages WHERE slug='sample-about' AND source_module IS NULL")->fetchColumn() === 1, 'edited page preserved and detached');
     $assert((int)$db->query("SELECT COUNT(*) FROM core_menus WHERE url='/sample-about' AND source_module IS NULL")->fetchColumn() === 1, 'edited menu preserved and detached');
     $assert((int)$db->query("SELECT COUNT(*) FROM core_pages WHERE slug='sample-terms'")->fetchColumn() === 0, 'untouched page removed');
+    $assert((int)$db->query("SELECT COUNT(*) FROM core_pages WHERE slug='sample-history' AND source_module IS NULL")->fetchColumn() === 1, 'page with revision history preserved and detached');
     $assert((int)$db->query("SELECT COUNT(*) FROM core_menus WHERE url='/sample-terms'")->fetchColumn() === 0, 'untouched menu removed');
     $assert((int)$db->query('SELECT COUNT(*) FROM core_module_installs WHERE module_id="sample"')->fetchColumn() === 0, 'module install registration removed');
     $assert((int)$db->query('SELECT COUNT(*) FROM core_module_migrations WHERE module_id="sample"')->fetchColumn() === 1, 'migration ledger retained to prevent destructive reruns');
