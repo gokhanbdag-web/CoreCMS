@@ -16,7 +16,8 @@
 - [x] Media library and safe uploads
 - [x] SEO metadata and sitemap
 - [ ] Localization and translation editor
-- [x] Site settings UI\n- [ ] Forms and email templates
+- [x] Site settings UI
+- [ ] Forms and email templates
 - [x] Theme and template registry
 
 ## Module platform
