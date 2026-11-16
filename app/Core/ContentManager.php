@@ -34,7 +34,7 @@ final class ContentManager
         throw new RuntimeException('Bağlantı yalnızca site içi /yol veya HTTPS adresi olabilir.');
     }
 
-    public function savePage(?int $id, string $title, string $slug, string $body, string $status, string $seoTitle = '', string $seoDescription = '', string $canonicalUrl = '', ?string $scheduledAt = null): int
+    public function savePage(?int $id, string $title, string $slug, string $body, string $status, string $seoTitle = '', string $seoDescription = '', string $canonicalUrl = '', ?string $scheduledAt = null, ?int $socialImageMediaId = null): int
     {
         $title = trim($title);
         $slug = self::slug($slug !== '' ? $slug : $title);
@@ -45,18 +45,19 @@ final class ContentManager
         if (self::charLength($seoTitle) > 255 || self::charLength($seoDescription) > 320 || strlen($canonicalUrl) > 500) throw new RuntimeException('SEO alanlarından biri izin verilen uzunluğu aşıyor.');
         if ($canonicalUrl !== '' && !preg_match('#^(https://[^/\\s]+(?:/[^\\s]*)?|/(?!/)[^\\s]*)$#i', $canonicalUrl)) throw new RuntimeException('Canonical adresi HTTPS veya site içi yol olmalı.');
         if ($status === 'scheduled') { $scheduledAt = $scheduledAt !== null ? str_replace('T', ' ', $scheduledAt) : null; if ($scheduledAt === null || !preg_match('/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}(?::\\d{2})?$/', $scheduledAt) || strtotime($scheduledAt) === false || strtotime($scheduledAt) <= time()) throw new RuntimeException('Planlı yayın için gelecekte geçerli bir tarih ve saat seçin.'); } else { $scheduledAt = null; }
+        if ($socialImageMediaId !== null && $socialImageMediaId > 0) { $mediaCheck = $this->db->prepare('SELECT id FROM core_media WHERE id=?'); $mediaCheck->execute([$socialImageMediaId]); if (!$mediaCheck->fetchColumn()) throw new RuntimeException('Sosyal paylaşım görseli medya kütüphanesinde bulunamadı.'); } else { $socialImageMediaId = null; }
         $body = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         if ($id !== null) {
             $check = $this->db->prepare('SELECT source_module FROM core_pages WHERE id=?');
             $check->execute([$id]);
             $source = $check->fetchColumn();
             if ($source === false) throw new RuntimeException('Sayfa bulunamadı.');
-            $stmt = $this->db->prepare('UPDATE core_pages SET title=?,slug=?,body=?,status=?,seo_title=?,seo_description=?,canonical_url=?,scheduled_at=? WHERE id=?');
-            $stmt->execute([$title, $slug, $body, $status, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $scheduledAt, $id]);
+            $stmt = $this->db->prepare('UPDATE core_pages SET title=?,slug=?,body=?,status=?,seo_title=?,seo_description=?,canonical_url=?,scheduled_at=?,social_image_media_id=? WHERE id=?');
+            $stmt->execute([$title, $slug, $body, $status, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $scheduledAt, $socialImageMediaId, $id]);
             return $id;
         }
-        $stmt = $this->db->prepare('INSERT INTO core_pages (title,slug,body,status,source_module,source_demo,seo_title,seo_description,canonical_url,scheduled_at) VALUES (?,?,?,?,NULL,NULL,?,?,?,?)');
-        $stmt->execute([$title, $slug, $body, $status, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $scheduledAt]);
+        $stmt = $this->db->prepare('INSERT INTO core_pages (title,slug,body,status,source_module,source_demo,seo_title,seo_description,canonical_url,scheduled_at,social_image_media_id) VALUES (?,?,?,?,NULL,NULL,?,?,?,?,?)');
+        $stmt->execute([$title, $slug, $body, $status, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $scheduledAt, $socialImageMediaId]);
         return (int)$this->db->lastInsertId();
     }
 
