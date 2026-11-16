@@ -46,3 +46,5 @@ jobs:
         run: php tests/page-editor-workflow.php
       - name: Technical SEO tests
         run: php tests/technical-seo.php
+      - name: SEO management tests
+        run: php tests/seo-management.php

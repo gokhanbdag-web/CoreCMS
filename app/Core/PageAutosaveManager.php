@@ -11,7 +11,7 @@ final class PageAutosaveManager
 
     public function get(int $pageId, int $userId): ?array
     {
-        $stmt = $this->db->prepare('SELECT title,slug,body,seo_title,seo_description,canonical_url,saved_at FROM core_page_autosaves WHERE page_id=? AND user_id=? LIMIT 1');
+        $stmt = $this->db->prepare('SELECT title,slug,body,seo_title,seo_description,canonical_url,social_image_media_id,saved_at FROM core_page_autosaves WHERE page_id=? AND user_id=? LIMIT 1');
         $stmt->execute([$pageId,$userId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
