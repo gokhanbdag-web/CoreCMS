@@ -36,7 +36,9 @@ The installer creates `config.php`; keep it private and never commit it.
 
 See the Module update and rollback contract in docs/MODULE-UPDATES.md for migration and hook guidance.
 
-See the Module runtime contract in docs/MODULE-RUNTIME.md for route, asset, template and theme conventions.\n\nSee the localization contract in docs/LOCALIZATION.md for locale management and translation lookup.
+See the Module runtime contract in docs/MODULE-RUNTIME.md for route, asset, template and theme conventions.
+
+See the localization contract in docs/LOCALIZATION.md for locale management and translation lookup.
 
 ## Module uninstall safety
 - Modules must be disabled and have no installed dependents before removal.
