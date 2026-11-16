@@ -28,6 +28,14 @@ The installer creates `config.php`; keep it private and never commit it.
 - Admins can preview, install, reset and remove a package from the Demo Packages section.
 - Reset/removal preserve edited or revision-backed content and avoid duplicate content on reinstall.
 
+## Module updates and rollback
+- Installed modules are updated only while disabled; version changes run ordered, idempotent migrations and optional before/after hooks.
+- New reversible migrations return `up` and `down` callables. Automatic rollback is offered only when every migration in the update has a `down` callable.
+- Legacy callable-only migrations are treated as irreversible. Failed or partial updates are recorded for operator review; rollback is never guessed.
+- Optional manifest `update_hooks` keys: `before_update`, `after_update`, `before_rollback`, `after_rollback`; each path must stay inside the module directory and return a callable.
+
+See the Module update and rollback contract in docs/MODULE-UPDATES.md for migration and hook guidance.
+
 ## Module uninstall safety
 - Modules must be disabled and have no installed dependents before removal.
 - Untouched module-provisioned pages and menus are removed; edited or historically revised content is detached and preserved.
