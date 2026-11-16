@@ -63,6 +63,21 @@ $userRoleOptions = static function (array $user) use ($roles, $role, $h, $t): st
     }
     return $html;
 };
+$userRowsHtml = '';
+foreach ($users as $user) {
+    if ($user['role'] === 'super_admin') {
+        $roleCell = $t('admin.roles.protected_account', 'Protected account');
+    } else {
+        $roleCell = '<form method="post" class="inline-form">' . CoreCMS\\Core\\Csrf::field()
+            . '<input type="hidden" name="action" value="assign_role">'
+            . '<input type="hidden" name="user_id" value="' . (int)$user['id'] . '">'
+            . '<select name="role">' . $userRoleOptions($user) . '</select>'
+            . '<button class="button secondary">' . $t('admin.common.save', 'Save') . '</button></form>';
+    }
+    $userRowsHtml .= '<tr><td>' . $h($user['name']) . '</td><td>' . $h($user['email']) . '</td><td>'
+        . $h($user['role']) . '</td><td>' . $roleCell . '</td></tr>';
+}
+
 
 ?><!doctype html>
 <html lang="<?= $h($currentLocale) ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $t('admin.roles.page_title', 'Users and roles') ?> · CoreCMS</title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/responsive-nav.css')) ?>?v=3"></head>
@@ -85,5 +100,5 @@ $userRoleOptions = static function (array $user) use ($roles, $role, $h, $t): st
 <?php foreach ($roles as $item): ?><tr><td><?= $h($item['name']) ?></td><td><code><?= $h($item['role_key']) ?></code></td><td><?= (int)$item['permission_count'] ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php?edit=' . (int)$item['id'])) ?>"><?= $t('admin.common.edit', 'Edit') ?></a> <?php if (!(int)$item['is_system']): ?><form method="post" class="inline-form" onsubmit="return confirm(<?= json_encode($translate('admin.roles.confirm_delete', 'Delete this role?')) ?>)"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="delete_role"><input type="hidden" name="role_id" value="<?= (int)$item['id'] ?>"><button class="link-button danger"><?= $t('admin.common.delete', 'Delete') ?></button></form><?php else: ?><?= $t('admin.roles.system_role', 'System role') ?><?php endif ?></td></tr><?php endforeach ?>
 </tbody></table></div></section>
 <section class="content-admin"><h2><?= $t('admin.roles.user_roles', 'User roles') ?></h2><p><?= $t('admin.roles.protected_intro', 'Super administrator accounts are protected and cannot be changed.') ?></p><div class="table-wrap"><table><thead><tr><th><?= $t('admin.common.name', 'Name') ?></th><th><?= $t('admin.common.email', 'Email') ?></th><th><?= $t('admin.roles.current_role', 'Current role') ?></th><th><?= $t('admin.roles.assign_role', 'Assign role') ?></th></tr></thead><tbody>
-<?php foreach ($users as $user): ?><tr><td><?= $h($user['name']) ?></td><td><?= $h($user['email']) ?></td><td><?= $h($user['role']) ?></td><td><?php if ($user['role'] === 'super_admin'): ?><?= $t('admin.roles.protected_account', 'Protected account') ?><?php else: ?><form method="post" class="inline-form"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="assign_role"><input type="hidden" name="user_id" value="<?= (int)$user['id'] ?>"><select name="role"><?= $userRoleOptions($user) ?></select><button class="button secondary"><?= $t('admin.common.save', 'Save')</button></form><?php endif ?></td></tr><?php endforeach ?>
+<?= $userRowsHtml ?>
 </tbody></table></div></section></main><script src="<?= $h(CoreCMS\Core\Url::asset('js/responsive-nav.js')) ?>?v=3" defer></script></body></html>
