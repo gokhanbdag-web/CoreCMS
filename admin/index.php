@@ -32,6 +32,11 @@ $autosaves=new CoreCMS\Core\PageAutosaveManager($db);
 $redirects=new CoreCMS\Core\RedirectManager($db);
 $migrator=new CoreCMS\Core\Migrator($db,dirname(__DIR__).'/database/migrations');
 $pending=$migrator->pending(); $notice=$error=null; $action=(string)($_POST['action']??'');
+$roleManager=new CoreCMS\\Core\\RoleManager($db);
+$role=(string)($_SESSION['corecms_user_role']??'');
+$actionPermissions=['media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage'];
+if(($_SERVER['REQUEST_METHOD']??'GET')==='POST' && isset($actionPermissions[$action]) && !$roleManager->can($role,$actionPermissions[$action])) { http_response_code(403); exit('Bu işlem için yetkiniz bulunmuyor.'); }
+if($action==='run_core_migrations' && !in_array($role,['admin','super_admin'],true)) { http_response_code(403); exit('Veritabanı güncellemelerini yalnızca yöneticiler uygulayabilir.'); }
 try {
  if(($_SERVER['REQUEST_METHOD']??'GET')==='POST') {
   if($action==='media_upload') { if($pending) throw new RuntimeException('Önce bekleyen veritabanı migrasyonlarını uygulayın.'); $mediaLibrary->upload($_FILES['media_file']??[],(int)($_SESSION['corecms_user_id']??0),(string)($_POST['alt_text']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=media&uploaded=1')); exit; }
@@ -53,6 +58,8 @@ try {
  }
 } catch(Throwable $e){$error=$e->getMessage();}
 $section=(string)($_GET['section']??'overview'); if(!in_array($section,['overview','pages','menus','media','modules','appearance','settings','seo','redirects'],true))$section='overview';
+$sectionPermissions=['overview'=>'dashboard.view','pages'=>'pages.manage','menus'=>'menus.manage','media'=>'media.manage','modules'=>'modules.manage','appearance'=>'appearance.manage','settings'=>'settings.manage','seo'=>'seo.manage','redirects'=>'seo.manage'];
+if(!$roleManager->can($role,$sectionPermissions[$section]??'dashboard.view')) { http_response_code(403); exit('Bu bölümü görüntülemek için yetkiniz bulunmuyor.'); }
 if(isset($_GET['restored']))$notice='Sayfa revizyonu geri yüklendi; önceki sürüm de geçmişe kaydedildi.'; if(isset($_GET['uploaded']))$notice='Görsel kütüphaneye eklendi.'; if(isset($_GET['saved']))$notice='Değişiklikler kaydedildi.'; if(isset($_GET['deleted']))$notice='Kayıt silindi.'; if(isset($_GET['detached']))$notice='İçerik modülden ayrıldı ve artık bağımsız yönetiliyor.';
 $h=static fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
 $pageRows=$db->query('SELECT id,title,slug,status,source_module FROM core_pages ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC);
@@ -72,6 +79,7 @@ if($ep && !$pending){$pageRevisions=$revisions->history((int)$ep['id']);$compare
 ?><!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CoreCMS Yönetim</title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/responsive-nav.css')) ?>?v=3"></head><body class="admin-body">
 <header class="site-header"><a class="brand" href="<?= $h(CoreCMS\Core\Url::to('/')) ?>">CoreCMS</a><nav><a href="<?= $h(CoreCMS\Core\Url::to('/')) ?>">Siteyi görüntüle</a><form method="post" class="inline-form"><?= CoreCMS\Core\Csrf::field() ?><button name="action" value="logout" class="link-button">Çıkış</button></form></nav></header>
 <main class="container admin"><h1>Kontrol paneli</h1><p>İçerik, menüler ve sektör modülleri.</p><nav class="admin-nav"><?php foreach(['overview'=>'Genel bakış','pages'=>'Sayfalar','menus'=>'Menüler','media'=>'Medya kütüphanesi','seo'=>'SEO analizi','redirects'=>'Yönlendirmeler','modules'=>'Modüller','appearance'=>'Görünüm','settings'=>'Site ayarları'] as $k=>$v): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/'.($k==='overview'?'':'?section='.$k))) ?>"><?= $h($v) ?></a><?php endforeach ?></nav>
+<?php if($roleManager->can($role,'users.manage')): ?><p><a href="<?= $h(CoreCMS\\Core\\Url::to('/admin/roles.php')) ?>">Kullanıcılar ve roller</a></p><?php endif ?>
 <?php if($notice): ?><p class="success"><?= $h($notice) ?></p><?php endif ?><?php if($error): ?><p class="error"><?= $h($error) ?></p><?php endif ?>
 <?php if($section==='overview'||$section==='modules'): ?>
 <section class="content-admin"><h2>Çekirdek güncellemeleri</h2><?php if($pending): ?><p><?= count($pending) ?> bekleyen migrasyon.</p><form method="post"><?= CoreCMS\Core\Csrf::field() ?><button class="button" name="action" value="run_core_migrations">Migrasyonları uygula</button></form><?php else: ?><p>Veritabanı güncel.</p><?php endif ?></section>
