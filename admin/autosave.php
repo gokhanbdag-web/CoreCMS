@@ -33,8 +33,9 @@ $body = (string)($_POST['body'] ?? '');
 $seoTitle = trim((string)($_POST['seo_title'] ?? ''));
 $seoDescription = trim((string)($_POST['seo_description'] ?? ''));
 $canonical = trim((string)($_POST['canonical_url'] ?? ''));
+$socialImageId = (int)($_POST['social_image_media_id'] ?? 0);
 
-if ($pageId < 1 || $userId < 1 || $title === '' || (preg_match_all('/./us', $title) ?: 0) > 255 || strlen($body) > 1000000 || (preg_match_all('/./us', $seoTitle) ?: 0) > 255 || (preg_match_all('/./us', $seoDescription) ?: 0) > 320 || strlen($canonical) > 500) {
+if ($pageId < 1 || $userId < 1 || $title === '' || (preg_match_all('/./us', $title) ?: 0) > 255 || strlen($body) > 1000000 || (preg_match_all('/./us', $seoTitle) ?: 0) > 255 || (preg_match_all('/./us', $seoDescription) ?: 0) > 320 || strlen($canonical) > 500 || $socialImageId < 0) {
     http_response_code(422);
     echo json_encode(['ok'=>false,'message'=>'Taslak verileri geçersiz veya çok uzun.']);
     exit;
@@ -53,11 +54,12 @@ try {
         echo json_encode(['ok'=>false,'message'=>'Sayfa bulunamadı.']);
         exit;
     }
-    $stmt = $db->prepare('INSERT INTO core_page_autosaves (page_id,user_id,title,slug,body,seo_title,seo_description,canonical_url,saved_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE title=VALUES(title),slug=VALUES(slug),body=VALUES(body),seo_title=VALUES(seo_title),seo_description=VALUES(seo_description),canonical_url=VALUES(canonical_url),saved_at=CURRENT_TIMESTAMP');
+    $stmt = $db->prepare('INSERT INTO core_page_autosaves (page_id,user_id,title,slug,body,seo_title,seo_description,canonical_url,social_image_media_id,saved_at) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE title=VALUES(title),slug=VALUES(slug),body=VALUES(body),seo_title=VALUES(seo_title),seo_description=VALUES(seo_description),canonical_url=VALUES(canonical_url),social_image_media_id=VALUES(social_image_media_id),saved_at=CURRENT_TIMESTAMP');
     if ((string)$db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
-        $stmt = $db->prepare('INSERT INTO core_page_autosaves (page_id,user_id,title,slug,body,seo_title,seo_description,canonical_url,saved_at) VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(page_id,user_id) DO UPDATE SET title=excluded.title,slug=excluded.slug,body=excluded.body,seo_title=excluded.seo_title,seo_description=excluded.seo_description,canonical_url=excluded.canonical_url,saved_at=CURRENT_TIMESTAMP');
+        $stmt = $db->prepare('INSERT INTO core_page_autosaves (page_id,user_id,title,slug,body,seo_title,seo_description,canonical_url,social_image_media_id,saved_at) VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(page_id,user_id) DO UPDATE SET title=excluded.title,slug=excluded.slug,body=excluded.body,seo_title=excluded.seo_title,seo_description=excluded.seo_description,canonical_url=excluded.canonical_url,social_image_media_id=excluded.social_image_media_id,saved_at=CURRENT_TIMESTAMP');
     }
-    $stmt->execute([$pageId,$userId,$title,$slug,$body,$seoTitle,$seoDescription,$canonical]);
+    if ($socialImageId > 0) { $media = $db->prepare('SELECT id FROM core_media WHERE id=?'); $media->execute([$socialImageId]); if (!$media->fetchColumn()) { http_response_code(422); echo json_encode(['ok'=>false,'message'=>'Sosyal görsel bulunamadı.']); exit; } } else { $socialImageId = null; }
+    $stmt->execute([$pageId,$userId,$title,$slug,$body,$seoTitle,$seoDescription,$canonical,$socialImageId]);
     echo json_encode(['ok'=>true,'saved_at'=>date(DATE_ATOM)]);
 } catch (Throwable $e) {
     error_log('[CoreCMS] Page autosave failed: '.$e->getMessage());
