@@ -71,6 +71,7 @@ final class ModuleRuntime
             'url' => (string)$menu['url'],
             'sort_order' => (int)$menu['sort_order'],
             'source_module' => (string)($menu['source_module'] ?? ''),
+            'source_demo' => (string)($menu['source_demo'] ?? ''),
         ]);
     }
 
@@ -152,7 +153,7 @@ final class ModuleRuntime
             $stmt = $this->db->prepare('INSERT INTO core_menus (menu_key,label,url,sort_order,source_module,source_demo) VALUES (?,?,?,?,?,NULL)');
             $stmt->execute([$menuKey, $label, $url, (int)($menu['sort_order'] ?? 0), $moduleId]);
             $contentId = (int)$this->db->lastInsertId();
-            $row = $this->db->prepare('SELECT menu_key,label,url,sort_order,source_module FROM core_menus WHERE id=?');
+            $row = $this->db->prepare('SELECT menu_key,label,url,sort_order,source_module,source_demo FROM core_menus WHERE id=?');
             $row->execute([$contentId]);
             $this->register($moduleId, 'menu', $key, $contentId, $this->menuHash($row->fetch(PDO::FETCH_ASSOC) ?: []));
             $created['menus']++;
@@ -234,7 +235,7 @@ final class ModuleRuntime
                 }
 
                 if ($type === 'menu') {
-                    $find = $this->db->prepare('SELECT id,menu_key,label,url,sort_order,source_module FROM core_menus WHERE id=?');
+                    $find = $this->db->prepare('SELECT id,menu_key,label,url,sort_order,source_module,source_demo FROM core_menus WHERE id=?');
                     $find->execute([$contentId]);
                     $menu = $find->fetch(PDO::FETCH_ASSOC);
                     if (!$menu) {
