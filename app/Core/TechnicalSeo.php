@@ -108,6 +108,8 @@ final class TechnicalSeo
             'name' => $orgName,
         ];
         if ($base !== '') $schema['url'] = $base . '/';
+        $logo = self::absolute((string)($settings['seo_logo_url'] ?? ''), $base);
+        if ($logo !== '') $schema['logo'] = $logo;
         $graph = [
             '@context' => 'https://schema.org',
             '@graph' => [
