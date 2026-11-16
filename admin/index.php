@@ -295,7 +295,6 @@ if(!$pending&&isset($_GET['template_key'])){
 <button class="button"><?= $adminText('admin.common.save','Save') ?></button></form></section><?php endif ?>
 <section class="content-admin"><h2><?= $adminText('admin.email.list','Email templates') ?></h2><div class="table-wrap"><table><thead><tr><th><?= $adminText('admin.email.key','Key') ?></th><th><?= $adminText('admin.email.name','Name') ?></th><th><?= $adminText('admin.common.actions','Actions') ?></th></tr></thead><tbody><?php foreach($emailTemplateRows as $templateRow): ?><tr><td><code><?= $h($templateRow['template_key']) ?></code></td><td><?= $h($templateRow['name']) ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=email_templates&template_key='.rawurlencode($templateRow['template_key']))) ?>"><?= $adminText('admin.common.edit','Edit') ?></a></td></tr><?php endforeach ?></tbody></table></div><?php if(!$emailTemplateRows): ?><p><?= $adminText('admin.email.empty','No email templates have been created yet.') ?></p><?php endif ?></section>
 <?php endif ?>
-<?php endif ?>
 <?php endif ?></main><?php if($section==='pages' && $pageMediaRows): ?><script>
 document.getElementById('insert-page-media')?.addEventListener('click', function () {
     const field = document.getElementById('page-body');
