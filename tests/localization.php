@@ -25,4 +25,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'Over');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (9).\n";
+echo "Localization checks passed (8).\n";
