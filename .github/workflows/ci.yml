@@ -30,3 +30,5 @@ jobs:
         run: php tests/module-lifecycle.php
       - name: Module runtime tests
         run: php tests/module-runtime.php
+      - name: Content manager tests
+        run: php tests/content-manager.php
