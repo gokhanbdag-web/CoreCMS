@@ -342,13 +342,54 @@ final class ModuleRuntime
         return (new ThemeManager($this->db, $this->directory))->active();
     }
 
+    public function renderTemplate(string $moduleId, string $templateKey, array $data = []): string
+    {
+        $modules=(new ModuleManager($this->db,$this->directory))->enabledModules();
+        if(!isset($modules[$moduleId])) throw new RuntimeException('Şablon için modül etkin değil.');
+        if(!preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$templateKey)) throw new RuntimeException('Geçersiz modül şablon anahtarı.');
+        $templates=$modules[$moduleId]['templates']??[];
+        $relative=is_array($templates)?($templates[$templateKey]??null):null;
+        if(!is_string($relative)||$relative===''||str_starts_with($relative,'/')||str_contains($relative,'..')||str_contains($relative,'\\')) {
+            throw new RuntimeException('Modül şablonu tanımlanmamış veya yolu geçersiz.');
+        }
+        $root=realpath($modules[$moduleId]['_path'].'/templates');
+        $file=$root!==false?realpath($root.'/'.$relative):false;
+        if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)||strtolower(pathinfo($file,PATHINFO_EXTENSION))!=='php') {
+            throw new RuntimeException('Modül şablon dosyası bulunamadı.');
+        }
+        $db=$this->db; $module=$modules[$moduleId]; $runtime=$this;
+        extract($data,EXTR_SKIP);
+        ob_start();
+        try {
+            require $file;
+            return (string)ob_get_clean();
+        } catch(Throwable $e) {
+            ob_end_clean();
+            throw new RuntimeException('Modül şablonu oluşturulamadı: '.$e->getMessage(),0,$e);
+        }
+    }
+
     public function assetUrl(string $moduleId, string $relativePath): string
     {
-        if (!preg_match('/^[a-z0-9][a-z0-9._-]{1,79}$/', $moduleId)
-            || $relativePath === '' || str_contains($relativePath, '..')
-            || str_starts_with($relativePath, '/')) {
+        if (!preg_match('/^[a-z0-9][a-z0-9._-]{1,79}$/',$moduleId)
+            || $relativePath==='' || str_starts_with($relativePath,'/')
+            || str_contains($relativePath,'..') || str_contains($relativePath,'\\')
+            || !preg_match('#^[A-Za-z0-9._/-]+$#',$relativePath)) {
             throw new RuntimeException('Geçersiz modül varlığı yolu.');
         }
-        return Url::to('/modules/' . rawurlencode($moduleId) . '/assets/' . implode('/', array_map('rawurlencode', explode('/', $relativePath))));
+        $modules=(new ModuleManager($this->db,$this->directory))->enabledModules();
+        if(!isset($modules[$moduleId])) throw new RuntimeException('Varlık için modül etkin değil.');
+        $declared=$modules[$moduleId]['assets']??[];
+        if(!is_array($declared)||!in_array($relativePath,array_values($declared),true)) {
+            throw new RuntimeException('Modül varlığı manifest içinde tanımlı değil.');
+        }
+        $root=realpath($modules[$moduleId]['_path'].'/assets');
+        $file=$root!==false?realpath($root.'/'.$relativePath):false;
+        $allowed=['css','js','svg','png','jpg','jpeg','webp','gif','ico','woff','woff2','ttf','otf'];
+        if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)
+            ||!in_array(strtolower(pathinfo($file,PATHINFO_EXTENSION)),$allowed,true)) {
+            throw new RuntimeException('Modül varlığı bulunamadı veya güvenli bir dosya türü değil.');
+        }
+        return Url::to('/modules/'.rawurlencode($moduleId).'/assets/'.implode('/',array_map('rawurlencode',explode('/',$relativePath))));
     }
 }
