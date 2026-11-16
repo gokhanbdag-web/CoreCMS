@@ -14,7 +14,7 @@ $db->exec("INSERT INTO core_pages(slug,status,updated_at,canonical_url) VALUES
  ('ozel','published','2026-11-15 10:00:00','/ozel-kanonik')");
 $settings = ['site_url' => 'https://example.test/subsite', 'site_name' => 'Örnek <Site>', 'seo_org_name' => 'Örnek Kurum', 'seo_social_image' => 'https://example.test/social.jpg', 'search_console_verification' => 'token_123'];
 $xml = TechnicalSeo::sitemap($db, $settings);
-if (!str_contains($xml, 'https://example.test/subsite/hakkimizda') || !str_contains($xml, 'https://example.test/ozel-kanonik')) throw new RuntimeException('Published page URLs missing.');
+if (!str_contains($xml, 'https://example.test/subsite/hakkimizda') || !str_contains($xml, 'https://example.test/subsite/ozel-kanonik')) throw new RuntimeException('Published page URLs missing.');
 if (str_contains($xml, 'gizli') || str_contains($xml, 'gelecek')) throw new RuntimeException('Non-public pages leaked into sitemap.');
 if (!str_contains($xml, '&lt;') && str_contains($xml, 'Örnek')) { /* XML data is escaped at URL boundary; fixture title is not emitted. */ }
 $robots = TechnicalSeo::robots($settings);
