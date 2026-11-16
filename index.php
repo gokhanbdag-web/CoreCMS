@@ -125,4 +125,4 @@ if ($layout !== '' && is_file($layout)) {
 <body><header class="site-header"><a class="brand" href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></a><nav>
 <?php foreach ($menus as $menu): ?><a href="<?= htmlspecialchars($menu['url'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($menu['label'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?>
 <a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>">Yönetim</a></nav></header>
-<main class="container"><?= $contentHtml ?></main><footer><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> · <?= date('Y') ?></footer><script src="<?= htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') ?>" defer></script></body></html>
+<main class="container"><?= $contentHtml ?></main><footer><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> · <?= date('Y') ?></footer><script src="<?= htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') ?>?v=3" defer></script></body></html>
