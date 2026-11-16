@@ -17,7 +17,7 @@ return static function (PDO $db): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     $permissions = [
-        'dashboard.view','pages.view','pages.manage','menus.manage','media.manage',
+        'dashboard.view','pages.manage','menus.manage','media.manage',
         'seo.manage','modules.manage','appearance.manage','settings.manage','users.manage'
     ];
     $insertRole = $db->prepare('INSERT IGNORE INTO core_roles (role_key,name,is_system) VALUES (?,?,0)');
