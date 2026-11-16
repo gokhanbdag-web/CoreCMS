@@ -23,6 +23,11 @@ The installer creates `config.php`; keep it private and never commit it.
 - `installer`: browser-based installation flow
 - `admin`: core administration interface
 
+## Module uninstall safety
+- Modules must be disabled and have no installed dependents before removal.
+- Untouched module-provisioned pages and menus are removed; edited or historically revised content is detached and preserved.
+- Module-owned database tables, customer data and migration history are retained so reinstalling does not rerun destructive schema changes.
+
 ## Administration and permissions
 - Built-in administrator access remains fully compatible.
 - Custom roles can be created and assigned to existing users from the admin role manager.

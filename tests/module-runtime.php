@@ -30,7 +30,7 @@ try {
     file_put_contents($dir . '/Frontend/item.php', "<?php return static function (PDO \$db, array \$params): string { return 'item:' . \$params['slug']; };");
     $db = new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
     $db->exec('CREATE TABLE core_modules (module_id TEXT PRIMARY KEY, version TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0)');
-    $db->exec('CREATE TABLE core_pages (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,body TEXT,status TEXT,source_module TEXT,source_demo TEXT)');
+    $db->exec('CREATE TABLE core_pages (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,body TEXT,status TEXT,seo_title TEXT,seo_description TEXT,canonical_url TEXT,scheduled_at TEXT,social_image_media_id INTEGER,source_module TEXT,source_demo TEXT)');
     $db->exec('CREATE TABLE core_menus (id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER,source_module TEXT,source_demo TEXT)');
     $db->exec('CREATE TABLE core_module_installs (module_id TEXT PRIMARY KEY,version TEXT NOT NULL,installed_at TEXT DEFAULT CURRENT_TIMESTAMP)');
     $db->exec('CREATE TABLE core_module_migrations (module_id TEXT,migration TEXT,applied_at TEXT DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(module_id,migration))');
