@@ -17,6 +17,8 @@ $adminRolesTranslations = require dirname(__DIR__) . '/database/migrations/0016_
 $adminRolesTranslations($db);
 $adminFinalTranslations = require dirname(__DIR__) . '/database/migrations/0017_admin_remaining_ui_translations.php';
 $adminFinalTranslations($db);
+$frontendTranslations = require dirname(__DIR__) . '/database/migrations/0019_frontend_ui_translations.php';
+$frontendTranslations($db);
 $adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
 $adminUiExtras($db);
 $locales = new CoreCMS\Core\LocaleManager($db);
@@ -39,6 +41,8 @@ $assert($locales->translate('admin.pages.open_preview', 'en') === 'Open preview'
 $assert($locales->translate('admin.common.select', 'en') === 'Select', 'shared selection label English translation');
 $assert($locales->translate('admin.redirects.empty', 'en') === 'No redirects have been created yet.', 'redirect empty state English translation');
 $assert($locales->translate('admin.seo.description_placeholder', 'en') === 'Detailed information about {title}. {site_name}', 'SEO template placeholder English translation');
+$assert($locales->translate('frontend.404.title', 'en') === 'Page not found', 'frontend 404 English translation');
+$assert($locales->translate('frontend.language_switcher', 'en') === 'Select language', 'frontend language switcher English translation');
 $locales->saveLanguage('en', 'English');
 $locales->saveLanguage('de', 'Deutsch');
 $locales->saveTranslation('en', 'admin.dashboard.title', 'Dashboard');
@@ -56,4 +60,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (25).\n";
+echo "Localization checks passed (27).\n";

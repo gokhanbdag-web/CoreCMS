@@ -8,6 +8,7 @@ if (!is_file($root . '/config.php')) {
     exit;
 }
 require $root . '/app/bootstrap.php';
+$frontText = static fn(string $key, string $fallback): string => htmlspecialchars($translate($key, $fallback), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 // Scheduled pages are promoted on the next public/admin request; no server cron is required.
 try { $publishDue = $db->prepare("UPDATE core_pages SET status='published',scheduled_at=NULL WHERE status='scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= ?"); $publishDue->execute([date('Y-m-d H:i:s')]); }
 catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '.$e->getMessage()); }
@@ -95,13 +96,13 @@ if ($page) {
     echo '<article class="content-page"><h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
     echo '<div class="content-body">' . $pageBodyHtml . '</div></article>';
 } elseif ($path === '/') {
-    echo '<section class="hero"><span class="eyebrow">' . htmlspecialchars($homeEyebrow, ENT_QUOTES, 'UTF-8') . '</span><h1>' . htmlspecialchars($homeTitle, ENT_QUOTES, 'UTF-8') . '<br><em>' . htmlspecialchars($homeAccentTitle, ENT_QUOTES, 'UTF-8') . '</em></h1><p>' . htmlspecialchars($homeDescription, ENT_QUOTES, 'UTF-8') . '</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">Yönetim panelini aç</a></section><section class="module-grid"><h2>Etkin modüller</h2>';
-    if (!$modules) echo '<p>Henüz etkin sektör modülü bulunmuyor.</p>';
+    echo '<section class="hero"><span class="eyebrow">' . htmlspecialchars($homeEyebrow, ENT_QUOTES, 'UTF-8') . '</span><h1>' . htmlspecialchars($homeTitle, ENT_QUOTES, 'UTF-8') . '<br><em>' . htmlspecialchars($homeAccentTitle, ENT_QUOTES, 'UTF-8') . '</em></h1><p>' . htmlspecialchars($homeDescription, ENT_QUOTES, 'UTF-8') . '</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">' . $frontText('frontend.home.admin_button', 'Open administration') . '</a></section><section class="module-grid"><h2>' . $frontText('frontend.home.enabled_modules', 'Enabled modules') . '</h2>';
+    if (!$modules) echo '<p>' . $frontText('frontend.home.no_modules', 'No sector modules are enabled yet.') . '</p>';
     foreach ($modules as $module) echo '<article class="module-card"><h3>' . htmlspecialchars($module['name'], ENT_QUOTES, 'UTF-8') . '</h3><p>' . htmlspecialchars($module['description'] ?? '', ENT_QUOTES, 'UTF-8') . '</p><small>v' . htmlspecialchars($module['version'], ENT_QUOTES, 'UTF-8') . '</small></article>';
     echo '</section>';
 } else {
     http_response_code(404);
-    echo '<section class="content-page"><h1>Sayfa bulunamadı</h1><p>Aradığınız içerik mevcut değil.</p></section>';
+    echo '<section class="content-page"><h1>' . $frontText('frontend.404.title', 'Page not found') . '</h1><p>' . $frontText('frontend.404.description', 'The content you are looking for is unavailable.') . '</p></section>';
 }
 $contentHtml = (string)ob_get_clean();
 $theme = $runtime->theme();
@@ -150,5 +151,5 @@ if ($theme) {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title><?= CoreCMS\Core\TechnicalSeo::head($settings, $pageTitle, $metaDescription, $canonicalUrl, $path === '/') ?><link rel="stylesheet" href="<?= htmlspecialchars(CoreCMS\Core\Url::asset('css/site.css'), ENT_QUOTES, 'UTF-8') ?>"></head>
 <body><header class="site-header"><a class="brand" href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></a><nav>
 <?php foreach ($menus as $menu): ?><a href="<?= htmlspecialchars($menu['url'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($menu['label'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?>
-<a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>">Yönetim</a></nav><div class="language-switcher" aria-label="Dil seçimi"><?php foreach ($availableLocales as $language): $languageQuery = $_GET; $languageQuery['lang'] = $language['locale_code']; ?><a href="<?= htmlspecialchars(CoreCMS\Core\Url::to($path) . '?' . http_build_query($languageQuery), ENT_QUOTES, 'UTF-8') ?>" lang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>" hreflang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>"<?= $language['locale_code'] === $currentLocale ? ' aria-current="true"' : '' ?>><?= htmlspecialchars($language['name'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?></div></header>
+<a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>"><?= $frontText('frontend.nav.admin', 'Administration') ?></a></nav><div class="language-switcher" aria-label="<?= $frontText('frontend.language_switcher', 'Select language') ?>"><?php foreach ($availableLocales as $language): $languageQuery = $_GET; $languageQuery['lang'] = $language['locale_code']; ?><a href="<?= htmlspecialchars(CoreCMS\Core\Url::to($path) . '?' . http_build_query($languageQuery), ENT_QUOTES, 'UTF-8') ?>" lang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>" hreflang="<?= htmlspecialchars($language['locale_code'], ENT_QUOTES, 'UTF-8') ?>"<?= $language['locale_code'] === $currentLocale ? ' aria-current="true"' : '' ?>><?= htmlspecialchars($language['name'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?></div></header>
 <main class="container"><?= $contentHtml ?></main><footer><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?> · <?= date('Y') ?></footer><script src="<?= htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') ?>?v=3" defer></script></body></html>
