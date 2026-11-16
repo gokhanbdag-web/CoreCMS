@@ -45,4 +45,6 @@ $audit = CoreCMS\Core\SeoAnalyzer::audit($db);
 if (count($audit['broken_links']) !== 1 || $audit['broken_links'][0]['target'] !== '/olmayan-sayfa') throw new RuntimeException('Broken internal link not detected.');
 $score = CoreCMS\Core\SeoAnalyzer::analyze($audit['pages'][0]);
 if (!isset($score['score'],$score['issues'],$score['word_count']) || $score['score'] < 0 || $score['score'] > 100) throw new RuntimeException('SEO score result invalid.');
+$imageScore = CoreCMS\\Core\\SeoAnalyzer::analyze(['title'=>'Test','slug'=>'test','body'=>'[[media:5]]'],[5=>'Ürün fotoğrafı']);
+if ($imageScore['image_count'] !== 1 || !is_array($imageScore['issues'])) throw new RuntimeException('Image SEO analysis failed.');
 echo 'SEO management checks passed (15).'.PHP_EOL;
