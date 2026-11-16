@@ -13,13 +13,18 @@ final class ModuleRuntime
 
     private function registry(): void
     {
-        $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = (string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         if ($driver === 'sqlite') {
             $this->db->exec('CREATE TABLE IF NOT EXISTS core_module_content_registry (
                 module_id TEXT NOT NULL, content_type TEXT NOT NULL, content_key TEXT NOT NULL,
-                content_id INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                content_id INTEGER NOT NULL, managed_hash TEXT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (module_id,content_type,content_key)
             )');
+            $columns = $this->db->query('PRAGMA table_info(core_module_content_registry)')->fetchAll(PDO::FETCH_ASSOC);
+            $hasHash = false;
+            foreach ($columns as $column) if (($column['name'] ?? '') === 'managed_hash') $hasHash = true;
+            if (!$hasHash) $this->db->exec('ALTER TABLE core_module_content_registry ADD COLUMN managed_hash TEXT NULL');
             return;
         }
         $this->db->exec("CREATE TABLE IF NOT EXISTS core_module_content_registry (
@@ -27,9 +32,62 @@ final class ModuleRuntime
             content_type VARCHAR(20) NOT NULL,
             content_key VARCHAR(100) NOT NULL,
             content_id BIGINT UNSIGNED NOT NULL,
+            managed_hash CHAR(64) NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (module_id,content_type,content_key)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $check = $this->db->prepare('SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
+        $check->execute(['core_module_content_registry','managed_hash']);
+        if ((int)$check->fetchColumn() === 0) $this->db->exec('ALTER TABLE core_module_content_registry ADD COLUMN managed_hash CHAR(64) NULL');
+    }
+
+    private function contentHash(array $values): string
+    {
+        return hash('sha256', json_encode($values, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR));
+    }
+
+    private function pageHash(array $page): string
+    {
+        return $this->contentHash([
+            'title' => (string)$page['title'],
+            'slug' => (string)$page['slug'],
+            'body' => (string)($page['body'] ?? ''),
+            'status' => (string)$page['status'],
+            'source_module' => (string)($page['source_module'] ?? ''),
+        ]);
+    }
+
+    private function menuHash(array $menu): string
+    {
+        return $this->contentHash([
+            'menu_key' => (string)$menu['menu_key'],
+            'label' => (string)$menu['label'],
+            'url' => (string)$menu['url'],
+            'sort_order' => (int)$menu['sort_order'],
+            'source_module' => (string)($menu['source_module'] ?? ''),
+        ]);
+    }
+
+    private function registeredContentExists(string $type, int $id): bool
+    {
+        $table = $type === 'page' ? 'core_pages' : ($type === 'menu' ? 'core_menus' : '');
+        if ($table === '') return true;
+        $stmt = $this->db->prepare('SELECT 1 FROM ' . $table . ' WHERE id=?');
+        $stmt->execute([$id]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    private function tableExists(string $table): bool
+    {
+        if (!in_array($table, ['core_page_revisions','core_page_autosaves'], true)) return false;
+        if ((string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $stmt = $this->db->prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?");
+            $stmt->execute([$table]);
+            return (bool)$stmt->fetchColumn();
+        }
+        $stmt = $this->db->prepare('SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+        $stmt->execute([$table]);
+        return (bool)$stmt->fetchColumn();
     }
 
     public function syncContent(string $moduleId): array
