@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
+$t = static fn(string $key, string $fallback): string => htmlspecialchars($translate($key, $fallback), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 CoreCMS\Core\Auth::startSession();
 CoreCMS\Core\Csrf::requireValidPost();
 CoreCMS\Core\Auth::requireAdmin();
@@ -9,7 +10,7 @@ $manager = new CoreCMS\Core\RoleManager($db);
 $role = (string)($_SESSION['corecms_user_role'] ?? '');
 if (!$manager->can($role, 'users.manage')) {
     http_response_code(403);
-    exit('Bu bölümü görüntülemek için yetkiniz bulunmuyor.');
+    exit($t('admin.access.forbidden', 'You are not allowed to view this section.'));
 }
 $error = null;
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -41,6 +42,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 $roles = $manager->roles();
 $users = $db->query('SELECT id,name,email,role,status FROM core_users ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+
 $editing = null;
 if (isset($_GET['edit'])) {
     $stmt = $db->prepare('SELECT * FROM core_roles WHERE id=?');
@@ -49,7 +51,34 @@ if (isset($_GET['edit'])) {
 }
 $selected = $editing ? $manager->permissionsForRole((string)$editing['role_key']) : [];
 $h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-$t = static fn(string $key, string $fallback): string => $h($translate($key, $fallback));
+$userRoleOptions = static function (array $user) use ($roles, $role, $h, $t): string {
+    $html = '';
+    if (in_array($role, ['admin', 'super_admin'], true)) {
+        $selected = $user['role'] === 'admin' ? ' selected' : '';
+        $html .= '<option value="admin"' . $selected . '>' . $t('admin.roles.admin_full', 'Administrator (full access)') . '</option>';
+    }
+    foreach ($roles as $option) {
+        $selected = $user['role'] === $option['role_key'] ? ' selected' : '';
+        $html .= '<option value="' . $h($option['role_key']) . '"' . $selected . '>' . $h($option['name']) . '</option>';
+    }
+    return $html;
+};
+$userRowsHtml = '';
+foreach ($users as $user) {
+    if ($user['role'] === 'super_admin') {
+        $roleCell = $t('admin.roles.protected_account', 'Protected account');
+    } else {
+        $roleCell = '<form method="post" class="inline-form">' . CoreCMS\Core\Csrf::field()
+            . '<input type="hidden" name="action" value="assign_role">'
+            . '<input type="hidden" name="user_id" value="' . (int)$user['id'] . '">'
+            . '<select name="role">' . $userRoleOptions($user) . '</select>'
+            . '<button class="button secondary">' . $t('admin.common.save', 'Save') . '</button></form>';
+    }
+    $userRowsHtml .= '<tr><td>' . $h($user['name']) . '</td><td>' . $h($user['email']) . '</td><td>'
+        . $h($user['role']) . '</td><td>' . $roleCell . '</td></tr>';
+}
+
+
 ?><!doctype html>
 <html lang="<?= $h($currentLocale) ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $t('admin.roles.page_title', 'Users and roles') ?> · CoreCMS</title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/responsive-nav.css')) ?>?v=3"></head>
 <body class="admin-body"><header class="site-header"><a class="brand" href="<?= $h(CoreCMS\Core\Url::to('/admin/')) ?>">CoreCMS</a><nav><a href="<?= $h(CoreCMS\Core\Url::to('/admin/')) ?>"><?= $t('admin.roles.back', 'Back to dashboard') ?></a></nav></header>
@@ -64,12 +93,12 @@ $t = static fn(string $key, string $fallback): string => $h($translate($key, $fa
 <label><?= $t('admin.roles.key', 'Role key') ?><input name="role_key" required pattern="[a-z][a-z0-9_]{1,39}" maxlength="40" value="<?= $h($editing['role_key'] ?? '') ?>" placeholder="icerik_editoru"></label>
 <label><?= $t('admin.roles.name', 'Role name') ?><input name="role_name" required maxlength="100" value="<?= $h($editing['name'] ?? '') ?>" placeholder="İçerik Editörü"></label>
 <h3><?= $t('admin.roles.permissions', 'Permissions') ?></h3>
-<?php foreach (CoreCMS\Core\RoleManager::permissionCatalog() as $key => $label): ?><label><input type="checkbox" name="permissions[]" value="<?= $h($key) ?>" <?= in_array($key, $selected, true) ? 'checked' : '' ?>> <?= $h($label) ?></label><?php endforeach ?>
-<button class="button"><?= $t('admin.roles.save', 'Save role') ?></button><?php if ($editing): ?> <a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php')) ?>"<?= $t('admin.common.cancel', 'Cancel') ?></a><?php endif ?>
+<?php foreach (CoreCMS\Core\RoleManager::permissionCatalog() as $key => $label): ?><label><input type="checkbox" name="permissions[]" value="<?= $h($key) ?>" <?= in_array($key, $selected, true) ? 'checked' : '' ?>> <?= $t('admin.permission.' . str_replace('.', '_', $key), $label) ?></label><?php endforeach ?>
+<button class="button"><?= $t('admin.roles.save', 'Save role') ?></button><?php if ($editing): ?> <a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php')) ?>"><?= $t('admin.common.cancel', 'Cancel') ?></a><?php endif ?>
 </form></section>
 <section class="content-admin"><h2><?= $t('admin.roles.defined', 'Defined roles') ?></h2><div class="table-wrap"><table><thead><tr><th><?= $t('admin.roles.table.role', 'Role') ?></th><th><?= $t('admin.roles.table.key', 'Key') ?></th><th><?= $t('admin.roles.table.permissions', 'Permissions') ?></th><th><?= $t('admin.common.actions', 'Actions') ?></th></tr></thead><tbody>
-<?php foreach ($roles as $item): ?><tr><td><?= $h($item['name']) ?></td><td><code><?= $h($item['role_key']) ?></code></td><td><?= (int)$item['permission_count'] ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php?edit=' . (int)$item['id'])) ?>"<?= $t('admin.common.edit', 'Edit') ?></a> <?php if (!(int)$item['is_system']): ?><form method="post" class="inline-form" onsubmit="return confirm(<?= json_encode($translate('admin.roles.confirm_delete', 'Delete this role?')) ?>)"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="delete_role"><input type="hidden" name="role_id" value="<?= (int)$item['id'] ?>"><button class="link-button danger"<?= $t('admin.common.delete', 'Delete') ?></button></form><?php else: ?><?= $t('admin.roles.system_role', 'System role') ?><?php endif ?></td></tr><?php endforeach ?>
+<?php foreach ($roles as $item): ?><tr><td><?= $h($item['name']) ?></td><td><code><?= $h($item['role_key']) ?></code></td><td><?= (int)$item['permission_count'] ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php?edit=' . (int)$item['id'])) ?>"><?= $t('admin.common.edit', 'Edit') ?></a> <?php if (!(int)$item['is_system']): ?><form method="post" class="inline-form" onsubmit="return confirm(<?= json_encode($translate('admin.roles.confirm_delete', 'Delete this role?')) ?>)"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="delete_role"><input type="hidden" name="role_id" value="<?= (int)$item['id'] ?>"><button class="link-button danger"><?= $t('admin.common.delete', 'Delete') ?></button></form><?php else: ?><?= $t('admin.roles.system_role', 'System role') ?><?php endif ?></td></tr><?php endforeach ?>
 </tbody></table></div></section>
 <section class="content-admin"><h2><?= $t('admin.roles.user_roles', 'User roles') ?></h2><p><?= $t('admin.roles.protected_intro', 'Super administrator accounts are protected and cannot be changed.') ?></p><div class="table-wrap"><table><thead><tr><th><?= $t('admin.common.name', 'Name') ?></th><th><?= $t('admin.common.email', 'Email') ?></th><th><?= $t('admin.roles.current_role', 'Current role') ?></th><th><?= $t('admin.roles.assign_role', 'Assign role') ?></th></tr></thead><tbody>
-<?php foreach ($users as $user): ?><tr><td><?= $h($user['name']) ?></td><td><?= $h($user['email']) ?></td><td><?= $h($user['role']) ?></td><td><?php if ($user['role'] === 'super_admin'): ?><?= $t('admin.roles.protected_account', 'Protected account') ?><?php else: ?><form method="post" class="inline-form"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="assign_role"><input type="hidden" name="user_id" value="<?= (int)$user['id'] ?>"><select name="role"><?php if (in_array($role, ['admin','super_admin'], true)): ?><option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?><?= $t('admin.roles.admin_full', 'Administrator (full access)') ?></option><?php endif ?><?php foreach ($roles as $option): ?><option value="<?= $h($option['role_key']) ?>" <?= $user['role'] === $option['role_key'] ? 'selected' : '' ?>><?= $h($option['name']) ?></option><?php endforeach ?></select><button class="button secondary"<?= $t('admin.common.save', 'Save') ?></button></form><?php endif ?></td></tr><?php endforeach ?>
+<?= $userRowsHtml ?>
 </tbody></table></div></section></main><script src="<?= $h(CoreCMS\Core\Url::asset('js/responsive-nav.js')) ?>?v=3" defer></script></body></html>
