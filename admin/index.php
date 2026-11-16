@@ -214,4 +214,4 @@ document.getElementById('page-preview-button')?.addEventListener('click',functio
   say('Otomatik taslak geri yüklendi; kaydetmeyi unutmayın.');
  });
 })();
-</script><?php endif ?><script src="<?= $h(CoreCMS\Core\Url::asset('js/responsive-nav.js')) ?>" defer></script></body></html>
+</script><?php endif ?><script src="<?= $h(CoreCMS\Core\Url::asset('js/responsive-nav.js')) ?>?v=3" defer></script></body></html>
