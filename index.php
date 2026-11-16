@@ -12,7 +12,28 @@ require $root . '/app/bootstrap.php';
 try { $publishDue = $db->prepare("UPDATE core_pages SET status='published',scheduled_at=NULL WHERE status='scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= ?"); $publishDue->execute([date('Y-m-d H:i:s')]); }
 catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '.$e->getMessage()); }
 
+
 $path = CoreCMS\Core\Url::path();
+require_once $root . '/app/Core/TechnicalSeo.php';
+if ($path === '/sitemap.xml') {
+    try {
+        header('Content-Type: application/xml; charset=UTF-8');
+        header('X-Content-Type-Options: nosniff');
+        echo CoreCMS\Core\TechnicalSeo::sitemap($db, $settings);
+    } catch (Throwable $e) {
+        http_response_code(503);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'Sitemap temporarily unavailable.';
+        error_log('[CoreCMS] Sitemap generation failed: ' . $e->getMessage());
+    }
+    exit;
+}
+if ($path === '/robots.txt') {
+    header('Content-Type: text/plain; charset=UTF-8');
+    header('X-Content-Type-Options: nosniff');
+    echo CoreCMS\Core\TechnicalSeo::robots($settings);
+    exit;
+}
 if ($path === '/admin' || str_starts_with($path, '/admin/')) {
     require $root . '/admin/index.php';
     exit;
@@ -75,7 +96,7 @@ if ($layout !== '' && is_file($layout)) {
 }
 ?><!doctype html>
 <html lang="<?= htmlspecialchars($settings['site_language'] ?? 'tr', ENT_QUOTES, 'UTF-8') ?>">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title><?php if ($metaDescription !== ''): ?><meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>"><?php endif ?><?php if ($canonicalUrl !== ''): ?><link rel="canonical" href="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>"><?php endif ?><link rel="stylesheet" href="<?= htmlspecialchars(CoreCMS\Core\Url::asset('css/site.css'), ENT_QUOTES, 'UTF-8') ?>"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title><?= CoreCMS\Core\TechnicalSeo::head($settings, $pageTitle, $metaDescription, $canonicalUrl, $path === '/') ?><link rel="stylesheet" href="<?= htmlspecialchars(CoreCMS\Core\Url::asset('css/site.css'), ENT_QUOTES, 'UTF-8') ?>"></head>
 <body><header class="site-header"><a class="brand" href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></a><nav>
 <?php foreach ($menus as $menu): ?><a href="<?= htmlspecialchars($menu['url'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($menu['label'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?>
 <a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>">Yönetim</a></nav></header>

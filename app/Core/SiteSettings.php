@@ -17,6 +17,11 @@ final class SiteSettings
         'home_title' => 'Tek çekirdek.',
         'home_accent_title' => 'Sınırsız sektör.',
         'home_description' => 'CoreCMS kurulumu tamamlandı. Sektör modülleri kendi sayfalarını, iş akışlarını ve tasarım katmanlarını bağımsız olarak ekler.',
+        'site_url' => '',
+        'seo_org_name' => '',
+        'seo_logo_url' => '',
+        'seo_social_image' => '',
+        'search_console_verification' => '',
     ];
 
     public function __construct(private PDO $db) {}
@@ -48,6 +53,11 @@ final class SiteSettings
                 'home_eyebrow' => 100,
                 'home_title', 'home_accent_title' => 120,
                 'home_description' => 600,
+                'site_url' => 500,
+                'seo_org_name' => 160,
+                'seo_logo_url' => 1000,
+                'seo_social_image' => 1000,
+                'search_console_verification' => 200,
                 default => 120,
             };
             if (self::length($value) > $limit) throw new RuntimeException('Ayar alanı izin verilen uzunluğu aşıyor: ' . $key);
@@ -56,6 +66,12 @@ final class SiteSettings
         if ($values['site_name'] === '' || $values['home_title'] === '') throw new RuntimeException('Site adı ve ana sayfa başlığı boş bırakılamaz.');
         if (!preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', $values['site_language'])) throw new RuntimeException('Dil kodu geçersiz.');
         if (!in_array($values['timezone'], DateTimeZone::listIdentifiers(), true)) throw new RuntimeException('Saat dilimi geçersiz.');
+        foreach (['site_url', 'seo_social_image', 'seo_logo_url'] as $urlKey) {
+            if ($values[$urlKey] === '') continue;
+            $parts = parse_url($values[$urlKey]);
+            if (!is_array($parts) || !in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true) || empty($parts['host']) || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) throw new RuntimeException('Geçerli mutlak HTTP(S) adresi girin: ' . $urlKey);
+        }
+        if ($values['search_console_verification'] !== '' && !preg_match('/^[A-Za-z0-9_-]{1,200}$/', $values['search_console_verification'])) throw new RuntimeException('Search Console doğrulama kodu geçersiz.');
         $driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         $sql = $driver === 'sqlite'
             ? 'INSERT INTO core_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value'
