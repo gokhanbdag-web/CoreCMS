@@ -17,7 +17,7 @@ if (empty($_SESSION['corecms_user_id'])) {
     }
     ?><!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CoreCMS Giriş</title><link rel="stylesheet" href="../assets/css/site.css"></head><body><main class="install-wrap"><section class="install-card"><h1>Yönetim paneli</h1><?php if (!empty($error)): ?><p class="error"><?= htmlspecialchars($error,ENT_QUOTES,'UTF-8') ?></p><?php endif; ?><form method="post"><label>E-posta<input type="email" name="email" required></label><label>Parola<input type="password" name="password" required></label><button class="button">Giriş yap</button></form></section></main></body></html><?php exit;
 }
-$manager = new CoreCMS\\Core\\ModuleManager($db, dirname(__DIR__) . '/modules');
+$manager = new CoreCMS\Core\ModuleManager($db, dirname(__DIR__) . '/modules');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['module_id'], $_POST['action'])) {
     $id = preg_replace('/[^a-z0-9._-]/i', '', $_POST['module_id']);
     try {
