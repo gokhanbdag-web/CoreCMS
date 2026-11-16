@@ -42,3 +42,5 @@ jobs:
         run: php tests/page-body-renderer.php
       - name: Page revision tests
         run: php tests/page-revisions.php
+      - name: Page editor workflow tests
+        run: php tests/page-editor-workflow.php
