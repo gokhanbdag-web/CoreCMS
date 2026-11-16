@@ -20,6 +20,14 @@ final class LocaleManager
         return $this->db->query('SELECT locale_code,name,is_default,enabled FROM core_languages ORDER BY is_default DESC,name,locale_code')->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function isEnabled(string $code): bool
+    {
+        if (!self::validCode($code)) return false;
+        $stmt = $this->db->prepare('SELECT 1 FROM core_languages WHERE locale_code=? AND enabled=1 LIMIT 1');
+        $stmt->execute([$code]);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function defaultCode(): string
     {
         $value = $this->db->query('SELECT locale_code FROM core_languages WHERE is_default=1 AND enabled=1 LIMIT 1')->fetchColumn();
