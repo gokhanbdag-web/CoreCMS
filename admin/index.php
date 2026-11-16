@@ -168,7 +168,7 @@ $pageRevisions=[]; $compareRevision=null;
 if($ep && !$pending && $contentLocale===$defaultLocale){$pageRevisions=$revisions->history((int)$ep['id']);$compareId=(int)($_GET['compare_revision']??0);if($compareId>0)$compareRevision=$revisions->find($compareId,(int)$ep['id']);}
 $formRows=$pending?[]:$formManager->forms();
 $formEdit=(!$pending&&isset($_GET['edit_form']))?$formManager->findById((int)$_GET['edit_form']):null;
-$submissionRows=$pending?[]:$formManager->submissions(null,200);
+$submissionRows=$pending?[]:$formManager->submissions(isset($_GET['form_id'])?(int)$_GET['form_id']:null,200);
 $emailTemplateRows=$pending?[]:$emailTemplates->templates();
 $emailTemplateEdit=null;
 $emailTemplateMissing=false;
@@ -283,6 +283,7 @@ if(!$pending&&isset($_GET['template_key'])){
 <?php if($section==='email_templates'): ?>
 <?php if($pending): ?><section class="content-admin"><h2><?= $adminText('admin.email.migration_required','Email templates require a database update') ?></h2><p><?= count($pending) ?> <?= $adminText('admin.core_updates.pending_suffix','pending migrations.') ?></p><form method="post"><?= CoreCMS\Core\Csrf::field() ?><button class="button" name="action" value="run_core_migrations"><?= $adminText('admin.core_updates.apply','Apply migrations') ?></button></form></section><?php else: ?>
 <?php if($emailTemplateEdit): ?><form method="get" class="inline-form"><input type="hidden" name="section" value="email_templates"><input type="hidden" name="template_key" value="<?= $h($emailTemplateEdit['template_key']) ?>"><label><?= $adminText('admin.content.language_label','Content language') ?><select name="content_locale"><?php foreach($availableLocales as $language): ?><option value="<?= $h($language['locale_code']) ?>" <?= $contentLocale===$language['locale_code']?'selected':'' ?>><?= $h($language['name']) ?> (<?= $h($language['locale_code']) ?>)</option><?php endforeach ?></select></label><button class="button secondary"><?= $adminText('admin.content.change_language','Load language') ?></button></form><?php if($emailTemplateMissing): ?><p class="notice"><?= $adminText('admin.content.translation_missing','No translation exists for this language yet. The base-language content is shown as a starting point.') ?></p><?php endif ?><?php endif ?>
+<?php if($contentLocale!==$defaultLocale && !$emailTemplateEdit): ?><p class="notice"><?= $adminText('admin.email.create_base_first','Create the email template in the default language before adding translations.') ?></p><?php else: ?>
 <section class="content-admin"><h2><?= $emailTemplateEdit ? $adminText('admin.email.edit','Edit email template') : $adminText('admin.email.new','Create email template') ?></h2>
 <form method="post" class="editor-form"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="email_template_save"><input type="hidden" name="content_locale" value="<?= $h($contentLocale) ?>">
 <label><?= $adminText('admin.email.key','Template key') ?><input name="template_key" required maxlength="100" value="<?= $h($emailTemplateEdit['template_key']??'') ?>" <?= $emailTemplateEdit?'readonly':'' ?> placeholder="contact.receipt"></label>
@@ -290,7 +291,7 @@ if(!$pending&&isset($_GET['template_key'])){
 <label><?= $adminText('admin.email.subject','Subject') ?><input name="subject" required maxlength="255" value="<?= $h($emailTemplateEdit['subject']??'') ?>"></label>
 <label><?= $adminText('admin.email.body','HTML email body') ?><textarea name="body" rows="14" required><?= $h($emailTemplateEdit['body']??'') ?></textarea></label>
 <small class="editor-help"><?= $adminText('admin.email.placeholders','Use placeholders such as {{name}}, {{email}} and {{site_name}}. Placeholder values are HTML-escaped.') ?></small>
-<button class="button"><?= $adminText('admin.common.save','Save') ?></button></form></section>
+<button class="button"><?= $adminText('admin.common.save','Save') ?></button></form></section><?php endif ?>
 <section class="content-admin"><h2><?= $adminText('admin.email.list','Email templates') ?></h2><div class="table-wrap"><table><thead><tr><th><?= $adminText('admin.email.key','Key') ?></th><th><?= $adminText('admin.email.name','Name') ?></th><th><?= $adminText('admin.common.actions','Actions') ?></th></tr></thead><tbody><?php foreach($emailTemplateRows as $templateRow): ?><tr><td><code><?= $h($templateRow['template_key']) ?></code></td><td><?= $h($templateRow['name']) ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=email_templates&template_key='.rawurlencode($templateRow['template_key']))) ?>"><?= $adminText('admin.common.edit','Edit') ?></a></td></tr><?php endforeach ?></tbody></table></div><?php if(!$emailTemplateRows): ?><p><?= $adminText('admin.email.empty','No email templates have been created yet.') ?></p><?php endif ?></section>
 <?php endif ?>
 <?php endif ?>
