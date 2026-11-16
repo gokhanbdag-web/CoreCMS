@@ -160,6 +160,119 @@ final class ModuleRuntime
         $stmt->execute([$moduleId, $type, $key, $contentId, $managedHash]);
     }
 
+    private function relatedRecordsExist(string $table, int $pageId): bool
+    {
+        if (!$this->tableExists($table)) return false;
+        $stmt = $this->db->prepare('SELECT 1 FROM ' . $table . ' WHERE page_id=? LIMIT 1');
+        $stmt->execute([$pageId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function uninstall(string $moduleId): array
+    {
+        $modules = (new ModuleManager($this->db, $this->directory))->discover();
+        if (!isset($modules[$moduleId])) throw new RuntimeException('Modül manifesti bulunamadı veya geçersiz.');
+        $manager = new ModuleManager($this->db, $this->directory);
+        $status = $manager->status($moduleId);
+        if (!$status['installed']) throw new RuntimeException('Modül kurulu değil.');
+        if ($status['enabled']) throw new RuntimeException('Önce modülü devre dışı bırakın.');
+
+        foreach ($modules as $candidate) {
+            if ($candidate['id'] === $moduleId || !in_array($moduleId, $candidate['dependencies'], true)) continue;
+            $stmt = $this->db->prepare('SELECT 1 FROM core_module_installs WHERE module_id=? LIMIT 1');
+            $stmt->execute([$candidate['id']]);
+            if ($stmt->fetchColumn()) {
+                throw new RuntimeException('Bu modüle bağlı kurulu modül var: ' . $candidate['id'] . '. Önce bağımlı modülü kaldırın.');
+            }
+        }
+
+        $this->registry();
+        $result = ['deleted_pages'=>0,'preserved_pages'=>0,'deleted_menus'=>0,'preserved_menus'=>0];
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare('SELECT content_type,content_key,content_id,managed_hash FROM core_module_content_registry WHERE module_id=?');
+            $stmt->execute([$moduleId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $entry) {
+                $type = (string)$entry['content_type'];
+                $contentId = (int)$entry['content_id'];
+                $managedHash = is_string($entry['managed_hash'] ?? null) ? $entry['managed_hash'] : '';
+
+                if ($type === 'page') {
+                    $find = $this->db->prepare('SELECT id,title,slug,body,status,source_module FROM core_pages WHERE id=?');
+                    $find->execute([$contentId]);
+                    $page = $find->fetch(PDO::FETCH_ASSOC);
+                    if (!$page) {
+                        $remove = $this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
+                        $remove->execute([$moduleId,$type,$entry['content_key']]);
+                        continue;
+                    }
+                    $hasHistory = $this->relatedRecordsExist('core_page_revisions',$contentId)
+                        || $this->relatedRecordsExist('core_page_autosaves',$contentId);
+                    $unchanged = $managedHash !== '' && hash_equals($managedHash,$this->pageHash($page)) && !$hasHistory;
+                    if ($unchanged && (string)($page['source_module'] ?? '') === $moduleId) {
+                        $remove = $this->db->prepare('DELETE FROM core_pages WHERE id=?');
+                        $remove->execute([$contentId]);
+                        $remove = $this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
+                        $remove->execute([$moduleId,$type,$entry['content_key']]);
+                        $result['deleted_pages']++;
+                    } else {
+                        if ((string)($page['source_module'] ?? '') === $moduleId) {
+                            $detach = $this->db->prepare('UPDATE core_pages SET source_module=NULL WHERE id=?');
+                            $detach->execute([$contentId]);
+                        }
+                        $preserve = $this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
+                        $preserve->execute([$moduleId,$type,$entry['content_key']]);
+                        $result['preserved_pages']++;
+                    }
+                    continue;
+                }
+
+                if ($type === 'menu') {
+                    $find = $this->db->prepare('SELECT id,menu_key,label,url,sort_order,source_module FROM core_menus WHERE id=?');
+                    $find->execute([$contentId]);
+                    $menu = $find->fetch(PDO::FETCH_ASSOC);
+                    if (!$menu) {
+                        $remove = $this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
+                        $remove->execute([$moduleId,$type,$entry['content_key']]);
+                        continue;
+                    }
+                    $unchanged = $managedHash !== '' && hash_equals($managedHash,$this->menuHash($menu));
+                    if ($unchanged && (string)($menu['source_module'] ?? '') === $moduleId) {
+                        $remove = $this->db->prepare('DELETE FROM core_menus WHERE id=?');
+                        $remove->execute([$contentId]);
+                        $remove = $this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
+                        $remove->execute([$moduleId,$type,$entry['content_key']]);
+                        $result['deleted_menus']++;
+                    } else {
+                        if ((string)($menu['source_module'] ?? '') === $moduleId) {
+                            $detach = $this->db->prepare('UPDATE core_menus SET source_module=NULL WHERE id=?');
+                            $detach->execute([$contentId]);
+                        }
+                        $preserve = $this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
+                        $preserve->execute([$moduleId,$type,$entry['content_key']]);
+                        $result['preserved_menus']++;
+                    }
+                    continue;
+                }
+
+                // Unknown future content types are retained conservatively.
+                $preserve = $this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
+                $preserve->execute([$moduleId,$type,$entry['content_key']]);
+            }
+
+            // Module tables and migration history intentionally remain untouched.
+            $remove = $this->db->prepare('DELETE FROM core_modules WHERE module_id=?');
+            $remove->execute([$moduleId]);
+            $remove = $this->db->prepare('DELETE FROM core_module_installs WHERE module_id=?');
+            $remove->execute([$moduleId]);
+            $this->db->commit();
+            return $result;
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw new RuntimeException('Modül güvenli şekilde kaldırılamadı: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
     private function routeMatch(string $pattern, string $path): ?array
     {
         $names = [];
