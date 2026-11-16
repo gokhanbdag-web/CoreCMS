@@ -29,9 +29,18 @@ final class PageRevisionManager
     public function history(int $pageId, int $limit = 30): array
     {
         $limit = max(1, min(100, $limit));
-        $query = $this->db->prepare('SELECT id,page_id,title,slug,status,editor_id,created_at,body,seo_title,seo_description,canonical_url,scheduled_at FROM core_page_revisions WHERE page_id=? ORDER BY id DESC LIMIT '.$limit);
+        $query = $this->db->prepare('SELECT id,page_id,title,slug,status,editor_id,created_at,seo_title,seo_description,canonical_url,scheduled_at FROM core_page_revisions WHERE page_id=? ORDER BY id DESC LIMIT '.$limit);
         $query->execute([$pageId]);
         return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+    public function find(int $revisionId, int $pageId): ?array
+    {
+        $query = $this->db->prepare('SELECT id,page_id,title,slug,body,status,editor_id,created_at,seo_title,seo_description,canonical_url,scheduled_at FROM core_page_revisions WHERE id=? AND page_id=? LIMIT 1');
+        $query->execute([$revisionId,$pageId]);
+        $revision = $query->fetch(PDO::FETCH_ASSOC);
+        return $revision ?: null;
     }
 
     public function restore(int $revisionId, ?int $editorId): int
