@@ -12,6 +12,7 @@ $config = require $configFile;
 require_once CORECMS_ROOT . '/app/Core/Database.php';
 require_once CORECMS_ROOT . '/app/Core/Migrator.php';
 require_once CORECMS_ROOT . '/app/Core/ModuleManager.php';
+require_once CORECMS_ROOT . '/app/Core/ModuleRuntime.php';
 require_once CORECMS_ROOT . '/app/Core/Csrf.php';
 require_once CORECMS_ROOT . '/app/Core/Auth.php';
 
@@ -19,9 +20,7 @@ $db = CoreCMS\Core\Database::connect($config['database']);
 $settings = [];
 try {
     $stmt = $db->query('SELECT setting_key, setting_value FROM core_settings');
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $settings[$row['setting_key']] = $row['setting_value'];
-    }
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) $settings[$row['setting_key']] = $row['setting_value'];
 } catch (Throwable $e) {
     error_log('[CoreCMS] Settings load failed: ' . $e->getMessage());
 }
