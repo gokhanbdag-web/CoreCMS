@@ -224,6 +224,144 @@ final class ModuleManager
         return $applied;
     }
 
+    public function update(string $id): array
+    {
+        $modules = $this->discover();
+        if (!isset($modules[$id])) throw new RuntimeException('Modül manifesti bulunamadı veya geçersiz.');
+        $module = $modules[$id];
+        $this->ensureRepositories();
+        $this->ensureUpdateHistory();
+        $status = $this->status($id);
+        if (!$status['installed']) throw new RuntimeException('Güncellenecek modül kurulu değil.');
+        if ($status['enabled']) throw new RuntimeException('Güncellemeden önce modülü devre dışı bırakın.');
+        $fromVersion = (string)$status['installed_version'];
+        $toVersion = (string)$module['version'];
+        if (version_compare($toVersion,$fromVersion,'<')) throw new RuntimeException('Modül sürümü kurulu sürümden eski olamaz.');
+        if ($toVersion === $fromVersion) return [];
+
+        foreach ($module['dependencies'] as $dependency) {
+            $stmt=$this->db->prepare('SELECT 1 FROM core_module_installs WHERE module_id=?');
+            $stmt->execute([$dependency]);
+            if (!$stmt->fetchColumn()) throw new RuntimeException('Güncelleme için eksik bağımlılık: '.$dependency);
+        }
+
+        $stmt=$this->db->prepare("INSERT INTO core_module_update_history (module_id,from_version,to_version,status,migrations_json,is_reversible) VALUES (?,?,?,'running','[]',1)");
+        $stmt->execute([$id,$fromVersion,$toVersion]);
+        $historyId=(int)$this->db->lastInsertId();
+        $applied=[];
+        $unsafeMigration=false;
+
+        try {
+            $context=['module_id'=>$id,'from_version'=>$fromVersion,'to_version'=>$toVersion];
+            $this->invokeUpdateHook($module,'before_update',$context);
+
+            $migrationDir=$module['_path'].'/migrations';
+            $migrationRoot=realpath($migrationDir);
+            $files=$migrationRoot!==false?(glob($migrationRoot.'/*.php')?:[]):[];
+            sort($files,SORT_STRING);
+            foreach($files as $file) {
+                $realFile=realpath($file);
+                if($realFile===false || !str_starts_with($realFile,$migrationRoot.DIRECTORY_SEPARATOR)) {
+                    throw new RuntimeException('Modül migrasyon dosyası güvenli dizin dışında.');
+                }
+                $name=basename($realFile);
+                $check=$this->db->prepare('SELECT 1 FROM core_module_migrations WHERE module_id=? AND migration=?');
+                $check->execute([$id,$name]);
+                if($check->fetchColumn()) continue;
+
+                $definition=require $realFile;
+                $up=is_callable($definition)?$definition:(is_array($definition)?($definition['up']??null):null);
+                $down=is_array($definition)?($definition['down']??null):null;
+                if(!is_callable($up)) throw new RuntimeException('Güncelleme migrasyonu up callable döndürmeli: '.$name);
+                $unsafeMigration=true;
+                if(!$this->db->beginTransaction()) throw new RuntimeException('Güncelleme migrasyonu başlatılamadı: '.$name);
+                $up($this->db);
+                $record=$this->db->prepare('INSERT INTO core_module_migrations (module_id,migration) VALUES (?,?)');
+                $record->execute([$id,$name]);
+                if($this->db->inTransaction()) $this->db->commit();
+                $applied[]=['name'=>$name,'reversible'=>is_callable($down)];
+                $unsafeMigration=false;
+                $allReversible=true;
+                foreach($applied as $item) if(!$item['reversible']) $allReversible=false;
+                $this->updateHistoryRecord($historyId,'running',$applied,$allReversible);
+            }
+
+            $this->invokeUpdateHook($module,'after_update',$context);
+            $stmt=$this->db->prepare('UPDATE core_module_installs SET version=? WHERE module_id=?');
+            $stmt->execute([$toVersion,$id]);
+            $stmt=$this->db->prepare('UPDATE core_modules SET version=? WHERE module_id=?');
+            $stmt->execute([$toVersion,$id]);
+            $allReversible=true;
+            foreach($applied as $item) if(!$item['reversible']) $allReversible=false;
+            $this->updateHistoryRecord($historyId,'complete',$applied,$allReversible);
+            return array_column($applied,'name');
+        } catch(Throwable $e) {
+            $allReversible=!$unsafeMigration;
+            foreach($applied as $item) if(!$item['reversible']) $allReversible=false;
+            $historyStatus=($applied || $unsafeMigration)?'partial':'failed';
+            $this->updateHistoryRecord($historyId,$historyStatus,$applied,$allReversible,$e->getMessage());
+            throw new RuntimeException('Modül güncellemesi tamamlanamadı: '.$e->getMessage(),0,$e);
+        }
+    }
+
+    public function rollback(string $id): array
+    {
+        $modules=$this->discover();
+        if(!isset($modules[$id])) throw new RuntimeException('Modül manifesti bulunamadı veya geçersiz.');
+        $module=$modules[$id];
+        $this->ensureRepositories();
+        $this->ensureUpdateHistory();
+        $status=$this->status($id);
+        if(!$status['installed']) throw new RuntimeException('Geri alınacak modül kurulu değil.');
+        if($status['enabled']) throw new RuntimeException('Geri almadan önce modülü devre dışı bırakın.');
+
+        $stmt=$this->db->prepare("SELECT * FROM core_module_update_history WHERE module_id=? AND status IN ('complete','partial') ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$id]);
+        $history=$stmt->fetch(PDO::FETCH_ASSOC);
+        if(!$history) throw new RuntimeException('Geri alınabilir bir modül güncellemesi bulunamadı.');
+        if((int)$history['is_reversible']!==1) throw new RuntimeException('Bu güncelleme için tüm migrasyonlarda down işlemi bulunmuyor. Otomatik geri alma güvenli değil.');
+
+        $migrations=json_decode((string)$history['migrations_json'],true);
+        if(!is_array($migrations)) throw new RuntimeException('Güncelleme migrasyon geçmişi okunamadı.');
+        $definitions=[];
+        foreach(array_reverse($migrations) as $item) {
+            $name=(string)($item['name']??'');
+            $file=realpath($module['_path'].'/migrations/'.$name);
+            $root=realpath($module['_path'].'/migrations');
+            if($name==='' || $root===false || $file===false || !str_starts_with($file,$root.DIRECTORY_SEPARATOR) || basename($file)!==$name) {
+                throw new RuntimeException('Geri alma migrasyon dosyası bulunamadı: '.$name);
+            }
+            $definition=require $file;
+            $down=is_array($definition)?($definition['down']??null):null;
+            if(!is_callable($down)) throw new RuntimeException('Geri alma için down callable bulunamadı: '.$name);
+            $definitions[]=['name'=>$name,'down'=>$down];
+        }
+
+        $context=['module_id'=>$id,'from_version'=>(string)$history['to_version'],'to_version'=>(string)$history['from_version']];
+        try {
+            $this->invokeUpdateHook($module,'before_rollback',$context);
+            foreach($definitions as $item) {
+                if(!$this->db->beginTransaction()) throw new RuntimeException('Geri alma işlemi başlatılamadı: '.$item['name']);
+                $item['down']($this->db);
+                $remove=$this->db->prepare('DELETE FROM core_module_migrations WHERE module_id=? AND migration=?');
+                $remove->execute([$id,$item['name']]);
+                if($this->db->inTransaction()) $this->db->commit();
+            }
+            $stmt=$this->db->prepare('UPDATE core_module_installs SET version=? WHERE module_id=?');
+            $stmt->execute([(string)$history['from_version'],$id]);
+            $stmt=$this->db->prepare('UPDATE core_modules SET version=? WHERE module_id=?');
+            $stmt->execute([(string)$history['from_version'],$id]);
+            $this->invokeUpdateHook($module,'after_rollback',$context);
+            $stmt=$this->db->prepare("UPDATE core_module_update_history SET status='rolled_back',rolled_back_at=CURRENT_TIMESTAMP,error_text=NULL WHERE id=?");
+            $stmt->execute([(int)$history['id']]);
+            return ['from_version'=>(string)$history['to_version'],'to_version'=>(string)$history['from_version'],'migrations'=>array_column($definitions,'name')];
+        } catch(Throwable $e) {
+            $stmt=$this->db->prepare("UPDATE core_module_update_history SET status='rollback_failed',error_text=? WHERE id=?");
+            $stmt->execute([$e->getMessage(),(int)$history['id']]);
+            throw new RuntimeException('Modül geri alma işlemi tamamlanamadı; manuel veritabanı kontrolü gerekli: '.$e->getMessage(),0,$e);
+        }
+    }
+
     public function enabledModules(): array
     {
         try {
