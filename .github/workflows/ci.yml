@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['8.1', '8.2', '8.3']
+        php-version: ['8.1', '8.2', '8.3', '8.5']
     steps:
       - uses: actions/checkout@v4
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: pdo, pdo_mysql
+          extensions: pdo, pdo_mysql, pdo_sqlite
       - name: PHP syntax checks
         run: |
           find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
@@ -26,3 +26,5 @@ jobs:
         run: php tests/smoke.php
       - name: Core foundation tests
         run: php tests/core-foundation.php
+      - name: Module lifecycle tests
+        run: php tests/module-lifecycle.php
