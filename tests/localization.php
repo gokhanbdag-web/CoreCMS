@@ -8,6 +8,8 @@ $migration($db);
 $locales = new CoreCMS\Core\LocaleManager($db);
 $assert = static function(bool $condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $assert($locales->defaultCode() === 'tr', 'Turkish must be seeded as default');
+$assert($locales->isEnabled('tr'), 'default locale must be enabled');
+$assert(!$locales->isEnabled('en'), 'unconfigured locale must not be enabled');
 $locales->saveLanguage('en', 'English');
 $locales->saveLanguage('de', 'Deutsch');
 $locales->saveTranslation('en', 'admin.dashboard.title', 'Dashboard');
@@ -25,4 +27,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'Over');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (8).\n";
+echo "Localization checks passed (10).\n";
