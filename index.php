@@ -44,6 +44,7 @@ $homeTitle = (string)($settings['home_title'] ?? 'Tek çekirdek.');
 $homeAccentTitle = (string)($settings['home_accent_title'] ?? 'Sınırsız sektör.');
 $homeDescription = (string)($settings['home_description'] ?? 'CoreCMS kurulumu tamamlandı. Sektör modülleri kendi sayfalarını, iş akışlarını ve tasarım katmanlarını bağımsız olarak ekler.');
 $pageTitle = $page ? (string)$page['title'] : $siteName;
+require_once $root . '/app/Core/MediaLibrary.php';
 require_once $root . '/app/Core/PageBodyRenderer.php';
 $pageBodyHtml = $page ? CoreCMS\Core\PageBodyRenderer::render($db, (string)$page['body'], new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath())) : '';
 ob_start();
