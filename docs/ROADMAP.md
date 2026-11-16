@@ -12,20 +12,20 @@
 
 ## Core CMS
 - [x] Roles and granular permissions
-- [ ] Dynamic pages and navigation editor
-- [ ] Media library and safe uploads
-- [ ] SEO metadata and sitemap
+- [x] Dynamic pages and navigation editor
+- [x] Media library and safe uploads
+- [x] SEO metadata and sitemap
 - [ ] Localization and translation editor
-- [ ] Forms, email templates and settings UI
-- [ ] Theme and template registry
+- [x] Site settings UI\n- [ ] Forms and email templates
+- [x] Theme and template registry
 
 ## Module platform
 - [x] Module installation registry and version tracking
 - [x] Per-module ordered migrations with idempotent tracking
 - [x] Dependency-aware install, activation and deactivation
 - [x] Preserve module tables and customer data on deactivation
-- [ ] Explicit non-destructive uninstall contract
-- [ ] Page/menu provisioning with ownership tracking
+- [x] Explicit non-destructive uninstall contract
+- [x] Page/menu provisioning with ownership tracking
 - [ ] Demo package preview/install/reset/remove
 - [ ] Module update hooks and rollback strategy
 - [ ] Module-owned routes, assets, themes and templates
