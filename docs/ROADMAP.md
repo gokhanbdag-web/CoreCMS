@@ -27,7 +27,7 @@
 - [x] Preserve module tables and customer data on deactivation
 - [x] Explicit non-destructive uninstall contract
 - [x] Page/menu provisioning with ownership tracking
-- [ ] Demo package preview/install/reset/remove
+- [x] Demo package preview/install/reset/remove
 - [ ] Module update hooks and rollback strategy
 - [ ] Module-owned routes, assets, themes and templates
 
