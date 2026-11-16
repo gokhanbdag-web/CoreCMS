@@ -5,6 +5,10 @@ if(!in_array('sqlite',PDO::getAvailableDrivers(),true)) throw new RuntimeExcepti
 $db=new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
 $db->exec("CREATE TABLE core_pages(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT,slug TEXT UNIQUE,body TEXT,status TEXT,source_module TEXT,source_demo TEXT,seo_title TEXT,seo_description TEXT,canonical_url TEXT,scheduled_at TEXT,social_image_media_id INTEGER)");
 $db->exec("CREATE TABLE core_media(id INTEGER PRIMARY KEY,alt_text TEXT)");
+$db->exec("CREATE TABLE core_languages(locale_code TEXT PRIMARY KEY,name TEXT,is_default INTEGER,enabled INTEGER)");
+$db->exec("INSERT INTO core_languages(locale_code,name,is_default,enabled) VALUES('tr','Türkçe',1,1),('en','English',0,1),('de','Deutsch',0,0)");
+$translationsMigration = require dirname(__DIR__) . '/database/migrations/0020_per_language_content.php';
+$translationsMigration($db);
 $db->exec("INSERT INTO core_media(id,alt_text) VALUES(7,'Sosyal görsel')");
 $db->exec("CREATE TABLE core_menus(id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER,source_module TEXT,source_demo TEXT)");
 $cm=new CoreCMS\Core\ContentManager($db); $checks=0;
@@ -12,6 +16,14 @@ $assert=static function(bool $ok,string $why)use(&$checks):void{$checks++;if(!$o
 $id=$cm->savePage(null,'Hakkımızda','','Merhaba <script>alert(1)</script>','published');
 $row=$db->query('SELECT * FROM core_pages WHERE id='.(int)$id)->fetch();
 $assert($row['slug']==='hakkimizda','slug generated');
+$cm->savePageTranslation($id,'en','About us','about-us','Welcome to our website.','About us','Learn more about us.','/about-us');
+$pageTranslation=$cm->pageTranslation($id,'en');
+$assert($pageTranslation && $pageTranslation['title']==='About us' && $pageTranslation['slug']==='about-us' && str_contains($pageTranslation['body'],'Welcome'), 'page translation saved');
+$cm->savePageTranslation($id,'en','About our company','about-us','Updated English body');
+$assert($cm->pageTranslation($id,'en')['title']==='About our company','page translation upsert');
+$assert($db->query('SELECT title FROM core_pages WHERE id='.(int)$id)->fetchColumn()==='Hakkımızda','base page remains unchanged by translation save');
+$failed=false;try{$cm->savePageTranslation($id,'de','Über uns','about-de','Text');}catch(RuntimeException){$failed=true;}
+$assert($failed,'disabled language cannot receive page translation');
 $cm->savePage($id,'Hakkımızda','','SEO içerik','published','Özel SEO başlığı','Açıklama','/hakkimizda');
 $seo=$db->query('SELECT seo_title,seo_description,canonical_url FROM core_pages WHERE id='.(int)$id)->fetch();
 $assert($seo['seo_title']==='Özel SEO başlığı' && $seo['seo_description']==='Açıklama' && $seo['canonical_url']==='/hakkimizda','SEO metadata saved');
@@ -29,6 +41,13 @@ $assert((int)$db->query('SELECT COUNT(*) FROM core_pages')->fetchColumn()===0,'p
 $menu=$cm->saveMenu(null,'main','Ana sayfa','/',10);
 $cm->saveMenu($menu,'main','Başlangıç','https://example.com',20);
 $assert($db->query('SELECT url FROM core_menus')->fetchColumn()==='https://example.com','menu update');
+$cm->saveMenuTranslation($menu,'en','Start page','/start');
+$menuTranslation=$cm->menuTranslation($menu,'en');
+$assert($menuTranslation && $menuTranslation['label']==='Start page' && $menuTranslation['url']==='/start','menu translation saved');
+$cm->saveMenuTranslation($menu,'en','Home','/home');
+$assert($cm->menuTranslation($menu,'en')['label']==='Home','menu translation upsert');
+$failed=false;try{$cm->saveMenuTranslation($menu,'de','Startseite','/startseite');}catch(RuntimeException){$failed=true;}
+$assert($failed,'disabled language cannot receive menu translation');
 $failed=false;try{$cm->saveMenu(null,'main','Kötü','javascript:alert(1)',0);}catch(RuntimeException){$failed=true;}
 $assert($failed,'unsafe URL rejected');
 $db->exec("INSERT INTO core_pages(title,slug,status,source_module) VALUES('Module','module-page','published','sample')");
