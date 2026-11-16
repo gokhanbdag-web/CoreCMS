@@ -6,7 +6,7 @@ define('CORECMS_ROOT', dirname(__DIR__));
 $configFile = CORECMS_ROOT . '/config.php';
 if (!is_file($configFile)) {
     http_response_code(503);
-    exit('Kurulum gerekli. <a href="' . htmlspecialchars(CoreCMS\Core\\Url::to('/installer/'), ENT_QUOTES, 'UTF-8') . '">Kurulumu başlat</a>.');
+    exit('Kurulum gerekli. <a href="' . htmlspecialchars(CoreCMS\Core\Url::to('/installer/'), ENT_QUOTES, 'UTF-8') . '">Kurulumu başlat</a>.');
 }
 $config = require $configFile;
 require_once CORECMS_ROOT . '/app/Core/Database.php';
@@ -16,7 +16,7 @@ require_once CORECMS_ROOT . '/app/Core/ModuleRuntime.php';
 require_once CORECMS_ROOT . '/app/Core/Csrf.php';
 require_once CORECMS_ROOT . '/app/Core/Auth.php';
 
-$db = CoreCMS\Core\\Database::connect($config['database']);
+$db = CoreCMS\Core\Database::connect($config['database']);
 $settings = [];
 try {
     $stmt = $db->query('SELECT setting_key, setting_value FROM core_settings');
