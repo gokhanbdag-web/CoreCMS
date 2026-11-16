@@ -305,15 +305,25 @@ final class ModuleRuntime
             foreach (($module['routes'] ?? []) as $route) {
                 if (!is_array($route) || !isset($route['path'], $route['handler'])
                     || !is_string($route['path']) || !is_string($route['handler'])) continue;
-                $methods = array_map('strtoupper', (array)($route['methods'] ?? ['GET']));
-                if (!in_array(strtoupper($method), $methods, true)) continue;
+                $rawMethods = $route['methods'] ?? ['GET'];
+                if (!is_array($rawMethods)) continue;
+                $methods = [];
+                foreach ($rawMethods as $methodName) {
+                    if (!is_string($methodName)) continue;
+                    $methodName = strtoupper($methodName);
+                    if (in_array($methodName,['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'],true)) $methods[]=$methodName;
+                }
+                if (!$methods || !in_array(strtoupper($method), $methods, true)) continue;
                 if (!preg_match('#^/[A-Za-z0-9/_-]*(?:\\{[a-zA-Z][a-zA-Z0-9_]*\\}[A-Za-z0-9/_-]*)*$#D', $route['path'])) continue;
                 $params = $this->routeMatch($route['path'], $path);
                 if ($params === null) continue;
-                $handlerPath = realpath($module['_path'] . '/' . ltrim($route['handler'], '/'));
-                $moduleRoot = realpath($module['_path']);
-                if ($handlerPath === false || $moduleRoot === false
-                    || !str_starts_with($handlerPath, $moduleRoot . DIRECTORY_SEPARATOR)
+                $frontendRoot = realpath($module['_path'] . '/Frontend');
+                $handlerRelative = preg_replace('#^Frontend/#','',ltrim($route['handler'],'/'));
+                $handlerPath = ($frontendRoot !== false && is_string($handlerRelative)
+                    && $handlerRelative !== '' && !str_contains($handlerRelative,'..') && !str_contains($handlerRelative,'\\'))
+                    ? realpath($frontendRoot . '/' . $handlerRelative) : false;
+                if ($handlerPath === false || $frontendRoot === false
+                    || !str_starts_with($handlerPath, $frontendRoot . DIRECTORY_SEPARATOR)
                     || !is_file($handlerPath)) {
                     http_response_code(500);
                     echo 'Modül rota işleyicisi bulunamadı.';
@@ -342,13 +352,58 @@ final class ModuleRuntime
         return (new ThemeManager($this->db, $this->directory))->active();
     }
 
+    public function renderTemplate(string $moduleId, string $templateKey, array $data = []): string
+    {
+        $modules=(new ModuleManager($this->db,$this->directory))->enabledModules();
+        $module=null;
+        foreach($modules as $candidate) if(($candidate['id']??'')===$moduleId) { $module=$candidate; break; }
+        if(!is_array($module)) throw new RuntimeException('Şablon için modül etkin değil.');
+        if(!preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$templateKey)) throw new RuntimeException('Geçersiz modül şablon anahtarı.');
+        $templates=$module['templates']??[];
+        $relative=is_array($templates)?($templates[$templateKey]??null):null;
+        if(!is_string($relative)||$relative===''||str_starts_with($relative,'/')||str_contains($relative,'..')||str_contains($relative,'\\')) {
+            throw new RuntimeException('Modül şablonu tanımlanmamış veya yolu geçersiz.');
+        }
+        $root=realpath($module['_path'].'/templates');
+        $file=$root!==false?realpath($root.'/'.$relative):false;
+        if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)||strtolower(pathinfo($file,PATHINFO_EXTENSION))!=='php') {
+            throw new RuntimeException('Modül şablon dosyası bulunamadı.');
+        }
+        $db=$this->db; $runtime=$this;
+        extract($data,EXTR_SKIP);
+        ob_start();
+        try {
+            require $file;
+            return (string)ob_get_clean();
+        } catch(Throwable $e) {
+            ob_end_clean();
+            throw new RuntimeException('Modül şablonu oluşturulamadı: '.$e->getMessage(),0,$e);
+        }
+    }
+
     public function assetUrl(string $moduleId, string $relativePath): string
     {
-        if (!preg_match('/^[a-z0-9][a-z0-9._-]{1,79}$/', $moduleId)
-            || $relativePath === '' || str_contains($relativePath, '..')
-            || str_starts_with($relativePath, '/')) {
+        if (!preg_match('/^[a-z0-9][a-z0-9._-]{1,79}$/',$moduleId)
+            || $relativePath==='' || str_starts_with($relativePath,'/')
+            || str_contains($relativePath,'..') || str_contains($relativePath,'\\')
+            || !preg_match('#^[A-Za-z0-9._/-]+$#',$relativePath)) {
             throw new RuntimeException('Geçersiz modül varlığı yolu.');
         }
-        return Url::to('/modules/' . rawurlencode($moduleId) . '/assets/' . implode('/', array_map('rawurlencode', explode('/', $relativePath))));
+        $modules=(new ModuleManager($this->db,$this->directory))->enabledModules();
+        $module=null;
+        foreach($modules as $candidate) if(($candidate['id']??'')===$moduleId) { $module=$candidate; break; }
+        if(!is_array($module)) throw new RuntimeException('Varlık için modül etkin değil.');
+        $declared=$module['assets']??[];
+        if(!is_array($declared)||!in_array($relativePath,array_values($declared),true)) {
+            throw new RuntimeException('Modül varlığı manifest içinde tanımlı değil.');
+        }
+        $root=realpath($module['_path'].'/assets');
+        $file=$root!==false?realpath($root.'/'.$relativePath):false;
+        $allowed=['css','js','svg','png','jpg','jpeg','webp','gif','ico','woff','woff2','ttf','otf','avif'];
+        if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)
+            ||!in_array(strtolower(pathinfo($file,PATHINFO_EXTENSION)),$allowed,true)) {
+            throw new RuntimeException('Modül varlığı bulunamadı veya güvenli bir dosya türü değil.');
+        }
+        return Url::to('/modules/'.rawurlencode($moduleId).'/assets/'.implode('/',array_map('rawurlencode',explode('/',$relativePath))));
     }
 }

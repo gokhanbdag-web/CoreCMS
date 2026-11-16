@@ -36,6 +36,8 @@ The installer creates `config.php`; keep it private and never commit it.
 
 See the Module update and rollback contract in docs/MODULE-UPDATES.md for migration and hook guidance.
 
+See the Module runtime contract in docs/MODULE-RUNTIME.md for route, asset, template and theme conventions.
+
 ## Module uninstall safety
 - Modules must be disabled and have no installed dependents before removal.
 - Untouched module-provisioned pages and menus are removed; edited or historically revised content is detached and preserved.

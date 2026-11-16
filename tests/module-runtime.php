@@ -15,20 +15,27 @@ $assert = static function (bool $ok, string $message) use (&$checks): void {
 };
 try {
     $dir = $root . '/sample';
-    mkdir($dir . '/migrations', 0700, true);
-    mkdir($dir . '/Frontend', 0700, true);
-    mkdir($dir . '/assets', 0700, true);
+    foreach (['migrations','Frontend','assets/css','assets/php','templates','views/theme'] as $folder) mkdir($dir . '/' . $folder, 0700, true);
     file_put_contents($dir . '/module.json', json_encode([
         'id'=>'sample','name'=>'Sample Module','version'=>'1.0.0',
         'pages'=>['about'=>['title'=>'About','slug'=>'sample-about','body'=>'Original text']],
         'menus'=>['about'=>['label'=>'About us','url'=>'/sample-about','menu_key'=>'main']],
-        'routes'=>[['path'=>'/sample/item/{slug}','methods'=>['GET'],'handler'=>'Frontend/item.php']],
+        'routes'=>[
+            ['path'=>'/sample/item/{slug}','methods'=>['GET'],'handler'=>'Frontend/item.php'],
+            ['path'=>'/sample/unsafe','methods'=>['GET'],'handler'=>'migrations/001_unsafe.php'],
+        ],
+        'assets'=>['css/module.css','php/payload.php'],
+        'templates'=>['card'=>'card.php'],
         'theme'=>['name'=>'Sample Theme','directory'=>'views/theme'],
     ], JSON_THROW_ON_ERROR));
-    mkdir($dir . '/views',0700,true); mkdir($dir . '/views/theme',0700,true);
     file_put_contents($dir . '/views/theme/layout.php', '<?php echo $contentHtml;');
+    file_put_contents($dir . '/assets/css/module.css', 'body{display:block;}');
+    file_put_contents($dir . '/assets/php/payload.php', '<?php echo "blocked";');
+    file_put_contents($dir . '/templates/card.php', "<?php echo '<strong>' . htmlspecialchars((string)\$title, ENT_QUOTES, 'UTF-8') . '</strong>'; ");
+    file_put_contents($dir . '/migrations/001_unsafe.php', "<?php return static function (PDO \$db, array \$params): string { return 'should-not-run'; };");
     file_put_contents($dir . '/Frontend/item.php', "<?php return static function (PDO \$db, array \$params): string { return 'item:' . \$params['slug']; };");
-    $db = new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
+
+    $db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
     $db->exec('CREATE TABLE core_modules (module_id TEXT PRIMARY KEY, version TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0)');
     $db->exec('CREATE TABLE core_pages (id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,body TEXT,status TEXT,seo_title TEXT,seo_description TEXT,canonical_url TEXT,scheduled_at TEXT,social_image_media_id INTEGER,source_module TEXT,source_demo TEXT)');
     $db->exec('CREATE TABLE core_menus (id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER,source_module TEXT,source_demo TEXT)');
@@ -36,17 +43,45 @@ try {
     $db->exec('CREATE TABLE core_module_migrations (module_id TEXT,migration TEXT,applied_at TEXT DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(module_id,migration))');
     $db->exec("INSERT INTO core_module_installs(module_id,version) VALUES('sample','1.0.0')");
     $db->exec("INSERT INTO core_modules(module_id,version,enabled) VALUES('sample','1.0.0',1)");
-    $runtime = new CoreCMS\Core\ModuleRuntime($db,$root);
+    $runtime = new CoreCMS\Core\ModuleRuntime($db, $root);
+
     $created = $runtime->syncContent('sample');
     $assert($created === ['pages'=>1,'menus'=>1], 'initial page/menu provisioning');
     $db->exec("UPDATE core_pages SET title='Admin edited title' WHERE slug='sample-about'");
     $assert($runtime->syncContent('sample') === ['pages'=>0,'menus'=>0], 'sync is idempotent');
-    $assert($db->query("SELECT title FROM core_pages WHERE slug='sample-about'")->fetchColumn()==='Admin edited title', 'admin edits are preserved');
-    $assert($runtime->dispatch('/sample/item/blue-widget','GET') === true, 'route dispatched');
-    $assert($runtime->theme()['name']==='Sample Theme', 'module theme discovered');
+    $assert($db->query("SELECT title FROM core_pages WHERE slug='sample-about'")->fetchColumn() === 'Admin edited title', 'admin edits are preserved');
+
+    ob_start();
+    $dispatched = $runtime->dispatch('/sample/item/blue-widget','GET');
+    $routeOutput = (string)ob_get_clean();
+    $assert($dispatched && $routeOutput === 'item:blue-widget', 'safe frontend route handler dispatches');
+
+    ob_start();
+    $unsafeDispatched = $runtime->dispatch('/sample/unsafe','GET');
+    $unsafeOutput = (string)ob_get_clean();
+    $assert($unsafeDispatched && http_response_code() === 500 && str_contains($unsafeOutput,'Modül rota işleyicisi bulunamadı'), 'route handlers outside Frontend are blocked');
+    http_response_code(200);
+
+    $assert($runtime->theme()['name'] === 'Sample Theme', 'module theme discovered');
+    $assetUrl = $runtime->assetUrl('sample','css/module.css');
+    $assert(str_contains($assetUrl,'/modules/sample/assets/css/module.css'), 'declared module asset URL');
+    foreach (['css/secret.css','../module.json','php/payload.php'] as $badPath) {
+        $blocked = false;
+        try { $runtime->assetUrl('sample',$badPath); } catch (RuntimeException $e) { $blocked = true; }
+        $assert($blocked, 'unsafe or undeclared module asset rejected: ' . $badPath);
+    }
+    $missingTemplateBlocked = false;
+    try { $runtime->renderTemplate('sample','missing'); } catch (RuntimeException $e) { $missingTemplateBlocked = true; }
+    $assert($missingTemplateBlocked, 'undeclared module templates are rejected');
+    $assert($runtime->renderTemplate('sample','card',['title'=>'Runtime Card']) === '<strong>Runtime Card</strong>', 'module template rendered');
+
+    $rules = (string)file_get_contents(dirname(__DIR__) . '/.htaccess');
+    $assert(str_contains($rules,'RewriteRule ^modules/[^/]+/(?!assets'), 'module source directories denied');
+    $assert(str_contains($rules,'php[0-9]?|phtml|phar|pht'), 'executable module files denied');
+    $assert(str_contains($rules,'assets/.*$ - [F,L,NC]'), 'unapproved module asset extensions denied');
     echo 'Module runtime checks passed (' . $checks . ').' . PHP_EOL;
 } finally {
-    $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
-    foreach($it as $f) $f->isDir()?rmdir($f->getPathname()):unlink($f->getPathname());
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($it as $f) $f->isDir() ? rmdir($f->getPathname()) : unlink($f->getPathname());
     rmdir($root);
 }
