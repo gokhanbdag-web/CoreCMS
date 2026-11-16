@@ -5,8 +5,9 @@ $root = dirname(__DIR__);
 $required = [
     'index.php', 'app/bootstrap.php', 'app/Core/Database.php',
     'app/Core/Migrator.php', 'app/Core/ModuleManager.php',
+    'app/Core/Url.php', 'app/Core/Csrf.php', 'app/Core/Auth.php',
     'installer/index.php', 'admin/index.php',
-    'database/migrations/0001_core_schema.php'
+    'database/migrations/0001_core_schema.php', 'tests/core-foundation.php'
 ];
 $failed = [];
 foreach ($required as $file) {
