@@ -7,8 +7,9 @@ Options -Indexes
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteRule ^(?:app|database|storage|tests|deploy)/ - [F,L,NC]
-  RewriteRule ^modules/.*\.php$ - [F,L,NC]
-  RewriteRule ^modules/[^/]+/(?:migrations|Admin|Frontend|views|demo|module\.json)(?:/|$) - [F,L,NC]
+  RewriteRule ^modules/.*\.(?:php[0-9]?|phtml|phar|pht)$ - [F,L,NC]
+  RewriteRule ^modules/[^/]+/(?!assets(?:/|$)).+ - [F,L,NC]
+  RewriteRule ^modules/[^/]+/assets/(?:.*/)?\.[^/]+$ - [F,L,NC]
   RewriteRule ^\.git(?:/|$) - [F,L,NC]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
