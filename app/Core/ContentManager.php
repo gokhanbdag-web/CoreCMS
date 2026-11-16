@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 
 use PDO;
 use RuntimeException;
@@ -20,11 +20,11 @@ final class ContentManager
     private function safeUrl(string $url): string
     {
         $url = trim($url);
-        if ($url === '' || preg_match('/[\\r\\n\\x00-\\x1F]/', $url)) {
+        if ($url === '' || preg_match('/[\r\n\x00-\x1F]/', $url)) {
             throw new RuntimeException('Menü bağlantısı geçersiz.');
         }
         if (str_starts_with($url, '/') && !str_starts_with($url, '//')) return $url;
-        if (preg_match('#^https://[^/\\s]+(?:/[^\\s]*)?$#i', $url)) return $url;
+        if (preg_match('#^https://[^/\s]+(?:/[^\s]*)?$#i', $url)) return $url;
         throw new RuntimeException('Bağlantı yalnızca site içi /yol veya HTTPS adresi olabilir.');
     }
 
