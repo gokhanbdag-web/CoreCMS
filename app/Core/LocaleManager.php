@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 
 use PDO;
 use RuntimeException;
@@ -50,7 +50,7 @@ final class LocaleManager
             $this->db->exec('UPDATE core_languages SET is_default=0');
             $this->db->prepare('UPDATE core_languages SET is_default=1 WHERE locale_code=?')->execute([$code]);
             $this->db->commit();
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             if ($this->db->inTransaction()) $this->db->rollBack();
             throw $e;
         }
