@@ -53,7 +53,13 @@ final class ModuleRuntime
             'slug' => (string)$page['slug'],
             'body' => (string)($page['body'] ?? ''),
             'status' => (string)$page['status'],
+            'seo_title' => (string)($page['seo_title'] ?? ''),
+            'seo_description' => (string)($page['seo_description'] ?? ''),
+            'canonical_url' => (string)($page['canonical_url'] ?? ''),
+            'scheduled_at' => (string)($page['scheduled_at'] ?? ''),
+            'social_image_media_id' => isset($page['social_image_media_id']) ? (int)$page['social_image_media_id'] : null,
             'source_module' => (string)($page['source_module'] ?? ''),
+            'source_demo' => (string)($page['source_demo'] ?? ''),
         ]);
     }
 
@@ -117,7 +123,7 @@ final class ModuleRuntime
             try {
                 $stmt->execute([$title, $slug, htmlspecialchars((string)($page['body'] ?? ''), ENT_QUOTES, 'UTF-8'), (string)($page['status'] ?? 'published'), $moduleId]);
                 $contentId = (int)$this->db->lastInsertId();
-                $row = $this->db->prepare('SELECT title,slug,body,status,source_module FROM core_pages WHERE id=?');
+                $row = $this->db->prepare('SELECT title,slug,body,status,seo_title,seo_description,canonical_url,scheduled_at,social_image_media_id,source_module,source_demo FROM core_pages WHERE id=?');
                 $row->execute([$contentId]);
                 $this->register($moduleId, 'page', $key, $contentId, $this->pageHash($row->fetch(PDO::FETCH_ASSOC) ?: []));
                 $created['pages']++;
@@ -198,7 +204,7 @@ final class ModuleRuntime
                 $managedHash = is_string($entry['managed_hash'] ?? null) ? $entry['managed_hash'] : '';
 
                 if ($type === 'page') {
-                    $find = $this->db->prepare('SELECT id,title,slug,body,status,source_module FROM core_pages WHERE id=?');
+                    $find = $this->db->prepare('SELECT id,title,slug,body,status,seo_title,seo_description,canonical_url,scheduled_at,social_image_media_id,source_module,source_demo FROM core_pages WHERE id=?');
                     $find->execute([$contentId]);
                     $page = $find->fetch(PDO::FETCH_ASSOC);
                     if (!$page) {
