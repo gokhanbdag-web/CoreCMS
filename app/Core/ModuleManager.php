@@ -32,6 +32,7 @@ final class ModuleManager
                 || !is_string($data['version'])
                 || !preg_match('/^\d+\.\d+\.\d+(?:[-+][a-zA-Z0-9.-]+)?$/', $data['version'])) continue;
 
+            $valid = true;
             foreach (['routes','assets','templates'] as $manifestSection) {
                 if (isset($data[$manifestSection]) && !is_array($data[$manifestSection])) { $valid = false; break; }
             }
