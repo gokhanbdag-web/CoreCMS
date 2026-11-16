@@ -46,9 +46,9 @@ final class FormManager
         $description=trim($description);
         $successMessage=trim($successMessage);
         if(!preg_match('/^[a-z][a-z0-9_-]{1,99}$/',$key))throw new RuntimeException('Form key must be 2–100 lowercase letters, numbers, hyphens or underscores.');
-        if($name===''||mb_strlen($name,'UTF-8')>190)throw new RuntimeException('Form name is required and cannot exceed 190 characters.');
+        if($name===''||self::length($name,'UTF-8')>190)throw new RuntimeException('Form name is required and cannot exceed 190 characters.');
         if($recipientEmail!==''&&!filter_var($recipientEmail,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Notification email address is invalid.');
-        if(mb_strlen($description,'UTF-8')>1000||mb_strlen($successMessage,'UTF-8')>500)throw new RuntimeException('Form description or success message is too long.');
+        if(self::length($description,'UTF-8')>1000||self::length($successMessage,'UTF-8')>500)throw new RuntimeException('Form description or success message is too long.');
         $normalized=$this->normalizeFields($fields);
         $json=json_encode($normalized,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
         if($id!==null&&$id>0){
@@ -82,6 +82,7 @@ final class FormManager
             $value=$input[$fieldKey]??null;
             if($field['type']==='checkbox'){
                 $value=in_array($value,[true,1,'1','on','yes'],true);
+                if($field['required']&&!$value)throw new RuntimeException('Required field is missing: '.$fieldKey);
             }else{
                 if(is_array($value)||is_object($value))throw new RuntimeException('Invalid value for field: '.$fieldKey);
                 $value=trim((string)($value??''));
@@ -89,7 +90,7 @@ final class FormManager
                 if($field['type']==='email'&&$value!==''&&!filter_var($value,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Invalid email address for field: '.$fieldKey);
                 if($field['type']==='select'&&$value!==''&&!in_array($value,$field['options'],true))throw new RuntimeException('Invalid selection for field: '.$fieldKey);
                 $max=$field['type']==='textarea'?10000:1000;
-                if(mb_strlen($value,'UTF-8')>$max)throw new RuntimeException('Field value is too long: '.$fieldKey);
+                if(self::length($value,'UTF-8')>$max)throw new RuntimeException('Field value is too long: '.$fieldKey);
             }
             $payload[$fieldKey]=$value;
         }
@@ -117,7 +118,7 @@ final class FormManager
         if(!in_array($status,['new','read','archived'],true))throw new RuntimeException('Invalid submission status.');
         $stmt=$this->db->prepare('UPDATE core_form_submissions SET status=? WHERE id=?');
         $stmt->execute([$status,$id]);
-        if($stmt->rowCount()<1)throw new RuntimeException('Form submission was not found.');
+        if($stmt->rowCount()<1){$check=$this->db->prepare('SELECT id FROM core_form_submissions WHERE id=?');$check->execute([$id]);if(!$check->fetchColumn())throw new RuntimeException('Form submission was not found.');}
     }
 
     private function normalizeFields(array $fields): array
@@ -132,18 +133,23 @@ final class FormManager
             $required=(bool)($field['required']??false);
             if(!preg_match('/^[a-z][a-z0-9_]{0,39}$/',$key)||isset($seen[$key]))throw new RuntimeException('Form field keys must be unique valid identifiers.');
             if(!in_array($type,self::FIELD_TYPES,true))throw new RuntimeException('Unsupported form field type.');
-            if($label===''||mb_strlen($label,'UTF-8')>120)throw new RuntimeException('Form field label is required and cannot exceed 120 characters.');
+            if($label===''||self::length($label,'UTF-8')>120)throw new RuntimeException('Form field label is required and cannot exceed 120 characters.');
             $options=[];
             if($type==='select'){
                 $raw=$field['options']??[];
                 if(!is_array($raw)||count($raw)<1||count($raw)>50)throw new RuntimeException('Select fields need between 1 and 50 options.');
-                foreach($raw as $option){if(!is_scalar($option))throw new RuntimeException('Invalid select option.');$option=trim((string)$option);if($option===''||mb_strlen($option,'UTF-8')>120)throw new RuntimeException('Select options must be between 1 and 120 characters.');$options[]=$option;}
+                foreach($raw as $option){if(!is_scalar($option))throw new RuntimeException('Invalid select option.');$option=trim((string)$option);if($option===''||self::length($option,'UTF-8')>120)throw new RuntimeException('Select options must be between 1 and 120 characters.');$options[]=$option;}
                 if(count(array_unique($options))!==count($options))throw new RuntimeException('Select options must be unique.');
             }
             $seen[$key]=true;
             $normalized[]=['key'=>$key,'type'=>$type,'label'=>$label,'required'=>$required,'options'=>$options];
         }
         return $normalized;
+    }
+
+    private static function length(string $value): int
+    {
+        return preg_match_all('/./us', $value) ?: 0;
     }
 
     private function decodeFields(string $json): array
