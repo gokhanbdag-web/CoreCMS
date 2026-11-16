@@ -20,13 +20,63 @@ final class ThemeManager
             $root = realpath($module['_path']);
             if ($path === false || $root === false || !str_starts_with($path, $root . DIRECTORY_SEPARATOR) || !is_dir($path)) continue;
             if (!is_file($path . '/layout.php')) continue;
+
+            $templates = ['layout' => 'layout.php'];
+            foreach (($theme['templates'] ?? []) as $key => $relative) {
+                if (!is_string($key) || !preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$key)
+                    || !is_string($relative) || $relative === '' || str_starts_with($relative,'/')
+                    || str_contains($relative,'..') || str_contains($relative,'\\')) continue;
+                $file = realpath($path . '/' . $relative);
+                if ($file !== false && str_starts_with($file,$path . DIRECTORY_SEPARATOR)
+                    && is_file($file) && strtolower(pathinfo($file,PATHINFO_EXTENSION)) === 'php') {
+                    $templates[$key] = $relative;
+                }
+            }
+            $assets = is_array($theme['assets'] ?? null) ? array_values($theme['assets']) : [];
             $result[$module['id']] = [
                 'module_id' => $module['id'],
                 'name' => trim((string)($theme['name'] ?? $module['name'])),
                 'path' => $path,
+                'templates' => $templates,
+                'assets' => $assets,
             ];
         }
         return $result;
+    }
+
+    public function renderTemplate(string $moduleId, string $templateKey, array $data = []): string
+    {
+        $available = $this->available();
+        if (!isset($available[$moduleId])) throw new RuntimeException('Tema etkin değil veya bulunamadı.');
+        if (!preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$templateKey)
+            || !isset($available[$moduleId]['templates'][$templateKey])) {
+            throw new RuntimeException('Tema şablonu tanımlanmamış.');
+        }
+        $root = realpath($available[$moduleId]['path']);
+        $file = $root !== false ? realpath($root . '/' . $available[$moduleId]['templates'][$templateKey]) : false;
+        if ($root === false || $file === false || !str_starts_with($file,$root . DIRECTORY_SEPARATOR)
+            || !is_file($file) || strtolower(pathinfo($file,PATHINFO_EXTENSION)) !== 'php') {
+            throw new RuntimeException('Tema şablon dosyası bulunamadı.');
+        }
+        $db = $this->db; $theme = $available[$moduleId]; $themeManager = $this;
+        extract($data,EXTR_SKIP);
+        ob_start();
+        try {
+            require $file;
+            return (string)ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            throw new RuntimeException('Tema şablonu oluşturulamadı: '.$e->getMessage(),0,$e);
+        }
+    }
+
+    public function assetUrl(string $moduleId, string $relativePath): string
+    {
+        $available = $this->available();
+        if (!isset($available[$moduleId]) || !in_array($relativePath,$available[$moduleId]['assets'],true)) {
+            throw new RuntimeException('Tema varlığı manifest içinde tanımlı değil.');
+        }
+        return (new ModuleRuntime($this->db,$this->moduleDirectory))->assetUrl($moduleId,$relativePath);
     }
 
     public function selectedId(): string
