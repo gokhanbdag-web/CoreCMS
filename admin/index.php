@@ -24,10 +24,10 @@ try {
  if(($_SERVER['REQUEST_METHOD']??'GET')==='POST') {
   if($action==='theme_save') { $themeManager->activate((string)($_POST['theme_module']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=appearance&saved=1')); exit; }
   if($action==='page_save') { $id=(int)($_POST['id']??0); $content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&saved=1')); exit; }
-  if($action==='page_detach') { $content->detachPage((int)($_POST['id']??0)); header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=pages&detached=1')); exit; }
+  if($action==='page_detach') { $content->detachPage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&detached=1')); exit; }
   if($action==='page_delete') { $content->deletePage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&deleted=1')); exit; }
   if($action==='menu_save') { $id=(int)($_POST['id']??0); $content->saveMenu($id?:null,(string)($_POST['menu_key']??'main'),(string)($_POST['label']??''),(string)($_POST['url']??''),(int)($_POST['sort_order']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&saved=1')); exit; }
-  if($action==='menu_detach') { $content->detachMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=menus&detached=1')); exit; }
+  if($action==='menu_detach') { $content->detachMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&detached=1')); exit; }
   if($action==='menu_delete') { $content->deleteMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&deleted=1')); exit; }
   if($action==='run_core_migrations') { $notice=count($migrator->migrate()).' çekirdek migrasyonu uygulandı.'; $pending=$migrator->pending(); }
   if(isset($_POST['module_id'])) { $id=(string)$_POST['module_id']; if($action==='install'){$modules->install($id);$notice='Modül kuruldu veya güncellendi.';} elseif($action==='enable'){$modules->enable($id);(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->syncContent($id);$notice='Modül etkinleştirildi ve içeriği eşitlendi.';} elseif($action==='disable'){$modules->disable($id);$notice='Modül devre dışı bırakıldı.';} }
