@@ -42,6 +42,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 $roles = $manager->roles();
 $users = $db->query('SELECT id,name,email,role,status FROM core_users ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+
+$editing = null;
+if (isset($_GET['edit'])) {
+    $stmt = $db->prepare('SELECT * FROM core_roles WHERE id=?');
+    $stmt->execute([(int)$_GET['edit']]);
+    $editing = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+$selected = $editing ? $manager->permissionsForRole((string)$editing['role_key']) : [];
+$h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $userRoleOptions = static function (array $user) use ($roles, $role, $h, $t): string {
     $html = '';
     if (in_array($role, ['admin', 'super_admin'], true)) {
@@ -54,14 +63,6 @@ $userRoleOptions = static function (array $user) use ($roles, $role, $h, $t): st
     }
     return $html;
 };
-$editing = null;
-if (isset($_GET['edit'])) {
-    $stmt = $db->prepare('SELECT * FROM core_roles WHERE id=?');
-    $stmt->execute([(int)$_GET['edit']]);
-    $editing = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-}
-$selected = $editing ? $manager->permissionsForRole((string)$editing['role_key']) : [];
-$h = static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
 ?><!doctype html>
 <html lang="<?= $h($currentLocale) ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $t('admin.roles.page_title', 'Users and roles') ?> · CoreCMS</title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/responsive-nav.css')) ?>?v=3"></head>
