@@ -68,7 +68,7 @@ final class ContentManager
             $stmt->execute([$pageId, $locale]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : null;
-        } catch (\\PDOException) {
+        } catch (\PDOException) {
             return null;
         }
     }
@@ -120,7 +120,7 @@ final class ContentManager
             $stmt->execute([$menuId, $locale]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : null;
-        } catch (\\PDOException) {
+        } catch (\PDOException) {
             return null;
         }
     }
@@ -144,7 +144,7 @@ final class ContentManager
             $stmt->execute([$locale, $slug, $slug]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : null;
-        } catch (\\PDOException) {
+        } catch (\PDOException) {
             $fallback = $this->db->prepare("SELECT p.id,p.slug AS base_slug,p.slug AS localized_slug,p.title,p.body,p.seo_title,p.seo_description,p.canonical_url,p.social_image_media_id,m.file_path AS social_image_path,m.alt_text AS social_image_alt FROM core_pages p LEFT JOIN core_media m ON m.id=p.social_image_media_id WHERE p.slug=? AND p.status='published' LIMIT 1");
             $fallback->execute([$slug]);
             $row = $fallback->fetch(PDO::FETCH_ASSOC);
@@ -158,7 +158,7 @@ final class ContentManager
         try {
             $stmt->execute([$locale, $menuKey]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\\PDOException) {
+        } catch (\PDOException) {
             $fallback = $this->db->prepare('SELECT id,label,url FROM core_menus WHERE menu_key=? ORDER BY sort_order,id');
             $fallback->execute([$menuKey]);
             return $fallback->fetchAll(PDO::FETCH_ASSOC);
@@ -171,7 +171,7 @@ final class ContentManager
         try {
             $stmt->execute([$pageId, $locale, $pageId]);
             $slug = $stmt->fetchColumn();
-        } catch (\\PDOException) {
+        } catch (\PDOException) {
             $fallback = $this->db->prepare('SELECT slug FROM core_pages WHERE id=?');
             $fallback->execute([$pageId]);
             $slug = $fallback->fetchColumn();
