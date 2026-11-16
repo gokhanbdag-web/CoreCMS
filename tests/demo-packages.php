@@ -40,6 +40,8 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,
     ]);
     $db->exec('CREATE TABLE core_modules(module_id TEXT PRIMARY KEY,version TEXT NOT NULL,enabled INTEGER NOT NULL DEFAULT 0)');
+    $db->exec('CREATE TABLE core_module_installs(module_id TEXT PRIMARY KEY,version TEXT NOT NULL,installed_at TEXT DEFAULT CURRENT_TIMESTAMP)');
+    $db->exec("INSERT INTO core_module_installs(module_id,version) VALUES('sample','1.0.0')");
     $db->exec('CREATE TABLE core_pages(id INTEGER PRIMARY KEY AUTOINCREMENT,title TEXT NOT NULL,slug TEXT NOT NULL UNIQUE,body TEXT,status TEXT,seo_title TEXT,seo_description TEXT,canonical_url TEXT,scheduled_at TEXT,social_image_media_id INTEGER,source_module TEXT,source_demo TEXT)');
     $db->exec('CREATE TABLE core_menus(id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER,source_module TEXT,source_demo TEXT)');
     $db->exec('CREATE TABLE core_page_revisions(id INTEGER PRIMARY KEY AUTOINCREMENT,page_id INTEGER)');
