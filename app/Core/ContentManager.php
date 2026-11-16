@@ -132,20 +132,20 @@ final class ContentManager
 
     public function publishedPage(string $slug, string $locale): ?array
     {
-        $stmt = $this->db->prepare("SELECT p.id,p.slug AS base_slug,
-            COALESCE(pt.slug,p.slug) AS localized_slug,
-            COALESCE(pt.title,p.title) AS title,
-            COALESCE(pt.body,p.body) AS body,
-            COALESCE(pt.seo_title,p.seo_title) AS seo_title,
-            COALESCE(pt.seo_description,p.seo_description) AS seo_description,
-            COALESCE(pt.canonical_url,p.canonical_url) AS canonical_url,
-            COALESCE(pt.social_image_media_id,p.social_image_media_id) AS social_image_media_id,
-            m.file_path AS social_image_path,m.alt_text AS social_image_alt
-            FROM core_pages p
-            LEFT JOIN core_page_translations pt ON pt.page_id=p.id AND pt.locale_code=?
-            LEFT JOIN core_media m ON m.id=COALESCE(pt.social_image_media_id,p.social_image_media_id)
-            WHERE p.status='published' AND (p.slug=? OR pt.slug=?) LIMIT 1");
         try {
+            $stmt = $this->db->prepare("SELECT p.id,p.slug AS base_slug,
+                COALESCE(pt.slug,p.slug) AS localized_slug,
+                COALESCE(pt.title,p.title) AS title,
+                COALESCE(pt.body,p.body) AS body,
+                COALESCE(pt.seo_title,p.seo_title) AS seo_title,
+                COALESCE(pt.seo_description,p.seo_description) AS seo_description,
+                COALESCE(pt.canonical_url,p.canonical_url) AS canonical_url,
+                COALESCE(pt.social_image_media_id,p.social_image_media_id) AS social_image_media_id,
+                m.file_path AS social_image_path,m.alt_text AS social_image_alt
+                FROM core_pages p
+                LEFT JOIN core_page_translations pt ON pt.page_id=p.id AND pt.locale_code=?
+                LEFT JOIN core_media m ON m.id=COALESCE(pt.social_image_media_id,p.social_image_media_id)
+                WHERE p.status='published' AND (p.slug=? OR pt.slug=?) LIMIT 1");
             $stmt->execute([$locale, $slug, $slug]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $row : null;
@@ -159,8 +159,8 @@ final class ContentManager
 
     public function menusForLocale(string $menuKey, string $locale): array
     {
-        $stmt = $this->db->prepare('SELECT m.id,COALESCE(mt.label,m.label) AS label,COALESCE(mt.url,m.url) AS url FROM core_menus m LEFT JOIN core_menu_translations mt ON mt.menu_id=m.id AND mt.locale_code=? WHERE m.menu_key=? ORDER BY m.sort_order,m.id');
         try {
+            $stmt = $this->db->prepare('SELECT m.id,COALESCE(mt.label,m.label) AS label,COALESCE(mt.url,m.url) AS url FROM core_menus m LEFT JOIN core_menu_translations mt ON mt.menu_id=m.id AND mt.locale_code=? WHERE m.menu_key=? ORDER BY m.sort_order,m.id');
             $stmt->execute([$locale, $menuKey]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\PDOException) {
@@ -172,8 +172,8 @@ final class ContentManager
 
     public function pageSlugForLocale(int $pageId, string $locale): ?string
     {
-        $stmt = $this->db->prepare('SELECT COALESCE((SELECT slug FROM core_page_translations WHERE page_id=? AND locale_code=?),(SELECT slug FROM core_pages WHERE id=?))');
         try {
+            $stmt = $this->db->prepare('SELECT COALESCE((SELECT slug FROM core_page_translations WHERE page_id=? AND locale_code=?),(SELECT slug FROM core_pages WHERE id=?))');
             $stmt->execute([$pageId, $locale, $pageId]);
             $slug = $stmt->fetchColumn();
         } catch (\PDOException) {
