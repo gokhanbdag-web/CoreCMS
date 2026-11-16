@@ -69,6 +69,79 @@ final class ModuleManager
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
+    private function ensureUpdateHistory(): void
+    {
+        if ((string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $this->db->exec('CREATE TABLE IF NOT EXISTS core_module_update_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                module_id TEXT NOT NULL,
+                from_version TEXT NOT NULL,
+                to_version TEXT NOT NULL,
+                status TEXT NOT NULL,
+                migrations_json TEXT NOT NULL,
+                is_reversible INTEGER NOT NULL DEFAULT 0,
+                error_text TEXT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                rolled_back_at TEXT NULL
+            )');
+            return;
+        }
+        $this->db->exec("CREATE TABLE IF NOT EXISTS core_module_update_history (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            module_id VARCHAR(100) NOT NULL,
+            from_version VARCHAR(40) NOT NULL,
+            to_version VARCHAR(40) NOT NULL,
+            status VARCHAR(30) NOT NULL,
+            migrations_json LONGTEXT NOT NULL,
+            is_reversible TINYINT(1) NOT NULL DEFAULT 0,
+            error_text TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            rolled_back_at TIMESTAMP NULL,
+            INDEX idx_module_update_history (module_id,id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    private function invokeUpdateHook(array $module, string $hookName, array $context): void
+    {
+        $hooks = $module['update_hooks'] ?? [];
+        if (!is_array($hooks) || !isset($hooks[$hookName])) return;
+        $relative = $hooks[$hookName];
+        if (!is_string($relative) || $relative === '' || str_starts_with($relative, '/')
+            || str_contains($relative, '..') || str_contains($relative, '\\')) {
+            throw new RuntimeException('Geçersiz modül güncelleme hook yolu: ' . $hookName);
+        }
+        $root = realpath($module['_path']);
+        $file = realpath($module['_path'] . '/' . $relative);
+        if ($root === false || $file === false || !str_starts_with($file, $root . DIRECTORY_SEPARATOR) || !is_file($file)) {
+            throw new RuntimeException('Modül güncelleme hook dosyası bulunamadı: ' . $hookName);
+        }
+        $hook = require $file;
+        if (!is_callable($hook)) throw new RuntimeException('Modül güncelleme hook dosyası callable döndürmeli: ' . $hookName);
+        $hook($this->db, $context, $module);
+    }
+
+    private function updateHistoryRecord(int $historyId, string $status, array $migrations, bool $reversible, ?string $error = null): void
+    {
+        $stmt = $this->db->prepare('UPDATE core_module_update_history SET status=?,migrations_json=?,is_reversible=?,error_text=? WHERE id=?');
+        $stmt->execute([$status,json_encode($migrations,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR),$reversible?1:0,$error,$historyId]);
+    }
+
+    public function rollbackStatus(string $id): array
+    {
+        $this->ensureUpdateHistory();
+        $stmt = $this->db->prepare("SELECT id,from_version,to_version,status,is_reversible,error_text FROM core_module_update_history WHERE module_id=? AND status IN ('complete','partial') ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return [
+            'available' => is_array($row) && (int)$row['is_reversible'] === 1,
+            'history_id' => is_array($row) ? (int)$row['id'] : null,
+            'from_version' => is_array($row) ? (string)$row['from_version'] : null,
+            'to_version' => is_array($row) ? (string)$row['to_version'] : null,
+            'status' => is_array($row) ? (string)$row['status'] : null,
+            'error' => is_array($row) ? $row['error_text'] : null,
+        ];
+    }
+
     public function status(string $id): array
     {
         $this->ensureRepositories();
