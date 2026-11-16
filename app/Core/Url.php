@@ -9,6 +9,10 @@ final class Url
     {
         $script = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
         $script = '/' . ltrim($script, '/');
+        if (preg_match('#/admin/[^/]+\.php$#', $script) === 1) {
+            $base = dirname(dirname($script));
+            return $base === '/' || $base === '.' ? '' : rtrim($base, '/');
+        }
         foreach (['/admin/index.php', '/installer/index.php', '/index.php'] as $suffix) {
             if (str_ends_with($script, $suffix)) {
                 $base = substr($script, 0, -strlen($suffix));
