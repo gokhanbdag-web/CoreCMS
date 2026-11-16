@@ -39,6 +39,7 @@ if ($pageId < 1 || $userId < 1 || $title === '' || (preg_match_all('/./us', $tit
     echo json_encode(['ok'=>false,'message'=>'Taslak verileri geçersiz veya çok uzun.']);
     exit;
 }
+if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) { http_response_code(422); echo json_encode(['ok'=>false,'message'=>'Sayfa bağlantısı geçersiz.']); exit; }
 if ($canonical !== '' && !preg_match('#^(https://[^/\s]+(?:/[^\s]*)?|/(?!/)[^\s]*)$#i', $canonical)) {
     http_response_code(422);
     echo json_encode(['ok'=>false,'message'=>'Canonical adresi HTTPS veya site içi yol olmalı.']);
