@@ -23,4 +23,13 @@ $assert($failed,'unsafe URL rejected');
 $db->exec("INSERT INTO core_pages(title,slug,status,source_module) VALUES('Module','module-page','published','sample')");
 $failed=false;try{$cm->deletePage((int)$db->query("SELECT id FROM core_pages WHERE slug='module-page'")->fetchColumn());}catch(RuntimeException){$failed=true;}
 $assert($failed,'module page deletion protected');
+$modulePage=(int)$db->query("SELECT id FROM core_pages WHERE slug='module-page'")->fetchColumn();
+$cm->detachPage($modulePage);
+$assert($db->query('SELECT source_module FROM core_pages WHERE id='.$modulePage)->fetchColumn()===null,'module page detachment');
+$cm->deletePage($modulePage);
+$db->exec("INSERT INTO core_menus(menu_key,label,url,sort_order,source_module) VALUES('main','Module link','/module',1,'sample')");
+$moduleMenu=(int)$db->lastInsertId();
+$cm->detachMenu($moduleMenu);
+$assert($db->query('SELECT source_module FROM core_menus WHERE id='.$moduleMenu)->fetchColumn()===null,'module menu detachment');
+$cm->deleteMenu($moduleMenu);
 echo 'Content manager checks passed ('.$checks.').'.PHP_EOL;
