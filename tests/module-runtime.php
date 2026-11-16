@@ -23,7 +23,7 @@ try {
         'id'=>'sample','name'=>'Sample Module','version'=>'1.0.0',
         'pages'=>['about'=>['title'=>'About','slug'=>'sample-about','body'=>'Original text']],
         'menus'=>['about'=>['label'=>'About us','url'=>'/sample-about','menu_key'=>'main']],
-        'routes'=>[['path'=>'/sample/item/{slug}','methods'=>['GET'],'handler'=>'Frontend/item.php']],
+        'routes'=>[['path'=>'/sample/item/{slug}','methods'=>['GET'],'handler'=>'Frontend/item.php'],['path'=>'/sample/unsafe','methods'=>['GET'],'handler'=>'migrations/001_unsafe.php']],
         'assets'=>['css/module.css','php/payload.php'],
         'templates'=>['card'=>'card.php'],
         'theme'=>['name'=>'Sample Theme','directory'=>'views/theme'],
@@ -34,6 +34,7 @@ try {
     file_put_contents($dir . '/assets/css/module.css', 'body{display:block;}');
     file_put_contents($dir . '/assets/php/payload.php', '<?php echo "blocked";');
     file_put_contents($dir . '/templates/card.php', "<?php echo '<strong>' . htmlspecialchars((string)\$title, ENT_QUOTES, 'UTF-8') . '</strong>'; ");
+    file_put_contents($dir . '/migrations/001_unsafe.php', "<?php return static function (PDO \\$db, array \\$params): string { return 'should-not-run'; };");
     file_put_contents($dir . '/Frontend/item.php', "<?php return static function (PDO \$db, array \$params): string { return 'item:' . \$params['slug']; };");
     $db = new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
     $db->exec('CREATE TABLE core_modules (module_id TEXT PRIMARY KEY, version TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0)');
@@ -50,6 +51,11 @@ try {
     $assert($runtime->syncContent('sample') === ['pages'=>0,'menus'=>0], 'sync is idempotent');
     $assert($db->query("SELECT title FROM core_pages WHERE slug='sample-about'")->fetchColumn()==='Admin edited title', 'admin edits are preserved');
     $assert($runtime->dispatch('/sample/item/blue-widget','GET') === true, 'route dispatched');
+    ob_start();
+    $unsafeRouteDispatched = $runtime->dispatch('/sample/unsafe','GET');
+    $unsafeRouteOutput = (string)ob_get_clean();
+    $assert($unsafeRouteDispatched && http_response_code() === 500 && str_contains($unsafeRouteOutput,'Modül rota işleyicisi bulunamadı'), 'route handlers outside Frontend are blocked');
+    http_response_code(200);
     $assert($runtime->theme()['name']==='Sample Theme', 'module theme discovered');
     $assetUrl = $runtime->assetUrl('sample','css/module.css');
     $assert(str_contains($assetUrl,'/modules/sample/assets/css/module.css'), 'declared module asset URL');
