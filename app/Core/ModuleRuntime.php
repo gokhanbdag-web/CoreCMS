@@ -52,7 +52,7 @@ final class ModuleRuntime
             if ($title === '' || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) continue;
             $stmt = $this->db->prepare('INSERT INTO core_pages (title,slug,body,status,source_module,source_demo) VALUES (?,?,?,?,?,NULL)');
             try {
-                $stmt->execute([$title, $slug, (string)($page['body'] ?? ''), (string)($page['status'] ?? 'published'), $moduleId]);
+                $stmt->execute([$title, $slug, htmlspecialchars((string)($page['body'] ?? ''), ENT_QUOTES, 'UTF-8'), (string)($page['status'] ?? 'published'), $moduleId]);
                 $contentId = (int)$this->db->lastInsertId();
                 $this->register($moduleId, 'page', $key, $contentId);
                 $created['pages']++;
@@ -72,7 +72,7 @@ final class ModuleRuntime
             $label = trim((string)($menu['label'] ?? ''));
             $url = trim((string)($menu['url'] ?? ''));
             if ($label === '' || $url === '' || !preg_match('/^[a-zA-Z0-9._-]{1,100}$/', $menuKey)
-                || (!str_starts_with($url, '/') && !preg_match('/^https:\\/\\//i', $url))) continue;
+                || (str_starts_with($url, '/') ? str_starts_with($url, '//') : !preg_match('/^https:\\/\\//i', $url))) continue;
             $stmt = $this->db->prepare('INSERT INTO core_menus (menu_key,label,url,sort_order,source_module,source_demo) VALUES (?,?,?,?,?,NULL)');
             $stmt->execute([$menuKey, $label, $url, (int)($menu['sort_order'] ?? 0), $moduleId]);
             $this->register($moduleId, 'menu', $key, (int)$this->db->lastInsertId());
@@ -110,7 +110,7 @@ final class ModuleRuntime
                     || !is_string($route['path']) || !is_string($route['handler'])) continue;
                 $methods = array_map('strtoupper', (array)($route['methods'] ?? ['GET']));
                 if (!in_array(strtoupper($method), $methods, true)) continue;
-                if (!str_starts_with($route['path'], '/') || str_contains($route['path'], '..')) continue;
+                if (!preg_match('#^/[A-Za-z0-9/_-]*(?:\\{[a-zA-Z][a-zA-Z0-9_]*\\}[A-Za-z0-9/_-]*)*$#D', $route['path'])) continue;
                 $params = $this->routeMatch($route['path'], $path);
                 if ($params === null) continue;
                 $handlerPath = realpath($module['_path'] . '/' . ltrim($route['handler'], '/'));
