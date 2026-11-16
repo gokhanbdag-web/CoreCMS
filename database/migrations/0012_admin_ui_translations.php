@@ -1,0 +1,74 @@
+<?php
+declare(strict_types=1);
+
+return static function (PDO $db): void {
+    $driver = (string)$db->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $sql = $driver === 'sqlite'
+        ? 'INSERT OR IGNORE INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?)'
+        : 'INSERT IGNORE INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?)';
+    $insert = $db->prepare($sql);
+    $entries = [
+        "admin.login.page_title" => ["CoreCMS Giriş", "CoreCMS Login"],
+        "admin.login.heading" => ["Yönetim paneli", "Administration"],
+        "admin.login.submit" => ["Giriş yap", "Sign in"],
+        "admin.login.error" => ["E-posta veya parola hatalı.", "Incorrect email or password."],
+        "admin.common.email" => ["E-posta", "Email"],
+        "admin.common.password" => ["Parola", "Password"],
+        "admin.shell.title" => ["CoreCMS Yönetim", "CoreCMS Administration"],
+        "admin.shell.view_site" => ["Siteyi görüntüle", "View site"],
+        "admin.shell.logout" => ["Çıkış", "Log out"],
+        "admin.shell.heading" => ["Kontrol paneli", "Dashboard"],
+        "admin.shell.intro" => ["İçerik, menüler ve sektör modülleri.", "Manage content, menus and sector modules."],
+        "admin.nav.overview" => ["Genel bakış", "Overview"],
+        "admin.nav.pages" => ["Sayfalar", "Pages"],
+        "admin.nav.menus" => ["Menüler", "Menus"],
+        "admin.nav.media" => ["Medya kütüphanesi", "Media library"],
+        "admin.nav.seo" => ["SEO analizi", "SEO analysis"],
+        "admin.nav.redirects" => ["Yönlendirmeler", "Redirects"],
+        "admin.nav.modules" => ["Modüller", "Modules"],
+        "admin.nav.appearance" => ["Görünüm", "Appearance"],
+        "admin.nav.settings" => ["Site ayarları", "Site settings"],
+        "admin.nav.localization" => ["Dil ve çeviriler", "Languages and translations"],
+        "admin.nav.demos" => ["Demo paketleri", "Demo packages"],
+        "admin.nav.users_roles" => ["Kullanıcılar ve roller", "Users and roles"],
+        "admin.roles.page_title" => ["Kullanıcılar ve Roller", "Users and roles"],
+        "admin.roles.back" => ["Yönetim paneline dön", "Back to dashboard"],
+        "admin.roles.heading" => ["Kullanıcılar ve roller", "Users and roles"],
+        "admin.roles.intro" => ["Roller için izinleri ayrı ayrı belirleyin. Yetkiler sunucu tarafında da doğrulanır.", "Assign permissions to roles individually. Permissions are also enforced on the server."],
+        "admin.roles.saved" => ["Rol kaydedildi.", "Role saved."],
+        "admin.roles.deleted" => ["Rol silindi.", "Role deleted."],
+        "admin.roles.assigned" => ["Kullanıcı rolü güncellendi.", "User role updated."],
+        "admin.roles.edit" => ["Rolü düzenle", "Edit role"],
+        "admin.roles.create" => ["Yeni rol oluştur", "Create role"],
+        "admin.roles.key" => ["Rol anahtarı", "Role key"],
+        "admin.roles.name" => ["Rol adı", "Role name"],
+        "admin.roles.permissions" => ["İzinler", "Permissions"],
+        "admin.roles.save" => ["Rolü kaydet", "Save role"],
+        "admin.common.cancel" => ["Vazgeç", "Cancel"],
+        "admin.roles.defined" => ["Tanımlı roller", "Defined roles"],
+        "admin.roles.table.role" => ["Rol", "Role"],
+        "admin.roles.table.key" => ["Anahtar", "Key"],
+        "admin.roles.table.permissions" => ["İzin", "Permissions"],
+        "admin.common.actions" => ["İşlem", "Actions"],
+        "admin.common.edit" => ["Düzenle", "Edit"],
+        "admin.roles.confirm_delete" => ["Rol silinsin mi?", "Delete this role?"],
+        "admin.common.delete" => ["Sil", "Delete"],
+        "admin.roles.system_role" => ["Sistem rolü", "System role"],
+        "admin.roles.user_roles" => ["Kullanıcı rolleri", "User roles"],
+        "admin.roles.protected_intro" => ["Süper yönetici hesapları koruma altındadır ve değiştirilemez.", "Super administrator accounts are protected and cannot be changed."],
+        "admin.common.name" => ["Ad", "Name"],
+        "admin.roles.current_role" => ["Mevcut rol", "Current role"],
+        "admin.roles.assign_role" => ["Rol ata", "Assign role"],
+        "admin.roles.protected_account" => ["Korunan hesap", "Protected account"],
+        "admin.roles.admin_full" => ["Yönetici (tam erişim)", "Administrator (full access)"],
+        "admin.common.save" => ["Kaydet", "Save"]
+    ];
+    foreach ($entries as $key => $values) {
+        $insert->execute(['tr', $key, $values[0]]);
+        $insert->execute(['en', $key, $values[1]]);
+    }
+    $languageSql = $driver === 'sqlite'
+        ? "INSERT OR IGNORE INTO core_languages(locale_code,name,is_default,enabled) VALUES('en','English',0,1)"
+        : "INSERT IGNORE INTO core_languages(locale_code,name,is_default,enabled) VALUES('en','English',0,1)";
+    $db->exec($languageSql);
+};
