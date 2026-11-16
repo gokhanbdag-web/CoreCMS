@@ -12,7 +12,7 @@ CoreCMS stores enabled locales in `core_languages` and keyed text translations i
 ## PHP usage
 
 ```php
-$locales = new CoreCMS\\Core\\LocaleManager($db);
+$locales = new CoreCMS\Core\LocaleManager($db);
 echo htmlspecialchars($locales->translate('admin.dashboard.title', 'en', 'Dashboard'), ENT_QUOTES, 'UTF-8');
 ```
 
