@@ -23,7 +23,12 @@ The installer creates `config.php`; keep it private and never commit it.
 - `installer`: browser-based installation flow
 - `admin`: core administration interface
 
-## Demo packages\n- Sector modules can declare demo packages in `module.json` with page and menu definitions.\n- Admins can preview, install, reset and remove a package from the Demo Packages section.\n- Reset/removal preserve edited or revision-backed content and avoid duplicate content on reinstall.\n\n## Module uninstall safety
+## Demo packages
+- Sector modules can declare demo packages in `module.json` with page and menu definitions.
+- Admins can preview, install, reset and remove a package from the Demo Packages section.
+- Reset/removal preserve edited or revision-backed content and avoid duplicate content on reinstall.
+
+## Module uninstall safety
 - Modules must be disabled and have no installed dependents before removal.
 - Untouched module-provisioned pages and menus are removed; edited or historically revised content is detached and preserved.
 - Module-owned database tables, customer data and migration history are retained so reinstalling does not rerun destructive schema changes.
@@ -31,7 +36,7 @@ The installer creates `config.php`; keep it private and never commit it.
 ## Administration and permissions
 - Built-in administrator access remains fully compatible.
 - Custom roles can be created and assigned to existing users from the admin role manager.
-- Permissions are checked server-side for dashboard sections, content, menus, media, SEO, modules, themes, settings and user management.
+- Permissions are checked server-side for dashboard sections, content, menus, media, SEO, modules, demo packages, themes, settings and user management.
 
 ## Module contract
 Every module has a `module.json` manifest with an ID, version, minimum core version, dependencies, permissions, routes, assets and provisioning metadata. Module-specific schema changes belong in that module's `migrations/` directory. Module-owned content must be tagged with its source module/demo package so removal tools can preserve customer-created data.
