@@ -32,14 +32,14 @@ if (!empty($settings['timezone']) && in_array($settings['timezone'], DateTimeZon
 }
 
 // Resolve the active locale from an explicit selection, a cookie, or the configured default.
-$localeManager = new CoreCMS\\Core\\LocaleManager($db);
+$localeManager = new CoreCMS\Core\LocaleManager($db);
 $defaultLocale = $localeManager->defaultCode();
 $requestedLocale = isset($_GET['lang']) ? (string)$_GET['lang'] : (string)($_COOKIE['corecms_locale'] ?? $defaultLocale);
 $currentLocale = $localeManager->isEnabled($requestedLocale) ? $requestedLocale : $defaultLocale;
 if (isset($_GET['lang']) && $currentLocale === $requestedLocale && !headers_sent()) {
     setcookie('corecms_locale', $currentLocale, [
         'expires' => time() + 31536000,
-        'path' => CoreCMS\\Core\\Url::basePath() . '/',
+        'path' => CoreCMS\Core\Url::basePath() . '/',
         'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
         'httponly' => true,
         'samesite' => 'Lax',
