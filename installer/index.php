@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $payload = "<?php\ndeclare(strict_types=1);\nreturn " . var_export($config, true) . ";\n";
             if (file_put_contents($configFile, $payload, LOCK_EX) === false) throw new RuntimeException('config.php yazılamadı. Kök dizin yazma iznini kontrol edin.');
             require_once dirname(__DIR__) . '/app/Core/Migrator.php';
-            $migrator = new CoreCMS\\Core\\Migrator($db, dirname(__DIR__) . '/database/migrations');
+            $migrator = new CoreCMS\Core\Migrator($db, dirname(__DIR__) . '/database/migrations');
             $migrator->migrate();
             $stmt = $db->prepare("INSERT INTO core_users (name,email,password_hash,role) VALUES (?,?,?,'admin')");
             $stmt->execute([$adminName, $email, password_hash($password, PASSWORD_DEFAULT)]);
