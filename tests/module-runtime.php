@@ -73,6 +73,9 @@ try {
     $assert($missingTemplateBlocked, 'undeclared module templates are rejected');
     $templateHtml = $runtime->renderTemplate('sample','card',['title'=>'Runtime Card']);
     $assert($templateHtml === '<strong>Runtime Card</strong>', 'module template rendered from registered template path');
+    $rules = (string)file_get_contents(dirname(__DIR__) . '/.htaccess');
+    $assert(str_contains($rules,'RewriteRule ^modules/[^/]+/(?!assets'), 'module source directories are denied by rewrite rules');
+    $assert(str_contains($rules,'RewriteRule ^modules/.*\\.(?:php'), 'executable module assets are denied by rewrite rules');
     echo 'Module runtime checks passed (' . $checks . ').' . PHP_EOL;
 } finally {
     $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
