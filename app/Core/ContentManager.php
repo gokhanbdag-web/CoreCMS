@@ -79,14 +79,19 @@ final class ContentManager
         $pageCheck->execute([$pageId]);
         if (!$pageCheck->fetchColumn()) throw new RuntimeException('Sayfa bulunamadı.');
 
-        $languageCheck = $this->db->prepare('SELECT enabled FROM core_languages WHERE locale_code=?');
+        $languageCheck = $this->db->prepare('SELECT enabled,is_default FROM core_languages WHERE locale_code=?');
         $languageCheck->execute([$locale]);
-        if ((int)$languageCheck->fetchColumn() !== 1) throw new RuntimeException('Çeviri dili etkin olmalıdır.');
+        $language = $languageCheck->fetch(PDO::FETCH_ASSOC);
+        if (!$language || (int)$language['enabled'] !== 1) throw new RuntimeException('Çeviri dili etkin olmalıdır.');
+        if ((int)$language['is_default'] === 1) throw new RuntimeException('Ana dilin içeriği doğrudan düzenlenmelidir.');
 
         $title = trim($title);
         $slug = self::slug($slug !== '' ? $slug : $title);
         if ($title === '' || self::charLength($title) > 255) throw new RuntimeException('Çeviri sayfa başlığı zorunludur (en fazla 255 karakter).');
         if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) throw new RuntimeException('Çeviri sayfa bağlantısı geçersiz.');
+        $baseSlugCheck = $this->db->prepare('SELECT id FROM core_pages WHERE slug=? AND id<>? LIMIT 1');
+        $baseSlugCheck->execute([$slug, $pageId]);
+        if ($baseSlugCheck->fetchColumn()) throw new RuntimeException('Çeviri sayfa bağlantısı başka bir sayfa tarafından kullanılıyor.');
 
         $seoTitle = trim($seoTitle);
         $seoDescription = trim($seoDescription);
