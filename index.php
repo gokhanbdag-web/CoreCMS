@@ -39,13 +39,17 @@ try {
 } catch (Throwable $e) { error_log('[CoreCMS] Menu load failed: ' . $e->getMessage()); }
 
 $siteName = (string)($settings['site_name'] ?? 'CoreCMS');
+$homeEyebrow = (string)($settings['home_eyebrow'] ?? 'MODÜLER İÇERİK YÖNETİMİ');
+$homeTitle = (string)($settings['home_title'] ?? 'Tek çekirdek.');
+$homeAccentTitle = (string)($settings['home_accent_title'] ?? 'Sınırsız sektör.');
+$homeDescription = (string)($settings['home_description'] ?? 'CoreCMS kurulumu tamamlandı. Sektör modülleri kendi sayfalarını, iş akışlarını ve tasarım katmanlarını bağımsız olarak ekler.');
 $pageTitle = $page ? (string)$page['title'] : $siteName;
 ob_start();
 if ($page) {
     echo '<article class="content-page"><h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
     echo '<div class="content-body">' . (string)$page['body'] . '</div></article>';
 } elseif ($path === '/') {
-    echo '<section class="hero"><span class="eyebrow">MODÜLER İÇERİK YÖNETİMİ</span><h1>Tek çekirdek.<br><em>Sınırsız sektör.</em></h1><p>CoreCMS kurulumu tamamlandı. Sektör modülleri kendi sayfalarını, iş akışlarını ve tasarım katmanlarını bağımsız olarak ekler.</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">Yönetim panelini aç</a></section><section class="module-grid"><h2>Etkin modüller</h2>';
+    echo '<section class="hero"><span class="eyebrow">' . htmlspecialchars($homeEyebrow, ENT_QUOTES, 'UTF-8') . '</span><h1>' . htmlspecialchars($homeTitle, ENT_QUOTES, 'UTF-8') . '<br><em>' . htmlspecialchars($homeAccentTitle, ENT_QUOTES, 'UTF-8') . '</em></h1><p>' . htmlspecialchars($homeDescription, ENT_QUOTES, 'UTF-8') . '</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">Yönetim panelini aç</a></section><section class="module-grid"><h2>Etkin modüller</h2>';
     if (!$modules) echo '<p>Henüz etkin sektör modülü bulunmuyor.</p>';
     foreach ($modules as $module) echo '<article class="module-card"><h3>' . htmlspecialchars($module['name'], ENT_QUOTES, 'UTF-8') . '</h3><p>' . htmlspecialchars($module['description'] ?? '', ENT_QUOTES, 'UTF-8') . '</p><small>v' . htmlspecialchars($module['version'], ENT_QUOTES, 'UTF-8') . '</small></article>';
     echo '</section>';

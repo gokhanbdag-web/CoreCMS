@@ -34,3 +34,5 @@ jobs:
         run: php tests/content-manager.php
       - name: Theme manager tests
         run: php tests/theme-manager.php
+      - name: Site settings tests
+        run: php tests/site-settings.php

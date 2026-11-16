@@ -15,13 +15,16 @@ if (!CoreCMS\Core\Auth::check()) {
 }
 require_once dirname(__DIR__).'/app/Core/ContentManager.php';
 require_once dirname(__DIR__).'/app/Core/ThemeManager.php';
+require_once dirname(__DIR__).'/app/Core/SiteSettings.php';
 $modules=new CoreCMS\Core\ModuleManager($db,dirname(__DIR__).'/modules');
 $content=new CoreCMS\Core\ContentManager($db);
 $themeManager=new CoreCMS\Core\ThemeManager($db,dirname(__DIR__).'/modules');
+$siteSettings=new CoreCMS\Core\SiteSettings($db);
 $migrator=new CoreCMS\Core\Migrator($db,dirname(__DIR__).'/database/migrations');
 $pending=$migrator->pending(); $notice=$error=null; $action=(string)($_POST['action']??'');
 try {
  if(($_SERVER['REQUEST_METHOD']??'GET')==='POST') {
+  if($action==='site_settings_save') { $siteSettings->save($_POST); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=settings&saved=1')); exit; }
   if($action==='theme_save') { $themeManager->activate((string)($_POST['theme_module']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=appearance&saved=1')); exit; }
   if($action==='page_save') { $id=(int)($_POST['id']??0); $content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&saved=1')); exit; }
   if($action==='page_detach') { $content->detachPage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&detached=1')); exit; }
@@ -33,7 +36,7 @@ try {
   if(isset($_POST['module_id'])) { $id=(string)$_POST['module_id']; if($action==='install'){$modules->install($id);$notice='Modül kuruldu veya güncellendi.';} elseif($action==='enable'){$modules->enable($id);(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->syncContent($id);$notice='Modül etkinleştirildi ve içeriği eşitlendi.';} elseif($action==='disable'){$modules->disable($id);$notice='Modül devre dışı bırakıldı.';} }
  }
 } catch(Throwable $e){$error=$e->getMessage();}
-$section=(string)($_GET['section']??'overview'); if(!in_array($section,['overview','pages','menus','modules','appearance'],true))$section='overview';
+$section=(string)($_GET['section']??'overview'); if(!in_array($section,['overview','pages','menus','modules','appearance','settings'],true))$section='overview';
 if(isset($_GET['saved']))$notice='Değişiklikler kaydedildi.'; if(isset($_GET['deleted']))$notice='Kayıt silindi.'; if(isset($_GET['detached']))$notice='İçerik modülden ayrıldı ve artık bağımsız yönetiliyor.';
 $h=static fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
 $pageRows=$db->query('SELECT id,title,slug,status,source_module FROM core_pages ORDER BY id DESC')->fetchAll(PDO::FETCH_ASSOC);
@@ -43,11 +46,14 @@ if(isset($_GET['edit_page'])){$q=$db->prepare('SELECT * FROM core_pages WHERE id
 if(isset($_GET['edit_menu'])){$q=$db->prepare('SELECT * FROM core_menus WHERE id=?');$q->execute([(int)$_GET['edit_menu']]);$em=$q->fetch(PDO::FETCH_ASSOC)?:null;}
 ?><!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CoreCMS Yönetim</title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"></head><body>
 <header class="site-header"><a class="brand" href="<?= $h(CoreCMS\Core\Url::to('/')) ?>">CoreCMS</a><nav><a href="<?= $h(CoreCMS\Core\Url::to('/')) ?>">Siteyi görüntüle</a><form method="post" class="inline-form"><?= CoreCMS\Core\Csrf::field() ?><button name="action" value="logout" class="link-button">Çıkış</button></form></nav></header>
-<main class="container admin"><h1>Kontrol paneli</h1><p>İçerik, menüler ve sektör modülleri.</p><nav class="admin-nav"><?php foreach(['overview'=>'Genel bakış','pages'=>'Sayfalar','menus'=>'Menüler','modules'=>'Modüller','appearance'=>'Görünüm'] as $k=>$v): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/'.($k==='overview'?'':'?section='.$k))) ?>"><?= $h($v) ?></a><?php endforeach ?></nav>
+<main class="container admin"><h1>Kontrol paneli</h1><p>İçerik, menüler ve sektör modülleri.</p><nav class="admin-nav"><?php foreach(['overview'=>'Genel bakış','pages'=>'Sayfalar','menus'=>'Menüler','modules'=>'Modüller','appearance'=>'Görünüm','settings'=>'Site ayarları'] as $k=>$v): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/'.($k==='overview'?'':'?section='.$k))) ?>"><?= $h($v) ?></a><?php endforeach ?></nav>
 <?php if($notice): ?><p class="success"><?= $h($notice) ?></p><?php endif ?><?php if($error): ?><p class="error"><?= $h($error) ?></p><?php endif ?>
 <?php if($section==='overview'||$section==='modules'): ?>
 <section class="content-admin"><h2>Çekirdek güncellemeleri</h2><?php if($pending): ?><p><?= count($pending) ?> bekleyen migrasyon.</p><form method="post"><?= CoreCMS\Core\Csrf::field() ?><button class="button" name="action" value="run_core_migrations">Migrasyonları uygula</button></form><?php else: ?><p>Veritabanı güncel.</p><?php endif ?></section>
 <section class="module-grid"><h2>Modül yöneticisi</h2><?php foreach($modules->discover() as $mod): $st=$modules->status($mod['id']); ?><article class="module-card"><h3><?= $h($mod['name']) ?></h3><p><?= $h($mod['description']??'') ?></p><small><?= $st['enabled']?'Etkin':($st['installed']?'Kurulu / pasif':'Kurulmamış') ?></small><form method="post"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="module_id" value="<?= $h($mod['id']) ?>"><?php if(!$st['installed']||$st['installed_version']!==$mod['version']): ?><button class="button secondary" name="action" value="install">Kur / Güncelle</button><?php elseif($st['enabled']): ?><button class="button secondary" name="action" value="disable">Devre dışı bırak</button><?php else: ?><button class="button secondary" name="action" value="enable">Etkinleştir</button><?php endif ?></form></article><?php endforeach ?></section>
+<?php endif ?>
+<?php if($section==='settings'): $currentSettings=$siteSettings->all(); ?>
+<section class="content-admin"><h2>Genel site ayarları</h2><form method="post" class="editor-form"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="site_settings_save"><label>Site adı<input name="site_name" maxlength="120" required value="<?= $h($currentSettings['site_name']) ?>"></label><label>Site dili<input name="site_language" maxlength="12" required value="<?= $h($currentSettings['site_language']) ?>" placeholder="tr"></label><label>Saat dilimi<input name="timezone" maxlength="64" required value="<?= $h($currentSettings['timezone']) ?>" placeholder="Europe/Istanbul"></label><h2>Ana sayfa hero alanı</h2><label>Üst küçük başlık<input name="home_eyebrow" maxlength="100" value="<?= $h($currentSettings['home_eyebrow']) ?>"></label><label>Ana başlık<input name="home_title" maxlength="120" required value="<?= $h($currentSettings['home_title']) ?>"></label><label>Vurgulu ikinci başlık<input name="home_accent_title" maxlength="120" value="<?= $h($currentSettings['home_accent_title']) ?>"></label><label>Açıklama<textarea name="home_description" rows="5" maxlength="600"><?= $h($currentSettings['home_description']) ?></textarea></label><button class="button">Ayarları kaydet</button></form></section>
 <?php endif ?>
 <?php if($section==='appearance'): $availableThemes=$themeManager->available(); $activeThemeId=$themeManager->selectedId(); ?>
 <section class="content-admin"><h2>Aktif tema</h2><p>Yalnızca etkin modüllerde bulunan ve güvenli dizin içinde geçerli bir <code>layout.php</code> dosyası olan temalar seçilebilir.</p><form method="post" class="editor-form"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="theme_save"><label>Tema seçimi<select name="theme_module"><option value="" <?= $activeThemeId===''?'selected':'' ?>>Otomatik (ilk uygun etkin tema)</option><?php foreach($availableThemes as $theme): ?><option value="<?= $h($theme['module_id']) ?>" <?= $activeThemeId===$theme['module_id']?'selected':'' ?>><?= $h($theme['name']) ?> · <?= $h($theme['module_id']) ?></option><?php endforeach ?></select></label><button class="button">Temayı kaydet</button></form><?php if(!$availableThemes): ?><p>Şu anda seçilebilir tema yok. Tema sağlayan bir modülü kurup etkinleştirin.</p><?php endif ?></section>
