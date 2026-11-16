@@ -22,6 +22,12 @@ $assert($pageTranslation && $pageTranslation['title']==='About us' && $pageTrans
 $localizedPage=$cm->publishedPage('about-us','en');
 $assert($localizedPage && $localizedPage['title']==='About us' && $localizedPage['base_slug']==='hakkimizda','published page resolves translated slug and content');
 $assert($cm->pageSlugForLocale($id,'en')==='about-us' && $cm->pageSlugForLocale($id,'tr')==='hakkimizda','locale-specific page slug lookup');
+$failed=false;try{$cm->savePageTranslation($id,'tr','Hakkımızda','hakkimizda','Metin');}catch(RuntimeException){$failed=true;}
+$assert($failed,'default language page content cannot be stored as a translation');
+$otherPage=$cm->savePage(null,'Other page','other-page','Other','published');
+$failed=false;try{$cm->savePageTranslation($id,'en','About','other-page','Text');}catch(RuntimeException){$failed=true;}
+$assert($failed,'translated page slug cannot collide with another base page');
+$cm->deletePage($otherPage);
 $cm->savePageTranslation($id,'en','About our company','about-us','Updated English body');
 $assert($cm->pageTranslation($id,'en')['title']==='About our company','page translation upsert');
 $assert($db->query('SELECT title FROM core_pages WHERE id='.(int)$id)->fetchColumn()==='Hakkımızda','base page remains unchanged by translation save');
@@ -51,6 +57,8 @@ $localizedMenus=$cm->menusForLocale('main','en');
 $assert(count($localizedMenus)===1 && $localizedMenus[0]['label']==='Start page' && $localizedMenus[0]['url']==='/start','public menu uses localized label and URL');
 $cm->saveMenuTranslation($menu,'en','Home','/home');
 $assert($cm->menuTranslation($menu,'en')['label']==='Home','menu translation upsert');
+$failed=false;try{$cm->saveMenuTranslation($menu,'tr','Ana sayfa','/');}catch(RuntimeException){$failed=true;}
+$assert($failed,'default language menu content cannot be stored as a translation');
 $failed=false;try{$cm->saveMenuTranslation($menu,'de','Startseite','/startseite');}catch(RuntimeException){$failed=true;}
 $assert($failed,'disabled language cannot receive menu translation');
 $failed=false;try{$cm->saveMenu(null,'main','Kötü','javascript:alert(1)',0);}catch(RuntimeException){$failed=true;}
