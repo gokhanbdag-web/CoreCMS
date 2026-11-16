@@ -28,6 +28,7 @@ $assert(!$manager->can('content_editor', 'settings.manage'), 'ungranted settings
 $assert(!$manager->can('content_editor', 'unknown.permission'), 'unknown permission denied');
 $assert($manager->can('admin', 'settings.manage'), 'legacy admin retains full access');
 $assert($manager->can('super_admin', 'users.manage'), 'super admin bypass');
+$assert(isset(RoleManager::permissionCatalog()['demos.manage']), 'demo management permission is available');
 $assert($manager->roleExists('content_editor'), 'custom role exists');
 
 $db->exec("INSERT INTO core_users(name,email,role) VALUES ('Rename','rename@example.test','content_editor')");
