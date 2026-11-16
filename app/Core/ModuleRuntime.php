@@ -86,7 +86,7 @@ final class ModuleRuntime
 
     private function tableExists(string $table): bool
     {
-        if (!in_array($table, ['core_page_revisions','core_page_autosaves'], true)) return false;
+        if (!in_array($table, ['core_page_revisions','core_page_autosaves','core_demo_installs'], true)) return false;
         if ((string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
             $stmt = $this->db->prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?");
             $stmt->execute([$table]);
@@ -272,6 +272,10 @@ final class ModuleRuntime
             $remove->execute([$moduleId]);
             $remove = $this->db->prepare('DELETE FROM core_module_installs WHERE module_id=?');
             $remove->execute([$moduleId]);
+            if ($this->tableExists('core_demo_installs')) {
+                $remove = $this->db->prepare('DELETE FROM core_demo_installs WHERE module_id=?');
+                $remove->execute([$moduleId]);
+            }
             $this->db->commit();
             return $result;
         } catch (Throwable $e) {
