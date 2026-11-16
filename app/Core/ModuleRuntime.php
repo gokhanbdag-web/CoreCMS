@@ -310,10 +310,13 @@ final class ModuleRuntime
                 if (!preg_match('#^/[A-Za-z0-9/_-]*(?:\\{[a-zA-Z][a-zA-Z0-9_]*\\}[A-Za-z0-9/_-]*)*$#D', $route['path'])) continue;
                 $params = $this->routeMatch($route['path'], $path);
                 if ($params === null) continue;
-                $handlerPath = realpath($module['_path'] . '/' . ltrim($route['handler'], '/'));
-                $moduleRoot = realpath($module['_path']);
-                if ($handlerPath === false || $moduleRoot === false
-                    || !str_starts_with($handlerPath, $moduleRoot . DIRECTORY_SEPARATOR)
+                $frontendRoot = realpath($module['_path'] . '/Frontend');
+                $handlerRelative = preg_replace('#^Frontend/#','',ltrim($route['handler'],'/'));
+                $handlerPath = ($frontendRoot !== false && is_string($handlerRelative)
+                    && $handlerRelative !== '' && !str_contains($handlerRelative,'..') && !str_contains($handlerRelative,'\\'))
+                    ? realpath($frontendRoot . '/' . $handlerRelative) : false;
+                if ($handlerPath === false || $frontendRoot === false
+                    || !str_starts_with($handlerPath, $frontendRoot . DIRECTORY_SEPARATOR)
                     || !is_file($handlerPath)) {
                     http_response_code(500);
                     echo 'Modül rota işleyicisi bulunamadı.';
