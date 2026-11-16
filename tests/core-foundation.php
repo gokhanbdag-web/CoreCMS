@@ -26,6 +26,11 @@ $_SERVER['SCRIPT_NAME'] = '/shop/admin/index.php';
 $_SERVER['REQUEST_URI'] = '/shop/admin/';
 $assert(CoreCMS\Core\Url::basePath() === '/shop', 'admin subdirectory base path');
 
+$_SERVER['SCRIPT_NAME'] = '/shop/admin/roles.php';
+$_SERVER['REQUEST_URI'] = '/shop/admin/roles.php';
+$assert(CoreCMS\Core\Url::basePath() === '/shop', 'admin subpage base path');
+$assert(CoreCMS\Core\Url::asset('css/site.css') === '/shop/assets/css/site.css', 'admin subpage assets resolve from installation root');
+
 $_SERVER['SCRIPT_NAME'] = '/shop/installer/index.php';
 $assert(CoreCMS\Core\Url::basePath() === '/shop', 'installer subdirectory base path');
 
