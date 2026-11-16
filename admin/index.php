@@ -30,6 +30,8 @@ $content=new CoreCMS\Core\ContentManager($db);
 $themeManager=new CoreCMS\Core\ThemeManager($db,dirname(__DIR__).'/modules');
 $siteSettings=new CoreCMS\Core\SiteSettings($db);
 $localeManager=new CoreCMS\Core\LocaleManager($db);
+$contentLocale=(string)($_GET['content_locale']??$defaultLocale);
+if(!$localeManager->isEnabled($contentLocale))$contentLocale=$defaultLocale;
 $mediaLibrary=new CoreCMS\Core\MediaLibrary($db,dirname(__DIR__),CoreCMS\Core\Url::basePath());
 $revisions=new CoreCMS\Core\PageRevisionManager($db);
 $autosaves=new CoreCMS\Core\PageAutosaveManager($db);
@@ -50,14 +52,39 @@ try {
   if($action==='locale_default') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $localeManager->setDefault((string)($_POST['locale_code']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=localization&saved=1')); exit; }
   if($action==='translation_save') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $localeManager->saveTranslation((string)($_POST['locale_code']??''),(string)($_POST['translation_key']??''),(string)($_POST['translation_value']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=localization&locale='.rawurlencode((string)($_POST['locale_code']??'')).'&saved=1')); exit; }
   if($action==='theme_save') { $themeManager->activate((string)($_POST['theme_module']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=appearance&saved=1')); exit; }
-  if($action==='page_save') { $id=(int)($_POST['id']??0); if($pending) throw new RuntimeException($translate('admin.error.page_revision_migrations','Apply pending database migrations before using page revisions.')); if($id>0) $revisions->snapshot($id,(int)($_SESSION['corecms_user_id']??0)); $content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft'),(string)($_POST['seo_title']??''),(string)($_POST['seo_description']??''),(string)($_POST['canonical_url']??''),isset($_POST['scheduled_at'])?(string)$_POST['scheduled_at']:null,((int)($_POST['social_image_media_id']??0)>0?(int)$_POST['social_image_media_id']:null)); if($id>0)$autosaves->clear($id,(int)($_SESSION['corecms_user_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&saved=1')); exit; }
+  if($action==='page_save') {
+   $id=(int)($_POST['id']??0);
+   $saveLocale=(string)($_POST['content_locale']??$defaultLocale);
+   if(!$localeManager->isEnabled($saveLocale))$saveLocale=$defaultLocale;
+   if($saveLocale!==$defaultLocale) {
+    if($id<=0)throw new RuntimeException($translate('admin.content.save_base_first','Save the base-language page before adding a translation.'));
+    $content->savePageTranslation($id,$saveLocale,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['seo_title']??''),(string)($_POST['seo_description']??''),(string)($_POST['canonical_url']??''),((int)($_POST['social_image_media_id']??0)>0?(int)$_POST['social_image_media_id']:null));
+    header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=pages&edit_page='.$id.'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
+   }
+   if($pending)throw new RuntimeException($translate('admin.error.page_revision_migrations','Apply pending database migrations before using page revisions.'));
+   if($id>0)$revisions->snapshot($id,(int)($_SESSION['corecms_user_id']??0));
+   $savedPageId=$content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft'),(string)($_POST['seo_title']??''),(string)($_POST['seo_description']??''),(string)($_POST['canonical_url']??''),isset($_POST['scheduled_at'])?(string)$_POST['scheduled_at']:null,((int)($_POST['social_image_media_id']??0)>0?(int)$_POST['social_image_media_id']:null));
+   if($id>0)$autosaves->clear($id,(int)($_SESSION['corecms_user_id']??0));
+   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=pages&edit_page='.$savedPageId.'&saved=1')); exit;
+  }
   if($action==='page_revision_restore') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $restoredId=$revisions->restore((int)($_POST['revision_id']??0),(int)($_SESSION['corecms_user_id']??0)); $autosaves->clear($restoredId,(int)($_SESSION['corecms_user_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&edit_page='.$restoredId.'&restored=1')); exit; }
   if($action==='page_detach') { $content->detachPage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&detached=1')); exit; }
   if($action==='page_delete') { $content->deletePage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&deleted=1')); exit; }
   if($action==='seo_bulk_update') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $bulkEditor=new CoreCMS\Core\SeoBulkEditor($db,$revisions,$autosaves); $updated=$bulkEditor->apply((array)($_POST['page_ids']??[]),(string)($_POST['title_pattern']??''),(string)($_POST['description_pattern']??''),(string)($_POST['mode']??'fill_missing'),(string)($settings['site_name']??''),(int)($_SESSION['corecms_user_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=seo&bulk_updated='.$updated)); exit; }
   if($action==='redirect_save') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $redirects->save(((int)($_POST['id']??0)>0?(int)$_POST['id']:null),(string)($_POST['source_path']??''),(string)($_POST['target_path']??''),(int)($_POST['http_code']??301)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=redirects&saved=1')); exit; }
   if($action==='redirect_delete') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $redirects->delete((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=redirects&deleted=1')); exit; }
-  if($action==='menu_save') { $id=(int)($_POST['id']??0); $content->saveMenu($id?:null,(string)($_POST['menu_key']??'main'),(string)($_POST['label']??''),(string)($_POST['url']??''),(int)($_POST['sort_order']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&saved=1')); exit; }
+  if($action==='menu_save') {
+   $id=(int)($_POST['id']??0);
+   $saveLocale=(string)($_POST['content_locale']??$defaultLocale);
+   if(!$localeManager->isEnabled($saveLocale))$saveLocale=$defaultLocale;
+   if($saveLocale!==$defaultLocale) {
+    if($id<=0)throw new RuntimeException($translate('admin.content.save_base_first','Save the base-language menu item before adding a translation.'));
+    $content->saveMenuTranslation($id,$saveLocale,(string)($_POST['label']??''),(string)($_POST['url']??''));
+    header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=menus&edit_menu='.$id.'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
+   }
+   $savedMenuId=$content->saveMenu($id?:null,(string)($_POST['menu_key']??'main'),(string)($_POST['label']??''),(string)($_POST['url']??''),(int)($_POST['sort_order']??0));
+   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=menus&edit_menu='.$savedMenuId.'&saved=1')); exit;
+  }
   if($action==='menu_detach') { $content->detachMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&detached=1')); exit; }
   if($action==='menu_delete') { $content->deleteMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&deleted=1')); exit; }
   if($action==='run_core_migrations') { $notice = sprintf($translate('admin.notice.migrations_applied','%d core migrations applied.'), count($migrator->migrate())); $pending=$migrator->pending(); }
@@ -87,10 +114,23 @@ $menuRows=$db->query('SELECT id,menu_key,label,url,sort_order,source_module FROM
 $mediaRows=$pending?[]:$mediaLibrary->list((string)($_GET['q']??''));
 $pageMediaRows=$pending?[]:$mediaLibrary->list('',100);
 $ep=$em=null; $pageAutosave=null;
-if(isset($_GET['edit_page'])){$q=$db->prepare('SELECT * FROM core_pages WHERE id=?');$q->execute([(int)$_GET['edit_page']]);$ep=$q->fetch(PDO::FETCH_ASSOC)?:null; if($ep && !$pending)$pageAutosave=$autosaves->get((int)$ep['id'],(int)($_SESSION['corecms_user_id']??0));}
-if(isset($_GET['edit_menu'])){$q=$db->prepare('SELECT * FROM core_menus WHERE id=?');$q->execute([(int)$_GET['edit_menu']]);$em=$q->fetch(PDO::FETCH_ASSOC)?:null;}
+if(isset($_GET['edit_page'])) {
+ $q=$db->prepare('SELECT * FROM core_pages WHERE id=?');$q->execute([(int)$_GET['edit_page']]);$ep=$q->fetch(PDO::FETCH_ASSOC)?:null;
+ if($ep && $contentLocale!==$defaultLocale) {
+  $pageTranslation=$content->pageTranslation((int)$ep['id'],$contentLocale);
+  if($pageTranslation) foreach(['title','slug','body','seo_title','seo_description','canonical_url','social_image_media_id'] as $field) $ep[$field]=$pageTranslation[$field];
+ }
+ if($ep && !$pending && $contentLocale===$defaultLocale)$pageAutosave=$autosaves->get((int)$ep['id'],(int)($_SESSION['corecms_user_id']??0));
+}
+if(isset($_GET['edit_menu'])) {
+ $q=$db->prepare('SELECT * FROM core_menus WHERE id=?');$q->execute([(int)$_GET['edit_menu']]);$em=$q->fetch(PDO::FETCH_ASSOC)?:null;
+ if($em && $contentLocale!==$defaultLocale) {
+  $menuTranslation=$content->menuTranslation((int)$em['id'],$contentLocale);
+  if($menuTranslation){$em['label']=$menuTranslation['label'];$em['url']=$menuTranslation['url'];}
+ }
+}
 $pageRevisions=[]; $compareRevision=null;
-if($ep && !$pending){$pageRevisions=$revisions->history((int)$ep['id']);$compareId=(int)($_GET['compare_revision']??0);if($compareId>0)$compareRevision=$revisions->find($compareId,(int)$ep['id']);}
+if($ep && !$pending && $contentLocale===$defaultLocale){$pageRevisions=$revisions->history((int)$ep['id']);$compareId=(int)($_GET['compare_revision']??0);if($compareId>0)$compareRevision=$revisions->find($compareId,(int)$ep['id']);}
 ?><!doctype html><html lang="<?= htmlspecialchars($currentLocale, ENT_QUOTES, "UTF-8") ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $adminText('admin.shell.title', 'CoreCMS Administration') ?></title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/responsive-nav.css')) ?>?v=3"></head><body class="admin-body">
 <header class="site-header"><a class="brand" href="<?= $h(CoreCMS\Core\Url::to('/')) ?>">CoreCMS</a><nav><a href="<?= $h(CoreCMS\Core\Url::to('/')) ?>"><?= $adminText('admin.shell.view_site', 'View site') ?></a><form method="post" class="inline-form"><?= CoreCMS\Core\Csrf::field() ?><button name="action" value="logout" class="link-button"><?= $adminText('admin.shell.logout', 'Log out') ?></button></form></nav></header>
 <main class="container admin"><h1><?= $adminText('admin.shell.heading', 'Dashboard') ?></h1><p><?= $adminText('admin.shell.intro', 'Manage content, menus and sector modules.') ?></p><nav class="admin-nav"><?php foreach(['overview'=>['admin.nav.overview','Genel bakış','dashboard.view'],'pages'=>['admin.nav.pages','Sayfalar','pages.manage'],'menus'=>['admin.nav.menus','Menüler','menus.manage'],'media'=>['admin.nav.media','Medya kütüphanesi','media.manage'],'seo'=>['admin.nav.seo','SEO analizi','seo.manage'],'redirects'=>['admin.nav.redirects','Yönlendirmeler','seo.manage'],'modules'=>['admin.nav.modules','Modüller','modules.manage'],'appearance'=>['admin.nav.appearance','Görünüm','appearance.manage'],'settings'=>['admin.nav.settings','Site ayarları','settings.manage'],'localization'=>['admin.nav.localization','Dil ve çeviriler','settings.manage'],'demos'=>['admin.nav.demos','Demo paketleri','demos.manage']] as $k=>$item): if($roleManager->can($role,$item[2])): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/'.($k==='overview'?'':'?section='.$k))) ?>"><?= $h($translate($item[0], $item[1])) ?></a><?php endif; endforeach ?><?php if($roleManager->can($role,'users.manage')): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php')) ?>"><?= $adminText('admin.nav.users_roles', 'Users and roles') ?></a><?php endif ?></nav>
