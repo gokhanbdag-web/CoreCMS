@@ -128,7 +128,7 @@ final class MediaLibrary
 
     private function protectDirectory(string $directory): void
     {
-        $rules = "Options -Indexes\n<FilesMatch \"\\\\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh)$\">\n  Require all denied\n</FilesMatch>\n";
+        $rules = "Options -Indexes\n<FilesMatch "\\.(?:php[0-9]?|phtml|phar|cgi|pl|py|sh)$">\n  Require all denied\n</FilesMatch>\n";
         $htaccess = $directory . DIRECTORY_SEPARATOR . '.htaccess';
         if (!is_file($htaccess)) file_put_contents($htaccess, $rules, LOCK_EX);
         $index = $directory . DIRECTORY_SEPARATOR . 'index.html';
