@@ -17,6 +17,8 @@ $adminRolesTranslations = require dirname(__DIR__) . '/database/migrations/0016_
 $adminRolesTranslations($db);
 $adminFinalTranslations = require dirname(__DIR__) . '/database/migrations/0017_admin_remaining_ui_translations.php';
 $adminFinalTranslations($db);
+$adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
+$adminUiExtras($db);
 $locales = new CoreCMS\Core\LocaleManager($db);
 $assert = static function(bool $condition, string $message): void { if (!$condition) throw new RuntimeException($message); };
 $assert($locales->defaultCode() === 'tr', 'Turkish must be seeded as default');
@@ -33,6 +35,9 @@ $assert($locales->translate('admin.localization.add_edit', 'en') === 'Add or edi
 $assert($locales->translate('admin.permission.dashboard_view', 'en') === 'View dashboard', 'role permission English translation');
 $assert($locales->translate('admin.pages.markdown_help', 'en') === 'Formatting marks are rendered as safe HTML on the public site. A blank line creates a new paragraph.', 'page editor help English translation');
 $assert($locales->translate('admin.notice.module_enabled', 'en') === 'Module enabled and its content synchronized.', 'module action notice English translation');
+$assert($locales->translate('admin.pages.open_preview', 'en') === 'Open preview', 'page preview English translation');
+$assert($locales->translate('admin.common.select', 'en') === 'Select', 'shared selection label English translation');
+$assert($locales->translate('admin.redirects.empty', 'en') === 'No redirects have been created yet.', 'redirect empty state English translation');
 $locales->saveLanguage('en', 'English');
 $locales->saveLanguage('de', 'Deutsch');
 $locales->saveTranslation('en', 'admin.dashboard.title', 'Dashboard');
@@ -50,4 +55,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (21).\n";
+echo "Localization checks passed (24).\n";
