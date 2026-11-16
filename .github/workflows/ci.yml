@@ -38,3 +38,5 @@ jobs:
         run: php tests/site-settings.php
       - name: Media library tests
         run: php tests/media-library.php
+      - name: Page body renderer tests
+        run: php tests/page-body-renderer.php
