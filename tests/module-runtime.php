@@ -76,6 +76,14 @@ try {
     $rules = (string)file_get_contents(dirname(__DIR__) . '/.htaccess');
     $assert(str_contains($rules,'RewriteRule ^modules/[^/]+/(?!assets'), 'module source directories are denied by rewrite rules');
     $assert(str_contains($rules,'RewriteRule ^modules/.*\\.(?:php'), 'executable module assets are denied by rewrite rules');
+    $assert(str_contains($rules,'assets/.*\\.(?!css
+    echo 'Module runtime checks passed (' . $checks . ').' . PHP_EOL;
+} finally {
+    $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
+    foreach($it as $f) $f->isDir()?rmdir($f->getPathname()):unlink($f->getPathname());
+    rmdir($root);
+}
+), 'unapproved module asset extensions are denied by rewrite rules');
     echo 'Module runtime checks passed (' . $checks . ').' . PHP_EOL;
 } finally {
     $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
