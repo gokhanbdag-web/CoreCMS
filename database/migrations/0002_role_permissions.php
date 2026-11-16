@@ -26,7 +26,7 @@ return static function (PDO $db): void {
     $roleId->execute(['editor']);
     $editorId = (int)$roleId->fetchColumn();
     $insertPermission = $db->prepare('INSERT IGNORE INTO core_role_permissions (role_id,permission_key) VALUES (?,?)');
-    foreach (['dashboard.view','pages.view','pages.manage','menus.manage','media.manage'] as $permission) {
+    foreach (['dashboard.view','pages.manage','menus.manage','media.manage'] as $permission) {
         $insertPermission->execute([$editorId,$permission]);
     }
 };
