@@ -166,6 +166,16 @@ if(isset($_GET['edit_menu'])) {
 }
 $pageRevisions=[]; $compareRevision=null;
 if($ep && !$pending && $contentLocale===$defaultLocale){$pageRevisions=$revisions->history((int)$ep['id']);$compareId=(int)($_GET['compare_revision']??0);if($compareId>0)$compareRevision=$revisions->find($compareId,(int)$ep['id']);}
+$formRows=$pending?[]:$formManager->forms();
+$formEdit=(!$pending&&isset($_GET['edit_form']))?$formManager->findById((int)$_GET['edit_form']):null;
+$submissionRows=$pending?[]:$formManager->submissions(null,200);
+$emailTemplateRows=$pending?[]:$emailTemplates->templates();
+$emailTemplateEdit=null;
+$emailTemplateMissing=false;
+if(!$pending&&isset($_GET['template_key'])){
+ $emailTemplateEdit=$emailTemplates->get((string)$_GET['template_key'],$contentLocale);
+ $emailTemplateMissing=$contentLocale!==$defaultLocale&&$emailTemplateEdit!==null&&(int)$emailTemplateEdit['translated']===0;
+}
 ?><!doctype html><html lang="<?= htmlspecialchars($currentLocale, ENT_QUOTES, "UTF-8") ?>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= $adminText('admin.shell.title', 'CoreCMS Administration') ?></title><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/site.css')) ?>"><link rel="stylesheet" href="<?= $h(CoreCMS\Core\Url::asset('css/responsive-nav.css')) ?>?v=3"></head><body class="admin-body">
 <header class="site-header"><a class="brand" href="<?= $h(CoreCMS\Core\Url::to('/')) ?>">CoreCMS</a><nav><a href="<?= $h(CoreCMS\Core\Url::to('/')) ?>"><?= $adminText('admin.shell.view_site', 'View site') ?></a><form method="post" class="inline-form"><?= CoreCMS\Core\Csrf::field() ?><button name="action" value="logout" class="link-button"><?= $adminText('admin.shell.logout', 'Log out') ?></button></form></nav></header>
 <main class="container admin"><h1><?= $adminText('admin.shell.heading', 'Dashboard') ?></h1><p><?= $adminText('admin.shell.intro', 'Manage content, menus and sector modules.') ?></p><nav class="admin-nav"><?php foreach(['overview'=>['admin.nav.overview','Genel bakış','dashboard.view'],'pages'=>['admin.nav.pages','Sayfalar','pages.manage'],'menus'=>['admin.nav.menus','Menüler','menus.manage'],'media'=>['admin.nav.media','Medya kütüphanesi','media.manage'],'seo'=>['admin.nav.seo','SEO analizi','seo.manage'],'redirects'=>['admin.nav.redirects','Yönlendirmeler','seo.manage'],'modules'=>['admin.nav.modules','Modüller','modules.manage'],'appearance'=>['admin.nav.appearance','Görünüm','appearance.manage'],'settings'=>['admin.nav.settings','Site ayarları','settings.manage'],'localization'=>['admin.nav.localization','Dil ve çeviriler','settings.manage'],'demos'=>['admin.nav.demos','Demo paketleri','demos.manage']] as $k=>$item): if($roleManager->can($role,$item[2])): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/'.($k==='overview'?'':'?section='.$k))) ?>"><?= $h($translate($item[0], $item[1])) ?></a><?php endif; endforeach ?><?php if($roleManager->can($role,'users.manage')): ?><a href="<?= $h(CoreCMS\Core\Url::to('/admin/roles.php')) ?>"><?= $adminText('admin.nav.users_roles', 'Users and roles') ?></a><?php endif ?></nav>
