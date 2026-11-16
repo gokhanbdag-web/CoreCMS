@@ -29,6 +29,6 @@ $failed = false; try { $locales->saveTranslation('de', 'x.y', 'Nicht aktiv'); } 
 $assert($failed, 'disabled language cannot receive translations');
 $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch (RuntimeException) { $failed = true; }
 $assert($failed, 'unsafe translation key rejected');
-$rows = $locales->translations('en', 'Over');
+$rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
 echo "Localization checks passed (10).\n";
