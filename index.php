@@ -8,6 +8,9 @@ if (!is_file($root . '/config.php')) {
     exit;
 }
 require $root . '/app/bootstrap.php';
+// Scheduled pages are promoted on the next public/admin request; no server cron is required.
+try { $db->exec("UPDATE core_pages SET status='published',scheduled_at=NULL WHERE status='scheduled' AND scheduled_at IS NOT NULL AND scheduled_at <= CURRENT_TIMESTAMP"); }
+catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '.$e->getMessage()); }
 
 $path = CoreCMS\Core\Url::path();
 if ($path === '/admin' || str_starts_with($path, '/admin/')) {
@@ -27,7 +30,7 @@ if ($runtime->dispatch($path, (string)($_SERVER['REQUEST_METHOD'] ?? 'GET'))) ex
 $slug = trim($path, '/');
 $page = null;
 if ($slug !== '') {
-    $stmt = $db->prepare("SELECT title,body FROM core_pages WHERE slug=? AND status='published' LIMIT 1");
+    $stmt = $db->prepare("SELECT title,body,seo_title,seo_description,canonical_url FROM core_pages WHERE slug=? AND status='published' LIMIT 1");
     $stmt->execute([$slug]);
     $page = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
@@ -43,7 +46,10 @@ $homeEyebrow = (string)($settings['home_eyebrow'] ?? 'MODÜLER İÇERİK YÖNET�
 $homeTitle = (string)($settings['home_title'] ?? 'Tek çekirdek.');
 $homeAccentTitle = (string)($settings['home_accent_title'] ?? 'Sınırsız sektör.');
 $homeDescription = (string)($settings['home_description'] ?? 'CoreCMS kurulumu tamamlandı. Sektör modülleri kendi sayfalarını, iş akışlarını ve tasarım katmanlarını bağımsız olarak ekler.');
-$pageTitle = $page ? (string)$page['title'] : $siteName;
+$pageTitle = $page ? (string)(($page['seo_title'] ?? '') !== '' ? $page['seo_title'] : $page['title']) : $siteName;
+$metaDescription = $page ? (string)($page['seo_description'] ?? '') : $homeDescription;
+$canonicalUrl = $page ? (string)($page['canonical_url'] ?? '') : '';
+if ($canonicalUrl !== '' && str_starts_with($canonicalUrl, '/')) $canonicalUrl = rtrim((string)($config['site_url'] ?? ''), '/') . $canonicalUrl;
 require_once $root . '/app/Core/MediaLibrary.php';
 require_once $root . '/app/Core/PageBodyRenderer.php';
 $pageBodyHtml = $page ? CoreCMS\Core\PageBodyRenderer::render($db, (string)$page['body'], new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath())) : '';
@@ -69,7 +75,7 @@ if ($layout !== '' && is_file($layout)) {
 }
 ?><!doctype html>
 <html lang="<?= htmlspecialchars($settings['site_language'] ?? 'tr', ENT_QUOTES, 'UTF-8') ?>">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title><link rel="stylesheet" href="<?= htmlspecialchars(CoreCMS\Core\Url::asset('css/site.css'), ENT_QUOTES, 'UTF-8') ?>"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title><?php if ($metaDescription !== ''): ?><meta name="description" content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>"><?php endif ?><?php if ($canonicalUrl !== ''): ?><link rel="canonical" href="<?= htmlspecialchars($canonicalUrl, ENT_QUOTES, 'UTF-8') ?>"><?php endif ?><link rel="stylesheet" href="<?= htmlspecialchars(CoreCMS\Core\Url::asset('css/site.css'), ENT_QUOTES, 'UTF-8') ?>"></head>
 <body><header class="site-header"><a class="brand" href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></a><nav>
 <?php foreach ($menus as $menu): ?><a href="<?= htmlspecialchars($menu['url'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($menu['label'], ENT_QUOTES, 'UTF-8') ?></a><?php endforeach; ?>
 <a href="<?= htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') ?>">Yönetim</a></nav></header>
