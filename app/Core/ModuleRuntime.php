@@ -355,19 +355,21 @@ final class ModuleRuntime
     public function renderTemplate(string $moduleId, string $templateKey, array $data = []): string
     {
         $modules=(new ModuleManager($this->db,$this->directory))->enabledModules();
-        if(!isset($modules[$moduleId])) throw new RuntimeException('Şablon için modül etkin değil.');
+        $module=null;
+        foreach($modules as $candidate) if(($candidate['id']??'')===$moduleId) { $module=$candidate; break; }
+        if(!is_array($module)) throw new RuntimeException('Şablon için modül etkin değil.');
         if(!preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$templateKey)) throw new RuntimeException('Geçersiz modül şablon anahtarı.');
-        $templates=$modules[$moduleId]['templates']??[];
+        $templates=$module['templates']??[];
         $relative=is_array($templates)?($templates[$templateKey]??null):null;
         if(!is_string($relative)||$relative===''||str_starts_with($relative,'/')||str_contains($relative,'..')||str_contains($relative,'\\')) {
             throw new RuntimeException('Modül şablonu tanımlanmamış veya yolu geçersiz.');
         }
-        $root=realpath($modules[$moduleId]['_path'].'/templates');
+        $root=realpath($module['_path'].'/templates');
         $file=$root!==false?realpath($root.'/'.$relative):false;
         if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)||strtolower(pathinfo($file,PATHINFO_EXTENSION))!=='php') {
             throw new RuntimeException('Modül şablon dosyası bulunamadı.');
         }
-        $db=$this->db; $module=$modules[$moduleId]; $runtime=$this;
+        $db=$this->db; $runtime=$this;
         extract($data,EXTR_SKIP);
         ob_start();
         try {
@@ -388,12 +390,14 @@ final class ModuleRuntime
             throw new RuntimeException('Geçersiz modül varlığı yolu.');
         }
         $modules=(new ModuleManager($this->db,$this->directory))->enabledModules();
-        if(!isset($modules[$moduleId])) throw new RuntimeException('Varlık için modül etkin değil.');
-        $declared=$modules[$moduleId]['assets']??[];
+        $module=null;
+        foreach($modules as $candidate) if(($candidate['id']??'')===$moduleId) { $module=$candidate; break; }
+        if(!is_array($module)) throw new RuntimeException('Varlık için modül etkin değil.');
+        $declared=$module['assets']??[];
         if(!is_array($declared)||!in_array($relativePath,array_values($declared),true)) {
             throw new RuntimeException('Modül varlığı manifest içinde tanımlı değil.');
         }
-        $root=realpath($modules[$moduleId]['_path'].'/assets');
+        $root=realpath($module['_path'].'/assets');
         $file=$root!==false?realpath($root.'/'.$relativePath):false;
         $allowed=['css','js','svg','png','jpg','jpeg','webp','gif','ico','woff','woff2','ttf','otf','avif'];
         if($root===false||$file===false||!str_starts_with($file,$root.DIRECTORY_SEPARATOR)||!is_file($file)
