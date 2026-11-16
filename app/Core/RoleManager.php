@@ -10,7 +10,6 @@ final class RoleManager
 {
     private const PERMISSIONS = [
         'dashboard.view' => 'Kontrol panelini görüntüleme',
-        'pages.view' => 'Sayfaları görüntüleme',
         'pages.manage' => 'Sayfa oluşturma ve düzenleme',
         'menus.manage' => 'Menüleri yönetme',
         'media.manage' => 'Medya kütüphanesini yönetme',
@@ -59,7 +58,7 @@ final class RoleManager
         $key=strtolower(trim($key));
         $name=trim($name);
         if (!preg_match('/^[a-z][a-z0-9_]{1,39}$/',$key) || in_array($key,['admin','super_admin'],true)) throw new RuntimeException('Rol anahtarı 2-40 karakter olmalı; harf, rakam ve alt çizgi kullanılabilir.');
-        if ($name==='' || mb_strlen($name)>100) throw new RuntimeException('Rol adı zorunludur ve 100 karakteri aşamaz.');
+        if ($name==='' || strlen($name)>400) throw new RuntimeException('Rol adı zorunludur ve 100 karakteri aşamaz.');
         $allowed=array_keys(self::PERMISSIONS);
         $permissions=array_values(array_unique(array_filter($permissions,static fn($p)=>is_string($p)&&in_array($p,$allowed,true))));
         $this->db->beginTransaction();
@@ -68,6 +67,10 @@ final class RoleManager
                 $stmt=$this->db->prepare('SELECT role_key,is_system FROM core_roles WHERE id=?');
                 $stmt->execute([$id]); $existing=$stmt->fetch(PDO::FETCH_ASSOC);
                 if (!$existing || (int)$existing['is_system']===1) throw new RuntimeException('Sistem rolleri düzenlenemez.');
+                if ($existing['role_key'] !== $key) {
+                    $moveUsers=$this->db->prepare('UPDATE core_users SET role=? WHERE role=?');
+                    $moveUsers->execute([$key,$existing['role_key']]);
+                }
                 $stmt=$this->db->prepare('UPDATE core_roles SET role_key=?,name=? WHERE id=?');
                 $stmt->execute([$key,$name,$id]);
             } else {
