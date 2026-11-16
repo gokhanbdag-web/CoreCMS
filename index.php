@@ -117,6 +117,9 @@ if ($theme) {
             'menus'=>$menus,
             'path'=>$path,
             'siteName'=>$siteName,
+            'currentLocale'=>$currentLocale,
+            'availableLocales'=>$availableLocales,
+            'translate'=>$translate,
         ]);
         $themeCss = '';
         $themeJs = '';
