@@ -35,9 +35,9 @@ foreach ([['//evil.test','/x'],['/x','https://evil.test'],['/loop','/loop'],['/a
 $redirects->delete($id);
 if ($redirects->resolve('/eski-yol') !== null) throw new RuntimeException('Redirect deletion failed.');
 
-$db->exec("INSERT INTO core_pages(id,title,slug,body,status,seo_title,seo_description,canonical_url) VALUES
- (1,'Hakkımızda','hakkimizda','".str_repeat('örnek içerik ',45)."\\n## Ayrıntılar\\n[İletişim](/iletisim)','published','Hakkımızda sayfası için yeterince uzun SEO başlığı','Bu açıklama arama sonuçlarında sayfayı doğru biçimde anlatan ve ziyaretçiyi içeriğe davet eden kapsamlı bir meta açıklama metnidir.','/hakkimizda'),
- (2,'İletişim','iletisim','İletişim sayfası','published','','','','')");
+$insert = $db->prepare('INSERT INTO core_pages(id,title,slug,body,status,seo_title,seo_description,canonical_url) VALUES(?,?,?,?,?,?,?,?)');
+$insert->execute([1,'Hakkımızda','hakkimizda',str_repeat('örnek içerik ',45)."\n## Ayrıntılar\n[İletişim](/iletisim)",'published','Hakkımızda sayfası için yeterince uzun SEO başlığı','Bu açıklama arama sonuçlarında sayfayı doğru biçimde anlatan ve ziyaretçiyi içeriğe davet eden kapsamlı bir meta açıklama metnidir.','/hakkimizda']);
+$insert->execute([2,'İletişim','iletisim','İletişim sayfası','published','','','']);
 $audit = CoreCMS\Core\SeoAnalyzer::audit($db);
 if (count($audit['pages']) !== 2 || count($audit['broken_links']) !== 0) throw new RuntimeException('Internal link audit failed for valid links.');
 $db->exec("UPDATE core_pages SET body='[Kırık](/olmayan-sayfa)' WHERE id=1");
