@@ -34,7 +34,7 @@ try {
   if($action==='media_delete') { if($pending) throw new RuntimeException('Önce bekleyen veritabanı migrasyonlarını uygulayın.'); $mediaLibrary->delete((int)($_POST['media_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=media&deleted=1')); exit; }
   if($action==='site_settings_save') { $siteSettings->save($_POST); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=settings&saved=1')); exit; }
   if($action==='theme_save') { $themeManager->activate((string)($_POST['theme_module']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=appearance&saved=1')); exit; }
-  if($action==='page_save') { $id=(int)($_POST['id']??0); if($pending) throw new RuntimeException('Sayfa revizyonları için bekleyen veritabanı migrasyonlarını önce uygulayın.'); if($id>0) $revisions->snapshot($id,(int)($_SESSION['corecms_user_id']??0)); $content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&saved=1')); exit; }
+  if($action==='page_save') { $id=(int)($_POST['id']??0); if($pending) throw new RuntimeException('Sayfa revizyonları için bekleyen veritabanı migrasyonlarını önce uygulayın.'); if($id>0) $revisions->snapshot($id,(int)($_SESSION['corecms_user_id']??0)); $content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft'),(string)($_POST['seo_title']??''),(string)($_POST['seo_description']??''),(string)($_POST['canonical_url']??''),isset($_POST['scheduled_at'])?(string)$_POST['scheduled_at']:null); if($id>0)$autosaves->clear($id,(int)($_SESSION['corecms_user_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&saved=1')); exit; }
   if($action==='page_revision_restore') { if($pending) throw new RuntimeException('Önce bekleyen veritabanı migrasyonlarını uygulayın.'); $restoredId=$revisions->restore((int)($_POST['revision_id']??0),(int)($_SESSION['corecms_user_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&edit_page='.$restoredId.'&restored=1')); exit; }
   if($action==='page_detach') { $content->detachPage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&detached=1')); exit; }
   if($action==='page_delete') { $content->deletePage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&deleted=1')); exit; }
@@ -154,4 +154,32 @@ document.getElementById('page-preview-button')?.addEventListener('click',functio
  });
  document.body.appendChild(preview); preview.submit(); preview.remove();
 });
+</script><script>
+(function(){
+ const form=document.querySelector('.editor-form'); if(!form)return;
+ const status=document.getElementById('autosave-status');
+ const pageId=form.querySelector('[name="id"]')?.value||'0';
+ const fields=['title','slug','body','seo_title','seo_description','canonical_url'];
+ let timer=null,working=false;
+ function say(message){if(status)status.textContent=message;}
+ function save(){
+  if(pageId==='0'){say('Otomatik kayıt için önce sayfayı bir kez kaydedin.');return;}
+  if(working)return;working=true;say('Otomatik kaydediliyor…');
+  const data=new URLSearchParams();
+  data.set('_csrf',form.querySelector('[name="_csrf"]')?.value||'');data.set('page_id',pageId);
+  fields.forEach(function(name){const field=form.querySelector('[name="'+name+'"]');data.set(name,field?.value||'');});
+  fetch('<?= $h(CoreCMS\Core\Url::to('/admin/autosave.php')) ?>',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:data.toString()})
+   .then(function(response){return response.json().then(function(json){if(!response.ok||!json.ok)throw new Error(json.message||'Kayıt başarısız');return json;});})
+   .then(function(){say('Otomatik kaydedildi · '+new Date().toLocaleTimeString());})
+   .catch(function(error){say(error.message||'Otomatik kayıt yapılamadı.');})
+   .finally(function(){working=false;});
+ }
+ fields.forEach(function(name){form.querySelector('[name="'+name+'"]')?.addEventListener('input',function(){clearTimeout(timer);say('Değişiklikler bekliyor…');timer=setTimeout(save,1200);});});
+ document.getElementById('restore-autosave')?.addEventListener('click',function(){
+  const snapshot=<?= json_encode($pageAutosave ?: null, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_AMP|JSON_HEX_QUOT) ?>;
+  if(!snapshot)return;
+  fields.forEach(function(name){const field=form.querySelector('[name="'+name+'"]');if(field&&snapshot[name]!==undefined)field.value=snapshot[name];});
+  say('Otomatik taslak geri yüklendi; kaydetmeyi unutmayın.');
+ });
+})();
 </script><?php endif ?></body></html>
