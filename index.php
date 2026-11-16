@@ -9,7 +9,7 @@ if (!is_file($root . '/config.php')) {
 require $root . '/app/bootstrap.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$base = rtrim(str_replace('\\\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+$base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
     $path = substr($path, strlen($base)) ?: '/';
 }
@@ -21,7 +21,7 @@ if ($path === '/admin' || str_starts_with($path, '/admin/')) {
     exit;
 }
 
-$core = new CoreCMS\\Core\\ModuleManager($db, $root . '/modules');
+$core = new CoreCMS\Core\ModuleManager($db, $root . '/modules');
 $modules = $core->enabledModules();
 http_response_code(200);
 ?><!doctype html>
