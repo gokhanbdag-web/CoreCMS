@@ -17,6 +17,7 @@ require_once dirname(__DIR__).'/app/Core/ContentManager.php';
 require_once dirname(__DIR__).'/app/Core/ThemeManager.php';
 $modules=new CoreCMS\Core\ModuleManager($db,dirname(__DIR__).'/modules');
 $content=new CoreCMS\Core\ContentManager($db);
+$themeManager=new CoreCMS\Core\ThemeManager($db,dirname(__DIR__).'/modules');
 $migrator=new CoreCMS\Core\Migrator($db,dirname(__DIR__).'/database/migrations');
 $pending=$migrator->pending(); $notice=$error=null; $action=(string)($_POST['action']??'');
 try {
