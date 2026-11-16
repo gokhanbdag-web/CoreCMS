@@ -9,6 +9,7 @@ Options -Indexes
   RewriteRule ^(?:app|database|storage|tests|deploy)/ - [F,L,NC]
   RewriteRule ^modules/.*\.(?:php[0-9]?|phtml|phar|pht)$ - [F,L,NC]
   RewriteRule ^modules/[^/]+/(?!assets(?:/|$)).+ - [F,L,NC]
+  RewriteRule ^modules/[^/]+/assets/.*\.(?!css$|js$|svg$|png$|jpe?g$|webp$|avif$|gif$|ico$|woff2?$|ttf$|otf$)[A-Za-z0-9]+$ - [F,L,NC]
   RewriteRule ^modules/[^/]+/assets/(?:.*/)?\.[^/]+$ - [F,L,NC]
   RewriteRule ^\.git(?:/|$) - [F,L,NC]
   RewriteCond %{REQUEST_FILENAME} !-f
