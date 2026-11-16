@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__).'/app/Core/RoleManager.php';
 
-use CoreCMS\\Core\\RoleManager;
+use CoreCMS\Core\RoleManager;
 use PDO;
 
 if (!in_array('sqlite', PDO::getAvailableDrivers(), true)) {
