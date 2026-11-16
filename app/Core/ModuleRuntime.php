@@ -224,7 +224,7 @@ final class ModuleRuntime
                         $result['deleted_pages']++;
                     } else {
                         if ((string)($page['source_module'] ?? '') === $moduleId) {
-                            $detach = $this->db->prepare('UPDATE core_pages SET source_module=NULL WHERE id=?');
+                            $detach = $this->db->prepare('UPDATE core_pages SET source_module=NULL,source_demo=NULL WHERE id=?');
                             $detach->execute([$contentId]);
                         }
                         $preserve = $this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
@@ -252,7 +252,7 @@ final class ModuleRuntime
                         $result['deleted_menus']++;
                     } else {
                         if ((string)($menu['source_module'] ?? '') === $moduleId) {
-                            $detach = $this->db->prepare('UPDATE core_menus SET source_module=NULL WHERE id=?');
+                            $detach = $this->db->prepare('UPDATE core_menus SET source_module=NULL,source_demo=NULL WHERE id=?');
                             $detach->execute([$contentId]);
                         }
                         $preserve = $this->db->prepare('UPDATE core_module_content_registry SET managed_hash=NULL WHERE module_id=? AND content_type=? AND content_key=?');
