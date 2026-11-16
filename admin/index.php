@@ -59,13 +59,13 @@ try {
    if($saveLocale!==$defaultLocale) {
     if($id<=0)throw new RuntimeException($translate('admin.content.save_base_first','Save the base-language page before adding a translation.'));
     $content->savePageTranslation($id,$saveLocale,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['seo_title']??''),(string)($_POST['seo_description']??''),(string)($_POST['canonical_url']??''),((int)($_POST['social_image_media_id']??0)>0?(int)$_POST['social_image_media_id']:null));
-    header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=pages&edit_page='.$id.'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
+    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&edit_page='.$id.'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
    }
    if($pending)throw new RuntimeException($translate('admin.error.page_revision_migrations','Apply pending database migrations before using page revisions.'));
    if($id>0)$revisions->snapshot($id,(int)($_SESSION['corecms_user_id']??0));
    $savedPageId=$content->savePage($id?:null,(string)($_POST['title']??''),(string)($_POST['slug']??''),(string)($_POST['body']??''),(string)($_POST['status']??'draft'),(string)($_POST['seo_title']??''),(string)($_POST['seo_description']??''),(string)($_POST['canonical_url']??''),isset($_POST['scheduled_at'])?(string)$_POST['scheduled_at']:null,((int)($_POST['social_image_media_id']??0)>0?(int)$_POST['social_image_media_id']:null));
    if($id>0)$autosaves->clear($id,(int)($_SESSION['corecms_user_id']??0));
-   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=pages&edit_page='.$savedPageId.'&saved=1')); exit;
+   header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&edit_page='.$savedPageId.'&saved=1')); exit;
   }
   if($action==='page_revision_restore') { if($pending) throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.')); $restoredId=$revisions->restore((int)($_POST['revision_id']??0),(int)($_SESSION['corecms_user_id']??0)); $autosaves->clear($restoredId,(int)($_SESSION['corecms_user_id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&edit_page='.$restoredId.'&restored=1')); exit; }
   if($action==='page_detach') { $content->detachPage((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=pages&detached=1')); exit; }
@@ -80,10 +80,10 @@ try {
    if($saveLocale!==$defaultLocale) {
     if($id<=0)throw new RuntimeException($translate('admin.content.save_base_first','Save the base-language menu item before adding a translation.'));
     $content->saveMenuTranslation($id,$saveLocale,(string)($_POST['label']??''),(string)($_POST['url']??''));
-    header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=menus&edit_menu='.$id.'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
+    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&edit_menu='.$id.'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
    }
    $savedMenuId=$content->saveMenu($id?:null,(string)($_POST['menu_key']??'main'),(string)($_POST['label']??''),(string)($_POST['url']??''),(int)($_POST['sort_order']??0));
-   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=menus&edit_menu='.$savedMenuId.'&saved=1')); exit;
+   header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&edit_menu='.$savedMenuId.'&saved=1')); exit;
   }
   if($action==='menu_detach') { $content->detachMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&detached=1')); exit; }
   if($action==='menu_delete') { $content->deleteMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&deleted=1')); exit; }
