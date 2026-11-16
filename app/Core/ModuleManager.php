@@ -133,7 +133,7 @@ final class ModuleManager
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return [
-            'available' => is_array($row) && (int)$row['is_reversible'] === 1,
+            'available' => is_array($row) && in_array((string)$row['status'], ['complete','partial'], true) && (int)$row['is_reversible'] === 1,
             'history_id' => is_array($row) ? (int)$row['id'] : null,
             'from_version' => is_array($row) ? (string)$row['from_version'] : null,
             'to_version' => is_array($row) ? (string)$row['to_version'] : null,
