@@ -67,7 +67,7 @@ try {
 
     $runtime = new CoreCMS\Core\ModuleRuntime($db, $root);
     $created = $runtime->syncContent('sample');
-    $assert($created === ['pages' => 2, 'menus' => 2], 'module content provisioned');
+    $assert($created === ['pages' => 2, 'menus' => 2], 'module content provisioned: ' . json_encode($created));
 
     $db->exec("UPDATE core_pages SET title='Admin edited about',seo_title='Changed SEO title' WHERE slug='sample-about'");
     $db->exec("UPDATE core_menus SET label='Admin edited menu' WHERE url='/sample-about'");
