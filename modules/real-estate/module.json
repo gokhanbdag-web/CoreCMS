@@ -10,5 +10,21 @@
   "routes": [],
   "migrations": "migrations/",
   "provisioning": {"pages": [], "menus": []},
-  "demo_packages": []
+  "demo_packages": [
+    {
+      "id": "starter",
+      "name": "Emlak Başlangıç Paketi",
+      "description": "Portföy, hakkımızda ve iletişim sayfaları ile temel menüyü kurar.",
+      "pages": {
+        "portfolio": {"title":"Satılık ve Kiralık Portföy","slug":"emlak-portfoy","body":"Portföyümüzdeki güncel satılık ve kiralık gayrimenkulleri inceleyin.\n\nHer ilan için konum, özellikler ve fiyat bilgilerini yöneticiden düzenleyebilirsiniz.","status":"published","seo_title":"Gayrimenkul Portföyü","seo_description":"Satılık ve kiralık gayrimenkul portföyümüzü keşfedin."},
+        "about": {"title":"Hakkımızda","slug":"emlak-hakkimizda","body":"Gayrimenkul danışmanlığı hizmetlerimizi ve uzman ekibimizi tanıyın.","status":"published"},
+        "contact": {"title":"İletişim","slug":"emlak-iletisim","body":"Gayrimenkul talepleriniz için bizimle iletişime geçin.","status":"published"}
+      },
+      "menus": {
+        "portfolio": {"menu_key":"main","label":"Portföy","url":"/emlak-portfoy","sort_order":10},
+        "about": {"menu_key":"main","label":"Hakkımızda","url":"/emlak-hakkimizda","sort_order":20},
+        "contact": {"menu_key":"main","label":"İletişim","url":"/emlak-iletisim","sort_order":30}
+      }
+    }
+  ]
 }
