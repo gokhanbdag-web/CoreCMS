@@ -40,6 +40,7 @@ return static function (PDO $db): void {
         "admin.submissions.archived" => ["Arşivlendi", "Archived"],
         "admin.submissions.empty" => ["Henüz form gönderisi alınmadı.", "No form submissions have been received yet."],
         "admin.email.migration_required" => ["E-posta şablonları için veritabanı güncellemesi gerekli", "A database update is required for email templates"],
+        "admin.email.create_base_first" => ["Çeviri eklemeden önce e-posta şablonunu varsayılan dilde oluşturun.", "Create the email template in the default language before adding translations."],
         "admin.email.edit" => ["E-posta şablonunu düzenle", "Edit email template"],
         "admin.email.new" => ["E-posta şablonu oluştur", "Create email template"],
         "admin.email.key" => ["Şablon anahtarı", "Template key"],
