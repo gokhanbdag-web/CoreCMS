@@ -202,7 +202,7 @@ final class ModuleManager
                 $migration($this->db);
                 $stmt = $this->db->prepare('INSERT INTO core_module_migrations (module_id,migration) VALUES (?,?)');
                 $stmt->execute([$id, $name]);
-                $this->db->commit();
+                if ($this->db->inTransaction()) $this->db->commit();
                 $applied[] = $name;
             } catch (Throwable $e) {
                 if ($this->db->inTransaction()) $this->db->rollBack();
@@ -316,7 +316,7 @@ final class ModuleManager
         if(!$status['installed']) throw new RuntimeException('Geri alınacak modül kurulu değil.');
         if($status['enabled']) throw new RuntimeException('Geri almadan önce modülü devre dışı bırakın.');
 
-        $stmt=$this->db->prepare("SELECT * FROM core_module_update_history WHERE module_id=? AND status IN ('complete','partial') ORDER BY id DESC LIMIT 1");
+        $stmt=$this->db->prepare("SELECT * FROM core_module_update_history WHERE module_id=? AND status<>'rolled_back' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$id]);
         $history=$stmt->fetch(PDO::FETCH_ASSOC);
         if(!$history || !in_array((string)$history['status'],['complete','partial'],true)) throw new RuntimeException('Geri alınabilir bir modül güncellemesi bulunamadı.');
