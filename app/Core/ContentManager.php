@@ -61,6 +61,82 @@ final class ContentManager
         return (int)$this->db->lastInsertId();
     }
 
+    public function pageTranslation(int $pageId, string $locale): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM core_page_translations WHERE page_id=? AND locale_code=? LIMIT 1');
+        $stmt->execute([$pageId, $locale]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return is_array($row) ? $row : null;
+    }
+
+    public function savePageTranslation(int $pageId, string $locale, string $title, string $slug, string $body, string $seoTitle = '', string $seoDescription = '', string $canonicalUrl = '', ?int $socialImageMediaId = null): void
+    {
+        $pageCheck = $this->db->prepare('SELECT id FROM core_pages WHERE id=?');
+        $pageCheck->execute([$pageId]);
+        if (!$pageCheck->fetchColumn()) throw new RuntimeException('Sayfa bulunamadı.');
+
+        $languageCheck = $this->db->prepare('SELECT enabled FROM core_languages WHERE locale_code=?');
+        $languageCheck->execute([$locale]);
+        if ((int)$languageCheck->fetchColumn() !== 1) throw new RuntimeException('Çeviri dili etkin olmalıdır.');
+
+        $title = trim($title);
+        $slug = self::slug($slug !== '' ? $slug : $title);
+        if ($title === '' || self::charLength($title) > 255) throw new RuntimeException('Çeviri sayfa başlığı zorunludur (en fazla 255 karakter).');
+        if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) throw new RuntimeException('Çeviri sayfa bağlantısı geçersiz.');
+
+        $seoTitle = trim($seoTitle);
+        $seoDescription = trim($seoDescription);
+        $canonicalUrl = trim($canonicalUrl);
+        if (self::charLength($seoTitle) > 255 || self::charLength($seoDescription) > 320 || strlen($canonicalUrl) > 500) {
+            throw new RuntimeException('SEO alanlarından biri izin verilen uzunluğu aşıyor.');
+        }
+        if ($canonicalUrl !== '' && !preg_match('#^(https://[^/\\s]+(?:/[^\\s]*)?|/(?!/)[^\\s]*)$#i', $canonicalUrl)) {
+            throw new RuntimeException('Canonical adresi HTTPS veya site içi yol olmalı.');
+        }
+        if ($socialImageMediaId !== null && $socialImageMediaId > 0) {
+            $mediaCheck = $this->db->prepare('SELECT id FROM core_media WHERE id=?');
+            $mediaCheck->execute([$socialImageMediaId]);
+            if (!$mediaCheck->fetchColumn()) throw new RuntimeException('Sosyal paylaşım görseli medya kütüphanesinde bulunamadı.');
+        } else {
+            $socialImageMediaId = null;
+        }
+
+        $body = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $driver = (string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $sql = $driver === 'sqlite'
+            ? 'INSERT INTO core_page_translations(page_id,locale_code,title,slug,body,seo_title,seo_description,canonical_url,social_image_media_id) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(page_id,locale_code) DO UPDATE SET title=excluded.title,slug=excluded.slug,body=excluded.body,seo_title=excluded.seo_title,seo_description=excluded.seo_description,canonical_url=excluded.canonical_url,social_image_media_id=excluded.social_image_media_id,updated_at=CURRENT_TIMESTAMP'
+            : 'INSERT INTO core_page_translations(page_id,locale_code,title,slug,body,seo_title,seo_description,canonical_url,social_image_media_id) VALUES(?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE title=VALUES(title),slug=VALUES(slug),body=VALUES(body),seo_title=VALUES(seo_title),seo_description=VALUES(seo_description),canonical_url=VALUES(canonical_url),social_image_media_id=VALUES(social_image_media_id),updated_at=CURRENT_TIMESTAMP';
+        $this->db->prepare($sql)->execute([$pageId, $locale, $title, $slug, $body, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $socialImageMediaId]);
+    }
+
+    public function menuTranslation(int $menuId, string $locale): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM core_menu_translations WHERE menu_id=? AND locale_code=? LIMIT 1');
+        $stmt->execute([$menuId, $locale]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return is_array($row) ? $row : null;
+    }
+
+    public function saveMenuTranslation(int $menuId, string $locale, string $label, string $url): void
+    {
+        $menuCheck = $this->db->prepare('SELECT id FROM core_menus WHERE id=?');
+        $menuCheck->execute([$menuId]);
+        if (!$menuCheck->fetchColumn()) throw new RuntimeException('Menü öğesi bulunamadı.');
+
+        $languageCheck = $this->db->prepare('SELECT enabled FROM core_languages WHERE locale_code=?');
+        $languageCheck->execute([$locale]);
+        if ((int)$languageCheck->fetchColumn() !== 1) throw new RuntimeException('Çeviri dili etkin olmalıdır.');
+
+        $label = trim($label);
+        if ($label === '' || self::charLength($label) > 190) throw new RuntimeException('Menü çeviri etiketi zorunludur (en fazla 190 karakter).');
+        $url = $this->safeUrl($url);
+        $driver = (string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $sql = $driver === 'sqlite'
+            ? 'INSERT INTO core_menu_translations(menu_id,locale_code,label,url) VALUES(?,?,?,?) ON CONFLICT(menu_id,locale_code) DO UPDATE SET label=excluded.label,url=excluded.url,updated_at=CURRENT_TIMESTAMP'
+            : 'INSERT INTO core_menu_translations(menu_id,locale_code,label,url) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE label=VALUES(label),url=VALUES(url),updated_at=CURRENT_TIMESTAMP';
+        $this->db->prepare($sql)->execute([$menuId, $locale, $label, $url]);
+    }
+
     public function detachPage(int $id): void
     {
         $stmt = $this->db->prepare('SELECT source_module FROM core_pages WHERE id=?');
