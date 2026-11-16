@@ -58,7 +58,7 @@ final class RoleManager
         $key=strtolower(trim($key));
         $name=trim($name);
         if (!preg_match('/^[a-z][a-z0-9_]{1,39}$/',$key) || in_array($key,['admin','super_admin'],true)) throw new RuntimeException('Rol anahtarı 2-40 karakter olmalı; harf, rakam ve alt çizgi kullanılabilir.');
-        if ($name==='' || strlen($name)>400) throw new RuntimeException('Rol adı zorunludur ve 100 karakteri aşamaz.');
+        if ($name==='' || (preg_match_all('/./us', $name) ?: 0)>100) throw new RuntimeException('Rol adı zorunludur ve 100 karakteri aşamaz.');
         $allowed=array_keys(self::PERMISSIONS);
         $permissions=array_values(array_unique(array_filter($permissions,static fn($p)=>is_string($p)&&in_array($p,$allowed,true))));
         $this->db->beginTransaction();
