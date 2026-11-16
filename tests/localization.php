@@ -23,6 +23,8 @@ $contentEditorTranslations = require dirname(__DIR__) . '/database/migrations/00
 $contentEditorTranslations($db);
 $adminErrorTranslations = require dirname(__DIR__) . '/database/migrations/0022_admin_validation_error_translations.php';
 $adminErrorTranslations($db);
+$formsUiTranslations = require dirname(__DIR__) . '/database/migrations/0024_forms_email_admin_ui_translations.php';
+$formsUiTranslations($db);
 require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
 $adminUiExtras($db);
@@ -71,4 +73,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (32).\n";
+echo "Localization checks passed (34).\n";
