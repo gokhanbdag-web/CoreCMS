@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
+require dirname(__DIR__).'/app/Core/Url.php';
 require dirname(__DIR__).'/app/Core/ModuleManager.php';
+require dirname(__DIR__).'/app/Core/ModuleRuntime.php';
 require dirname(__DIR__).'/app/Core/ThemeManager.php';
 if(!in_array('sqlite',PDO::getAvailableDrivers(),true))throw new RuntimeException('PDO SQLite required.');
 $root=sys_get_temp_dir().'/corecms-theme-'.bin2hex(random_bytes(4));mkdir($root,0700,true);
