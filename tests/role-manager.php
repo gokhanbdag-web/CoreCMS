@@ -41,8 +41,9 @@ $db->exec("INSERT INTO core_users(name,email,role) VALUES ('Editor','editor@exam
 $blocked = false;
 try { $manager->delete($roleId); } catch (RuntimeException $e) { $blocked = true; }
 $assert($blocked, 'cannot delete role assigned to a user');
-$manager->assignUser(1, 'admin', true);
-$assert($db->query('SELECT role FROM core_users WHERE id=1')->fetchColumn() === 'admin', 'assign role to user');
+$editorId = (int)$db->query("SELECT id FROM core_users WHERE email='editor@example.test'")->fetchColumn();
+$manager->assignUser($editorId, 'admin', true);
+$assert($db->query('SELECT role FROM core_users WHERE id=' . $editorId)->fetchColumn() === 'admin', 'assign role to user');
 $manager->delete($roleId);
 $assert(!$manager->roleExists('content_editor'), 'unused custom role deleted');
 
