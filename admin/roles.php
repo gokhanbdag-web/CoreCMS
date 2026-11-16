@@ -38,7 +38,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             exit;
         }
     } catch (Throwable $e) {
-        $error = CoreCMS\\Core\\AdminErrorTranslator::translate($e->getMessage(), $translate);
+        $error = CoreCMS\Core\AdminErrorTranslator::translate($e->getMessage(), $translate);
     }
 }
 $roles = $manager->roles();
