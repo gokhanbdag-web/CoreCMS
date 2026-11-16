@@ -34,6 +34,16 @@ if ($path === '/robots.txt') {
     echo CoreCMS\Core\TechnicalSeo::robots($settings);
     exit;
 }
+require_once $root . '/app/Core/RedirectManager.php';
+try {
+    $redirect = (new CoreCMS\Core\RedirectManager($db))->resolve($path);
+    if ($redirect) {
+        header('Location: ' . CoreCMS\Core\Url::to((string)$redirect['target_path']), true, (int)$redirect['http_code']);
+        exit;
+    }
+} catch (Throwable $e) {
+    error_log('[CoreCMS] Redirect lookup failed: ' . $e->getMessage());
+}
 if ($path === '/admin' || str_starts_with($path, '/admin/')) {
     require $root . '/admin/index.php';
     exit;
@@ -51,7 +61,7 @@ if ($runtime->dispatch($path, (string)($_SERVER['REQUEST_METHOD'] ?? 'GET'))) ex
 $slug = trim($path, '/');
 $page = null;
 if ($slug !== '') {
-    $stmt = $db->prepare("SELECT title,body,seo_title,seo_description,canonical_url FROM core_pages WHERE slug=? AND status='published' LIMIT 1");
+    $stmt = $db->prepare("SELECT p.title,p.body,p.seo_title,p.seo_description,p.canonical_url,p.social_image_media_id,m.file_path AS social_image_path,m.alt_text AS social_image_alt FROM core_pages p LEFT JOIN core_media m ON m.id=p.social_image_media_id WHERE p.slug=? AND p.status='published' LIMIT 1");
     $stmt->execute([$slug]);
     $page = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
@@ -70,6 +80,11 @@ $homeDescription = (string)($settings['home_description'] ?? 'CoreCMS kurulumu t
 $pageTitle = $page ? (string)(($page['seo_title'] ?? '') !== '' ? $page['seo_title'] : $page['title']) : $siteName;
 $metaDescription = $page ? (string)($page['seo_description'] ?? '') : $homeDescription;
 $canonicalUrl = $page ? (string)($page['canonical_url'] ?? '') : '';
+if ($page && !empty($page['social_image_path'])) {
+    $socialMedia = new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath());
+    $pageSocialUrl = $socialMedia->url((string)$page['social_image_path']);
+    if ($pageSocialUrl !== '') { $settings['seo_social_image'] = $pageSocialUrl; $settings['seo_social_image_alt'] = (string)($page['social_image_alt'] ?? ''); }
+}
 
 require_once $root . '/app/Core/MediaLibrary.php';
 require_once $root . '/app/Core/PageBodyRenderer.php';
