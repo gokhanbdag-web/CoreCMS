@@ -19,6 +19,9 @@ $assert($row['slug']==='hakkimizda','slug generated');
 $cm->savePageTranslation($id,'en','About us','about-us','Welcome to our website.','About us','Learn more about us.','/about-us');
 $pageTranslation=$cm->pageTranslation($id,'en');
 $assert($pageTranslation && $pageTranslation['title']==='About us' && $pageTranslation['slug']==='about-us' && str_contains($pageTranslation['body'],'Welcome'), 'page translation saved');
+$localizedPage=$cm->publishedPage('about-us','en');
+$assert($localizedPage && $localizedPage['title']==='About us' && $localizedPage['base_slug']==='hakkimizda','published page resolves translated slug and content');
+$assert($cm->pageSlugForLocale($id,'en')==='about-us' && $cm->pageSlugForLocale($id,'tr')==='hakkimizda','locale-specific page slug lookup');
 $cm->savePageTranslation($id,'en','About our company','about-us','Updated English body');
 $assert($cm->pageTranslation($id,'en')['title']==='About our company','page translation upsert');
 $assert($db->query('SELECT title FROM core_pages WHERE id='.(int)$id)->fetchColumn()==='Hakkımızda','base page remains unchanged by translation save');
@@ -44,6 +47,8 @@ $assert($db->query('SELECT url FROM core_menus')->fetchColumn()==='https://examp
 $cm->saveMenuTranslation($menu,'en','Start page','/start');
 $menuTranslation=$cm->menuTranslation($menu,'en');
 $assert($menuTranslation && $menuTranslation['label']==='Start page' && $menuTranslation['url']==='/start','menu translation saved');
+$localizedMenus=$cm->menusForLocale('main','en');
+$assert(count($localizedMenus)===1 && $localizedMenus[0]['label']==='Start page' && $localizedMenus[0]['url']==='/start','public menu uses localized label and URL');
 $cm->saveMenuTranslation($menu,'en','Home','/home');
 $assert($cm->menuTranslation($menu,'en')['label']==='Home','menu translation upsert');
 $failed=false;try{$cm->saveMenuTranslation($menu,'de','Startseite','/startseite');}catch(RuntimeException){$failed=true;}
