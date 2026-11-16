@@ -16,8 +16,8 @@
 - [x] Media library and safe uploads
 - [x] SEO metadata and sitemap
 - [x] Locale registry, default-language selection and translation editor foundation
-- [ ] Extract existing admin/frontend UI strings into translation keys
-- [ ] Per-language page/menu content variants
+- [x] Extract built-in admin/frontend system UI strings into translation keys
+- [x] Per-language page/menu content variants (page body/slug/SEO and menu label/URL)
 - [x] Site settings UI
 - [ ] Forms and email templates
 - [x] Theme and template registry
