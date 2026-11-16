@@ -104,7 +104,12 @@ final class ModuleRuntime
             if (!preg_match('/^[a-z0-9][a-z0-9._-]{0,99}$/', $key)) continue;
             $stmt = $this->db->prepare('SELECT content_id FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
             $stmt->execute([$moduleId, 'page', $key]);
-            if ($stmt->fetchColumn()) continue;
+            $registeredId = (int)$stmt->fetchColumn();
+            if ($registeredId > 0) {
+                if ($this->registeredContentExists('page', $registeredId)) continue;
+                $cleanup = $this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
+                $cleanup->execute([$moduleId, 'page', $key]);
+            }
             $title = trim((string)($page['title'] ?? ''));
             $slug = trim((string)($page['slug'] ?? ''));
             if ($title === '' || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) continue;
@@ -112,7 +117,9 @@ final class ModuleRuntime
             try {
                 $stmt->execute([$title, $slug, htmlspecialchars((string)($page['body'] ?? ''), ENT_QUOTES, 'UTF-8'), (string)($page['status'] ?? 'published'), $moduleId]);
                 $contentId = (int)$this->db->lastInsertId();
-                $this->register($moduleId, 'page', $key, $contentId);
+                $row = $this->db->prepare('SELECT title,slug,body,status,source_module FROM core_pages WHERE id=?');
+                $row->execute([$contentId]);
+                $this->register($moduleId, 'page', $key, $contentId, $this->pageHash($row->fetch(PDO::FETCH_ASSOC) ?: []));
                 $created['pages']++;
             } catch (Throwable $e) {
                 error_log('[CoreCMS] Module page provisioning skipped (' . $moduleId . '/' . $key . '): ' . $e->getMessage());
@@ -125,7 +132,12 @@ final class ModuleRuntime
             if (!preg_match('/^[a-z0-9][a-z0-9._-]{0,99}$/', $key)) continue;
             $stmt = $this->db->prepare('SELECT content_id FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
             $stmt->execute([$moduleId, 'menu', $key]);
-            if ($stmt->fetchColumn()) continue;
+            $registeredId = (int)$stmt->fetchColumn();
+            if ($registeredId > 0) {
+                if ($this->registeredContentExists('menu', $registeredId)) continue;
+                $cleanup = $this->db->prepare('DELETE FROM core_module_content_registry WHERE module_id=? AND content_type=? AND content_key=?');
+                $cleanup->execute([$moduleId, 'menu', $key]);
+            }
             $menuKey = trim((string)($menu['menu_key'] ?? 'main'));
             $label = trim((string)($menu['label'] ?? ''));
             $url = trim((string)($menu['url'] ?? ''));
@@ -133,16 +145,19 @@ final class ModuleRuntime
                 || (str_starts_with($url, '/') ? str_starts_with($url, '//') : !preg_match('/^https:\\/\\//i', $url))) continue;
             $stmt = $this->db->prepare('INSERT INTO core_menus (menu_key,label,url,sort_order,source_module,source_demo) VALUES (?,?,?,?,?,NULL)');
             $stmt->execute([$menuKey, $label, $url, (int)($menu['sort_order'] ?? 0), $moduleId]);
-            $this->register($moduleId, 'menu', $key, (int)$this->db->lastInsertId());
+            $contentId = (int)$this->db->lastInsertId();
+            $row = $this->db->prepare('SELECT menu_key,label,url,sort_order,source_module FROM core_menus WHERE id=?');
+            $row->execute([$contentId]);
+            $this->register($moduleId, 'menu', $key, $contentId, $this->menuHash($row->fetch(PDO::FETCH_ASSOC) ?: []));
             $created['menus']++;
         }
         return $created;
     }
 
-    private function register(string $moduleId, string $type, string $key, int $contentId): void
+    private function register(string $moduleId, string $type, string $key, int $contentId, string $managedHash): void
     {
-        $stmt = $this->db->prepare('INSERT INTO core_module_content_registry (module_id,content_type,content_key,content_id) VALUES (?,?,?,?)');
-        $stmt->execute([$moduleId, $type, $key, $contentId]);
+        $stmt = $this->db->prepare('INSERT INTO core_module_content_registry (module_id,content_type,content_key,content_id,managed_hash) VALUES (?,?,?,?,?)');
+        $stmt->execute([$moduleId, $type, $key, $contentId, $managedHash]);
     }
 
     private function routeMatch(string $pattern, string $path): ?array
