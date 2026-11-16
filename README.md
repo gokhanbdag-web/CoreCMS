@@ -1,0 +1,33 @@
+# CoreCMS
+
+A modular, shared-hosting-friendly PHP CMS foundation. CoreCMS is designed around one reusable core and independent sector modules, rather than a monolithic collection of unrelated features.
+
+## Requirements
+- PHP 8.1+ (PDO, PDO MySQL, JSON, OpenSSL)
+- MySQL 5.7+ / MariaDB 10.3+
+- No Composer, SSH, Node.js, or command-line installation required
+
+## Install
+1. Upload the repository contents to a PHP/MySQL hosting account.
+2. Visit the site URL. The browser installer starts automatically.
+3. Enter database credentials and the first administrator account.
+4. Sign in at `/admin`.
+
+The installer creates `config.php`; keep it private and never commit it.
+
+## Architecture
+- `app/Core`: database, migrations, module registry and shared services
+- `database/migrations`: ordered PHP migrations used by fresh installs and upgrades
+- `modules/<module-id>`: isolated sector modules and their manifests
+- `themes`: frontend theme layer
+- `installer`: browser-based installation flow
+- `admin`: core administration interface
+
+## Module contract
+Every module has a `module.json` manifest with an ID, version, minimum core version, dependencies, permissions, routes, assets and provisioning metadata. Module-specific schema changes belong in that module's `migrations/` directory. Module-owned content must be tagged with its source module/demo package so removal tools can preserve customer-created data.
+
+## Development status
+This repository starts with the CoreCMS foundation and installation pipeline. Sector modules are being built incrementally; a manifest is not a claim that a sector module is feature-complete. See `docs/ROADMAP.md`.
+
+## Security
+Do not expose `config.php`, installer files, logs or backups publicly. Use HTTPS in production. Review the security checklist before launch.
