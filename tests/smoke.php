@@ -1,0 +1,23 @@
+<?php
+declare(strict_types=1);
+
+$root = dirname(__DIR__);
+$required = [
+    'index.php', 'app/bootstrap.php', 'app/Core/Database.php',
+    'app/Core/Migrator.php', 'app/Core/ModuleManager.php',
+    'installer/index.php', 'admin/index.php',
+    'database/migrations/0001_core_schema.php'
+];
+$failed = [];
+foreach ($required as $file) {
+    if (!is_file($root . '/' . $file)) $failed[] = 'Missing: ' . $file;
+}
+foreach (glob($root . '/modules/*/module.json') ?: [] as $manifest) {
+    $data = json_decode((string)file_get_contents($manifest), true);
+    if (!is_array($data) || empty($data['id']) || empty($data['version'])) $failed[] = 'Invalid manifest: ' . $manifest;
+}
+if ($failed) {
+    fwrite(STDERR, implode(PHP_EOL, $failed) . PHP_EOL);
+    exit(1);
+}
+echo "CoreCMS smoke checks passed." . PHP_EOL;
