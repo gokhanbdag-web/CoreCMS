@@ -10,8 +10,14 @@ final class ContentManager
 {
     public function __construct(private PDO $db) {}
 
+    private static function charLength(string $value): int
+    {
+        return preg_match_all('/./us', $value, $matches) ?: 0;
+    }
+
     public static function slug(string $value): string
     {
+        $value = strtr($value, ['ç'=>'c','Ç'=>'c','ğ'=>'g','Ğ'=>'g','ı'=>'i','İ'=>'i','ö'=>'o','Ö'=>'o','ş'=>'s','Ş'=>'s','ü'=>'u','Ü'=>'u']);
         $value = strtolower(trim($value));
         $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
         return trim($value, '-');
@@ -32,7 +38,7 @@ final class ContentManager
     {
         $title = trim($title);
         $slug = self::slug($slug !== '' ? $slug : $title);
-        if ($title === '' || mb_strlen($title) > 255) throw new RuntimeException('Sayfa başlığı zorunludur (en fazla 255 karakter).');
+        if ($title === '' || self::charLength($title) > 255) throw new RuntimeException('Sayfa başlığı zorunludur (en fazla 255 karakter).');
         if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) throw new RuntimeException('Sayfa bağlantısı geçersiz.');
         if (!in_array($status, ['draft', 'published'], true)) throw new RuntimeException('Yayın durumu geçersiz.');
         $body = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -65,7 +71,7 @@ final class ContentManager
         $menuKey = trim($menuKey);
         $label = trim($label);
         if (!preg_match('/^[a-zA-Z0-9._-]{1,100}$/', $menuKey)) throw new RuntimeException('Menü anahtarı 1-100 karakter olmalı; harf, rakam, nokta, tire ve alt çizgi kullanılabilir.');
-        if ($label === '' || mb_strlen($label) > 190) throw new RuntimeException('Menü etiketi zorunludur (en fazla 190 karakter).');
+        if ($label === '' || self::charLength($label) > 190) throw new RuntimeException('Menü etiketi zorunludur (en fazla 190 karakter).');
         $url = $this->safeUrl($url);
         if ($id !== null) {
             $check = $this->db->prepare('SELECT source_module FROM core_menus WHERE id=?');
