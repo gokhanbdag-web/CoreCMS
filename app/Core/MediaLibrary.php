@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 
 use PDO;
 use RuntimeException;
@@ -88,7 +88,7 @@ final class MediaLibrary
             );
             $stmt->execute([$name, $relative, $mime, $size, (int)$image[0], (int)$image[1], $altText, $userId > 0 ? $userId : null]);
             return (int)$this->db->lastInsertId();
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             @unlink($target);
             throw $e;
         }
