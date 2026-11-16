@@ -29,7 +29,7 @@
 - [x] Page/menu provisioning with ownership tracking
 - [x] Demo package preview/install/reset/remove
 - [x] Module update hooks and rollback strategy
-- [ ] Module-owned routes, assets, themes and templates
+- [x] Module-owned routes, assets, themes and templates
 
 ## Sector modules
 - [ ] Real estate: listings, agents, listing search/detail, lead forms
