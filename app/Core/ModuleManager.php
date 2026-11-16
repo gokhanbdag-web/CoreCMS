@@ -163,6 +163,14 @@ final class ModuleManager
         if (!isset($modules[$id])) throw new RuntimeException('Modül manifesti bulunamadı veya geçersiz.');
         $module = $modules[$id];
         $this->ensureRepositories();
+        $current = $this->status($id);
+        if ($current['installed']) {
+            if (version_compare($module['version'], (string)$current['installed_version'], '<')) {
+                throw new RuntimeException('Modül sürümü kurulu sürümden eski; kurulumla geriye düşürülemez.');
+            }
+            if ($module['version'] === $current['installed_version']) return [];
+            return $this->update($id);
+        }
 
         foreach ($module['dependencies'] as $dependency) {
             if (!isset($modules[$dependency])) throw new RuntimeException('Eksik modül bağımlılığı: ' . $dependency);
@@ -186,8 +194,9 @@ final class ModuleManager
             $stmt->execute([$id, $name]);
             if ($stmt->fetchColumn()) continue;
 
-            $migration = require $realFile;
-            if (!is_callable($migration)) throw new RuntimeException('Modül migrasyonu callable döndürmeli: ' . $name);
+            $definition = require $realFile;
+            $migration = is_callable($definition) ? $definition : (is_array($definition) ? ($definition['up'] ?? null) : null);
+            if (!is_callable($migration)) throw new RuntimeException('Modül migrasyonu callable veya up callable döndürmeli: ' . $name);
             try {
                 if (!$this->db->beginTransaction()) throw new RuntimeException('Migrasyon işlemi başlatılamadı.');
                 $migration($this->db);
