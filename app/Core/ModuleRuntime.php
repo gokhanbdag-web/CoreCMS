@@ -305,8 +305,15 @@ final class ModuleRuntime
             foreach (($module['routes'] ?? []) as $route) {
                 if (!is_array($route) || !isset($route['path'], $route['handler'])
                     || !is_string($route['path']) || !is_string($route['handler'])) continue;
-                $methods = array_map('strtoupper', (array)($route['methods'] ?? ['GET']));
-                if (!in_array(strtoupper($method), $methods, true)) continue;
+                $rawMethods = $route['methods'] ?? ['GET'];
+                if (!is_array($rawMethods)) continue;
+                $methods = [];
+                foreach ($rawMethods as $methodName) {
+                    if (!is_string($methodName)) continue;
+                    $methodName = strtoupper($methodName);
+                    if (in_array($methodName,['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'],true)) $methods[]=$methodName;
+                }
+                if (!$methods || !in_array(strtoupper($method), $methods, true)) continue;
                 if (!preg_match('#^/[A-Za-z0-9/_-]*(?:\\{[a-zA-Z][a-zA-Z0-9_]*\\}[A-Za-z0-9/_-]*)*$#D', $route['path'])) continue;
                 $params = $this->routeMatch($route['path'], $path);
                 if ($params === null) continue;
