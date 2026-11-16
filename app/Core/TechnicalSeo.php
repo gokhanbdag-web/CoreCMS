@@ -98,6 +98,8 @@ final class TechnicalSeo
             $safeImage = htmlspecialchars($image, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             $html .= '<meta property="og:image" content="' . $safeImage . '">' . "\n";
             $html .= '<meta name="twitter:image" content="' . $safeImage . '">' . "\n";
+            $imageAlt = trim((string)($settings['seo_social_image_alt'] ?? ''));
+            if ($imageAlt !== '') $html .= '<meta property="og:image:alt" content="' . htmlspecialchars($imageAlt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">' . "\n";
         }
         if ($verification !== '' && preg_match('/^[A-Za-z0-9_-]{1,200}$/', $verification)) {
             $html .= '<meta name="google-site-verification" content="' . htmlspecialchars($verification, ENT_QUOTES, 'UTF-8') . '">' . "\n";
