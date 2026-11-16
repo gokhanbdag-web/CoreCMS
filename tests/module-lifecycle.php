@@ -28,7 +28,7 @@ try {
     $module('child', ['base']);
     $db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
     $db->exec('CREATE TABLE core_modules (module_id TEXT PRIMARY KEY, version TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0)');
-    $manager = new CoreCMS\\Core\\ModuleManager($db, $root);
+    $manager = new CoreCMS\Core\ModuleManager($db, $root);
 
     try { $manager->install('child'); $assert(false, 'dependency must be installed first'); }
     catch (RuntimeException $e) { $assert(str_contains($e->getMessage(), 'Önce bağımlı modülü kurun'), 'dependency install guard'); }
