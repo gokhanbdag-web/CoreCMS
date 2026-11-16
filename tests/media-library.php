@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use CoreCMS\\Core\\MediaLibrary;
+use CoreCMS\Core\MediaLibrary;
 
 require dirname(__DIR__) . '/app/Core/MediaLibrary.php';
 
