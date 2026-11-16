@@ -32,6 +32,8 @@ jobs:
         run: php tests/role-manager.php
       - name: Module lifecycle tests
         run: php tests/module-lifecycle.php
+      - name: Non-destructive module uninstall tests
+        run: php tests/module-uninstall.php
       - name: Module runtime tests
         run: php tests/module-runtime.php
       - name: Content manager tests
