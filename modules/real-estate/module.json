@@ -1,0 +1,14 @@
+{
+  "id": "real-estate",
+  "name": "Emlak Yönetimi",
+  "description": "İlanlar, portföy, danışmanlar, arama ve emlak odaklı sayfa yapısı.",
+  "category": "Gayrimenkul",
+  "version": "0.1.0",
+  "minimum_core_version": "0.1.0",
+  "dependencies": [],
+  "permissions": ["listings.view", "listings.manage", "agents.manage"],
+  "routes": [],
+  "migrations": "migrations/",
+  "provisioning": {"pages": [], "menus": []},
+  "demo_packages": []
+}
