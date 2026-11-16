@@ -19,6 +19,7 @@ require_once dirname(__DIR__).'/app/Core/ContentManager.php';
 require_once dirname(__DIR__).'/app/Core/ThemeManager.php';
 require_once dirname(__DIR__).'/app/Core/SiteSettings.php';
 require_once dirname(__DIR__).'/app/Core/LocaleManager.php';
+require_once dirname(__DIR__).'/app/Core/AdminErrorTranslator.php';
 require_once dirname(__DIR__).'/app/Core/MediaLibrary.php';
 require_once dirname(__DIR__).'/app/Core/PageRevisionManager.php';
 require_once dirname(__DIR__).'/app/Core/PageAutosaveManager.php';
@@ -99,7 +100,7 @@ try {
 }
 if(isset($_POST['module_id'])) { $id=(string)$_POST['module_id']; if($action==='install'){$modules->install($id);$notice=$translate('admin.notice.module_installed','Module installed or updated.');} elseif($action==='enable'){$modules->enable($id);(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->syncContent($id);$notice=$translate('admin.notice.module_enabled','Module enabled and its content synchronized.');} elseif($action==='disable'){$modules->disable($id);$notice=$translate('admin.notice.module_disabled','Module disabled.');} elseif($action==='uninstall'){$result=(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->uninstall($id);$notice=sprintf($translate('admin.notice.module_uninstalled','Module removed. Modified content preserved: %d pages, %d menu items.'),$result['preserved_pages'],$result['preserved_menus']);} elseif($action==='update'){$applied=$modules->update($id);$notice=sprintf($translate('admin.notice.module_updated','Module updated. Applied migrations: %d.'),count($applied));} elseif($action==='rollback'){$rolled=$modules->rollback($id);$notice=sprintf($translate('admin.notice.module_rolled_back','Module rolled back from version %s to %s.'),$rolled['from_version'],$rolled['to_version']);} }
  }
-} catch(Throwable $e){$error=$e->getMessage();}
+} catch(Throwable $e){$error=CoreCMS\\Core\\AdminErrorTranslator::translate($e->getMessage(),$translate);}
 $section=(string)($_GET['section']??'overview'); if(!in_array($section,['overview','pages','menus','media','modules','appearance','settings','localization','seo','redirects','demos'],true))$section='overview';
 $sectionPermissions=['overview'=>'dashboard.view','pages'=>'pages.manage','menus'=>'menus.manage','media'=>'media.manage','modules'=>'modules.manage','appearance'=>'appearance.manage','settings'=>'settings.manage','localization'=>'settings.manage','seo'=>'seo.manage','redirects'=>'seo.manage','demos'=>'demos.manage'];
 if(!$roleManager->can($role,$sectionPermissions[$section]??'dashboard.view')) { http_response_code(403); exit($translate('admin.access.section_forbidden','You are not allowed to view this section.')); }
