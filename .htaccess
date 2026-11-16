@@ -1,6 +1,6 @@
 Options -Indexes
 
-<FilesMatch "^config\\.php(?:\\.install\\.lock)?$">
+<FilesMatch "^config\.php(?:\.install\.lock)?$">
   Require all denied
 </FilesMatch>
 
