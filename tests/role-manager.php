@@ -5,11 +5,11 @@ require dirname(__DIR__).'/app/Core/RoleManager.php';
 
 use CoreCMS\Core\RoleManager;
 
-if (!in_array('sqlite', \\PDO::getAvailableDrivers(), true)) {
+if (!in_array('sqlite', \PDO::getAvailableDrivers(), true)) {
     echo "Role manager tests skipped: SQLite PDO driver unavailable.".PHP_EOL;
     exit(0);
 }
-$db=new \\PDO('sqlite::memory:');
+$db=new \PDO('sqlite::memory:');
 $db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
 $db->exec("CREATE TABLE core_roles(id INTEGER PRIMARY KEY AUTOINCREMENT,role_key TEXT UNIQUE,name TEXT,is_system INTEGER DEFAULT 0)");
 $db->exec("CREATE TABLE core_role_permissions(role_id INTEGER,permission_key TEXT,PRIMARY KEY(role_id,permission_key))");
