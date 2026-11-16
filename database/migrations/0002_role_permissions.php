@@ -16,10 +16,6 @@ return static function (PDO $db): void {
         CONSTRAINT fk_core_role_permissions_role FOREIGN KEY (role_id) REFERENCES core_roles(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    $permissions = [
-        'dashboard.view','pages.manage','menus.manage','media.manage',
-        'seo.manage','modules.manage','appearance.manage','settings.manage','users.manage'
-    ];
     $insertRole = $db->prepare('INSERT IGNORE INTO core_roles (role_key,name,is_system) VALUES (?,?,0)');
     $insertRole->execute(['editor','Editör']);
     $roleId = $db->prepare('SELECT id FROM core_roles WHERE role_key=?');
