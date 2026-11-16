@@ -129,7 +129,7 @@ final class ModuleManager
     public function rollbackStatus(string $id): array
     {
         $this->ensureUpdateHistory();
-        $stmt = $this->db->prepare("SELECT id,from_version,to_version,status,is_reversible,error_text FROM core_module_update_history WHERE module_id=? AND status IN ('complete','partial') ORDER BY id DESC LIMIT 1");
+        $stmt = $this->db->prepare("SELECT id,from_version,to_version,status,is_reversible,error_text FROM core_module_update_history WHERE module_id=? AND status<>'rolled_back' ORDER BY id DESC LIMIT 1");
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return [
@@ -299,6 +299,7 @@ final class ModuleManager
             $allReversible=!$unsafeMigration;
             foreach($applied as $item) if(!$item['reversible']) $allReversible=false;
             $historyStatus=($applied || $unsafeMigration)?'partial':'failed';
+            if ($this->db->inTransaction()) $this->db->rollBack();
             $this->updateHistoryRecord($historyId,$historyStatus,$applied,$allReversible,$e->getMessage());
             throw new RuntimeException('Modül güncellemesi tamamlanamadı: '.$e->getMessage(),0,$e);
         }
@@ -318,7 +319,7 @@ final class ModuleManager
         $stmt=$this->db->prepare("SELECT * FROM core_module_update_history WHERE module_id=? AND status IN ('complete','partial') ORDER BY id DESC LIMIT 1");
         $stmt->execute([$id]);
         $history=$stmt->fetch(PDO::FETCH_ASSOC);
-        if(!$history) throw new RuntimeException('Geri alınabilir bir modül güncellemesi bulunamadı.');
+        if(!$history || !in_array((string)$history['status'],['complete','partial'],true)) throw new RuntimeException('Geri alınabilir bir modül güncellemesi bulunamadı.');
         if((int)$history['is_reversible']!==1) throw new RuntimeException('Bu güncelleme için tüm migrasyonlarda down işlemi bulunmuyor. Otomatik geri alma güvenli değil.');
 
         $migrations=json_decode((string)$history['migrations_json'],true);
@@ -356,6 +357,7 @@ final class ModuleManager
             $stmt->execute([(int)$history['id']]);
             return ['from_version'=>(string)$history['to_version'],'to_version'=>(string)$history['from_version'],'migrations'=>array_column($definitions,'name')];
         } catch(Throwable $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             $stmt=$this->db->prepare("UPDATE core_module_update_history SET status='rollback_failed',error_text=? WHERE id=?");
             $stmt->execute([$e->getMessage(),(int)$history['id']]);
             throw new RuntimeException('Modül geri alma işlemi tamamlanamadı; manuel veritabanı kontrolü gerekli: '.$e->getMessage(),0,$e);
@@ -381,9 +383,11 @@ final class ModuleManager
         $modules = $this->discover();
         if (!isset($modules[$id])) throw new RuntimeException('Modül manifesti bulunamadı veya geçersiz.');
         $this->ensureRepositories();
-        $stmt = $this->db->prepare('SELECT 1 FROM core_module_installs WHERE module_id=?');
+        $stmt = $this->db->prepare('SELECT version FROM core_module_installs WHERE module_id=?');
         $stmt->execute([$id]);
-        if (!$stmt->fetchColumn()) throw new RuntimeException('Önce modülü kurun.');
+        $installedVersion=$stmt->fetchColumn();
+        if ($installedVersion===false) throw new RuntimeException('Önce modülü kurun.');
+        if ((string)$installedVersion !== (string)$modules[$id]['version']) throw new RuntimeException('Etkinleştirmeden önce modülü güncelleyin.');
         foreach ($modules[$id]['dependencies'] as $dependency) {
             if (!isset($modules[$dependency])) throw new RuntimeException('Eksik modül bağımlılığı: ' . $dependency);
             $stmt = $this->db->prepare('SELECT enabled FROM core_modules WHERE module_id=?');
