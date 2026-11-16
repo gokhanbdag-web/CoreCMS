@@ -141,14 +141,8 @@ final class ModuleRuntime
 
     public function theme(): ?array
     {
-        foreach ((new ModuleManager($this->db, $this->directory))->enabledModules() as $module) {
-            $theme = $module['theme'] ?? null;
-            if (!is_array($theme) || !isset($theme['directory']) || !is_string($theme['directory'])) continue;
-            $path = realpath($module['_path'] . '/' . $theme['directory']);
-            if ($path === false || !str_starts_with($path, $module['_path'] . DIRECTORY_SEPARATOR) || !is_dir($path)) continue;
-            return ['module_id' => $module['id'], 'name' => (string)($theme['name'] ?? $module['name']), 'path' => $path];
-        }
-        return null;
+        require_once __DIR__ . '/ThemeManager.php';
+        return (new ThemeManager($this->db, $this->directory))->active();
     }
 
     public function assetUrl(string $moduleId, string $relativePath): string
