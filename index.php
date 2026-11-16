@@ -96,13 +96,13 @@ if ($page) {
     echo '<article class="content-page"><h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
     echo '<div class="content-body">' . $pageBodyHtml . '</div></article>';
 } elseif ($path === '/') {
-    echo '<section class="hero"><span class="eyebrow">' . htmlspecialchars($homeEyebrow, ENT_QUOTES, 'UTF-8') . '</span><h1>' . htmlspecialchars($homeTitle, ENT_QUOTES, 'UTF-8') . '<br><em>' . htmlspecialchars($homeAccentTitle, ENT_QUOTES, 'UTF-8') . '</em></h1><p>' . htmlspecialchars($homeDescription, ENT_QUOTES, 'UTF-8') . '</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">Yönetim panelini aç</a></section><section class="module-grid"><h2>Etkin modüller</h2>';
-    if (!$modules) echo '<p>Henüz etkin sektör modülü bulunmuyor.</p>';
+    echo '<section class="hero"><span class="eyebrow">' . htmlspecialchars($homeEyebrow, ENT_QUOTES, 'UTF-8') . '</span><h1>' . htmlspecialchars($homeTitle, ENT_QUOTES, 'UTF-8') . '<br><em>' . htmlspecialchars($homeAccentTitle, ENT_QUOTES, 'UTF-8') . '</em></h1><p>' . htmlspecialchars($homeDescription, ENT_QUOTES, 'UTF-8') . '</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">' . $frontText('frontend.home.admin_button', 'Open administration') . '</a></section><section class="module-grid"><h2>' . $frontText('frontend.home.enabled_modules', 'Enabled modules') . '</h2>';
+    if (!$modules) echo '<p>' . $frontText('frontend.home.no_modules', 'No sector modules are enabled yet.') . '</p>';
     foreach ($modules as $module) echo '<article class="module-card"><h3>' . htmlspecialchars($module['name'], ENT_QUOTES, 'UTF-8') . '</h3><p>' . htmlspecialchars($module['description'] ?? '', ENT_QUOTES, 'UTF-8') . '</p><small>v' . htmlspecialchars($module['version'], ENT_QUOTES, 'UTF-8') . '</small></article>';
     echo '</section>';
 } else {
     http_response_code(404);
-    echo '<section class="content-page"><h1>Sayfa bulunamadı</h1><p>Aradığınız içerik mevcut değil.</p></section>';
+    echo '<section class="content-page"><h1>' . $frontText('frontend.404.title', 'Page not found') . '</h1><p>' . $frontText('frontend.404.description', 'The content you are looking for is unavailable.') . '</p></section>';
 }
 $contentHtml = (string)ob_get_clean();
 $theme = $runtime->theme();
