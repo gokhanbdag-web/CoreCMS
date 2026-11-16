@@ -121,10 +121,14 @@ if ($theme) {
         $themeCss = '';
         $themeJs = '';
         foreach (($theme['assets'] ?? []) as $themeAsset) {
-            $extension = strtolower(pathinfo((string)$themeAsset, PATHINFO_EXTENSION));
-            $assetUrl = $themeManager->assetUrl($theme['module_id'], (string)$themeAsset);
-            if ($extension === 'css') $themeCss .= '<link rel="stylesheet" href="' . htmlspecialchars($assetUrl, ENT_QUOTES, 'UTF-8') . '">';
-            elseif ($extension === 'js') $themeJs .= '<script src="' . htmlspecialchars($assetUrl, ENT_QUOTES, 'UTF-8') . '" defer></script>';
+            try {
+                $extension = strtolower(pathinfo((string)$themeAsset, PATHINFO_EXTENSION));
+                $assetUrl = $themeManager->assetUrl($theme['module_id'], (string)$themeAsset);
+                if ($extension === 'css') $themeCss .= '<link rel="stylesheet" href="' . htmlspecialchars($assetUrl, ENT_QUOTES, 'UTF-8') . '">';
+                elseif ($extension === 'js') $themeJs .= '<script src="' . htmlspecialchars($assetUrl, ENT_QUOTES, 'UTF-8') . '" defer></script>';
+            } catch (Throwable $assetError) {
+                error_log('[CoreCMS] Theme asset skipped: ' . $theme['module_id'] . ' ' . $assetError->getMessage());
+            }
         }
         $themeCss .= '<link rel="stylesheet" href="' . htmlspecialchars(CoreCMS\Core\Url::asset('css/responsive-nav.css'), ENT_QUOTES, 'UTF-8') . '?v=3">';
         $themeJs .= '<script src="' . htmlspecialchars(CoreCMS\Core\Url::asset('js/responsive-nav.js'), ENT_QUOTES, 'UTF-8') . '?v=3" defer></script>';
