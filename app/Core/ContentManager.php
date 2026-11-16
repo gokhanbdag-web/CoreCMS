@@ -44,7 +44,7 @@ final class ContentManager
         $seoTitle = trim($seoTitle); $seoDescription = trim($seoDescription); $canonicalUrl = trim($canonicalUrl);
         if (self::charLength($seoTitle) > 255 || self::charLength($seoDescription) > 320 || strlen($canonicalUrl) > 500) throw new RuntimeException('SEO alanlarından biri izin verilen uzunluğu aşıyor.');
         if ($canonicalUrl !== '' && !preg_match('#^(https://[^/\\s]+(?:/[^\\s]*)?|/(?!/)[^\\s]*)$#i', $canonicalUrl)) throw new RuntimeException('Canonical adresi HTTPS veya site içi yol olmalı.');
-        if ($status === 'scheduled') { if ($scheduledAt === null || strtotime($scheduledAt) === false || strtotime($scheduledAt) <= time()) throw new RuntimeException('Planlı yayın için gelecekte bir tarih ve saat seçin.'); } else { $scheduledAt = null; }
+        if ($status === 'scheduled') { $scheduledAt = $scheduledAt !== null ? str_replace('T', ' ', $scheduledAt) : null; if ($scheduledAt === null || !preg_match('/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}(?::\\d{2})?$/', $scheduledAt) || strtotime($scheduledAt) === false || strtotime($scheduledAt) <= time()) throw new RuntimeException('Planlı yayın için gelecekte geçerli bir tarih ve saat seçin.'); } else { $scheduledAt = null; }
         $body = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         if ($id !== null) {
             $check = $this->db->prepare('SELECT source_module FROM core_pages WHERE id=?');
