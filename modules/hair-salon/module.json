@@ -1,0 +1,14 @@
+{
+  "id": "hair-salon",
+  "name": "Kuaför ve Güzellik Salonu",
+  "description": "Hizmetler, ekip profilleri, fiyat listesi ve randevu akışları için sektör modülü.",
+  "category": "Güzellik",
+  "version": "0.1.0",
+  "minimum_core_version": "0.1.0",
+  "dependencies": [],
+  "permissions": ["services.manage", "staff.manage", "appointments.manage"],
+  "routes": [],
+  "migrations": "migrations/",
+  "provisioning": {"pages": [], "menus": []},
+  "demo_packages": []
+}
