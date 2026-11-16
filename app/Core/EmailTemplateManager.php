@@ -27,9 +27,9 @@ final class EmailTemplateManager
     {
         $key=strtolower(trim($key));$name=trim($name);$subject=trim($subject);
         if(!preg_match('/^[a-z][a-z0-9_.-]{1,99}$/',$key))throw new RuntimeException('Email template key is invalid.');
-        if($name===''||mb_strlen($name,'UTF-8')>190)throw new RuntimeException('Email template name is required and cannot exceed 190 characters.');
-        if($subject===''||mb_strlen($subject,'UTF-8')>255)throw new RuntimeException('Email subject is required and cannot exceed 255 characters.');
-        if(trim($body)===''||mb_strlen($body,'UTF-8')>50000)throw new RuntimeException('Email template body is required and cannot exceed 50,000 characters.');
+        if($name===''||self::length($name,'UTF-8')>190)throw new RuntimeException('Email template name is required and cannot exceed 190 characters.');
+        if($subject===''||self::length($subject,'UTF-8')>255)throw new RuntimeException('Email subject is required and cannot exceed 255 characters.');
+        if(trim($body)===''||self::length($body,'UTF-8')>50000)throw new RuntimeException('Email template body is required and cannot exceed 50,000 characters.');
         $driver=(string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         $sql=$driver==='sqlite'
             ? 'INSERT INTO core_email_templates(template_key,name,subject,body) VALUES(?,?,?,?) ON CONFLICT(template_key) DO UPDATE SET name=excluded.name,subject=excluded.subject,body=excluded.body,updated_at=CURRENT_TIMESTAMP'
@@ -47,13 +47,18 @@ final class EmailTemplateManager
         if(!$row||(int)$row['enabled']!==1)throw new RuntimeException('Email template language must be enabled.');
         if((int)$row['is_default']===1)throw new RuntimeException('Edit the base email template directly for the default language.');
         $subject=trim($subject);
-        if($subject===''||mb_strlen($subject,'UTF-8')>255)throw new RuntimeException('Email subject is required and cannot exceed 255 characters.');
-        if(trim($body)===''||mb_strlen($body,'UTF-8')>50000)throw new RuntimeException('Email template body is required and cannot exceed 50,000 characters.');
+        if($subject===''||self::length($subject,'UTF-8')>255)throw new RuntimeException('Email subject is required and cannot exceed 255 characters.');
+        if(trim($body)===''||self::length($body,'UTF-8')>50000)throw new RuntimeException('Email template body is required and cannot exceed 50,000 characters.');
         $driver=(string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
         $sql=$driver==='sqlite'
             ? 'INSERT INTO core_email_template_translations(template_key,locale_code,subject,body) VALUES(?,?,?,?) ON CONFLICT(template_key,locale_code) DO UPDATE SET subject=excluded.subject,body=excluded.body,updated_at=CURRENT_TIMESTAMP'
             : 'INSERT INTO core_email_template_translations(template_key,locale_code,subject,body) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE subject=VALUES(subject),body=VALUES(body),updated_at=CURRENT_TIMESTAMP';
         $this->db->prepare($sql)->execute([$key,$locale,$subject,$body]);
+    }
+
+    private static function length(string $value): int
+    {
+        return preg_match_all('/./us', $value) ?: 0;
     }
 
     public function render(string $key,string $locale,array $variables=[]): ?array
