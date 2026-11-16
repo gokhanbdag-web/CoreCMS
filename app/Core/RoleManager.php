@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 
 use PDO;
 use RuntimeException;
@@ -79,7 +79,7 @@ final class RoleManager
             foreach($permissions as $permission) $stmt->execute([$id,$permission]);
             $this->db->commit();
             return $id;
-        } catch(\\Throwable $e) {
+        } catch(\Throwable $e) {
             if($this->db->inTransaction()) $this->db->rollBack();
             throw $e;
         }
