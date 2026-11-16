@@ -52,7 +52,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                         $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $name);
                         $db = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
                         $config = ['database' => ['host'=>$host,'port'=>$port,'name'=>$name,'user'=>$user,'password'=>$pass]];
-                        $payload = "<?php\\ndeclare(strict_types=1);\\nreturn " . var_export($config, true) . ";\\n";
+                        $payload = "<?php\ndeclare(strict_types=1);\nreturn " . var_export($config, true) . ";\n";
                         $handle = @fopen($configFile, 'x');
                         if ($handle === false) {
                             clearstatcache(true, $configFile);
