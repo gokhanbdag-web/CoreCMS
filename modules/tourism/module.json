@@ -1,0 +1,14 @@
+{
+  "id": "tourism",
+  "name": "Turizm ve Tur",
+  "description": "Tur, aktivite, destinasyon, rezervasyon ve tur detayları için sektör modülü.",
+  "category": "Turizm",
+  "version": "0.1.0",
+  "minimum_core_version": "0.1.0",
+  "dependencies": [],
+  "permissions": ["tours.view", "tours.manage", "bookings.manage"],
+  "routes": [],
+  "migrations": "migrations/",
+  "provisioning": {"pages": [], "menus": []},
+  "demo_packages": []
+}
