@@ -23,7 +23,7 @@ The installer creates `config.php`; keep it private and never commit it.
 - `installer`: browser-based installation flow
 - `admin`: core administration interface
 
-## Module uninstall safety
+## Demo packages\n- Sector modules can declare demo packages in `module.json` with page and menu definitions.\n- Admins can preview, install, reset and remove a package from the Demo Packages section.\n- Reset/removal preserve edited or revision-backed content and avoid duplicate content on reinstall.\n\n## Module uninstall safety
 - Modules must be disabled and have no installed dependents before removal.
 - Untouched module-provisioned pages and menus are removed; edited or historically revised content is detached and preserved.
 - Module-owned database tables, customer data and migration history are retained so reinstalling does not rerun destructive schema changes.
