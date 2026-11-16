@@ -190,9 +190,11 @@ final class ContentManager
         $menuCheck->execute([$menuId]);
         if (!$menuCheck->fetchColumn()) throw new RuntimeException('Menü öğesi bulunamadı.');
 
-        $languageCheck = $this->db->prepare('SELECT enabled FROM core_languages WHERE locale_code=?');
+        $languageCheck = $this->db->prepare('SELECT enabled,is_default FROM core_languages WHERE locale_code=?');
         $languageCheck->execute([$locale]);
-        if ((int)$languageCheck->fetchColumn() !== 1) throw new RuntimeException('Çeviri dili etkin olmalıdır.');
+        $language = $languageCheck->fetch(PDO::FETCH_ASSOC);
+        if (!$language || (int)$language['enabled'] !== 1) throw new RuntimeException('Çeviri dili etkin olmalıdır.');
+        if ((int)$language['is_default'] === 1) throw new RuntimeException('Ana dilin içeriği doğrudan düzenlenmelidir.');
 
         $label = trim($label);
         if ($label === '' || self::charLength($label) > 190) throw new RuntimeException('Menü çeviri etiketi zorunludur (en fazla 190 karakter).');
