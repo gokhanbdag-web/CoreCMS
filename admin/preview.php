@@ -8,6 +8,12 @@ if (!CoreCMS\Core\Auth::check()) {
     http_response_code(403);
     exit('Bu önizleme yalnızca yetkili yönetici oturumunda kullanılabilir.');
 }
+
+if (!(new CoreCMS\Core\RoleManager($db))->can((string)($_SESSION['corecms_user_role'] ?? ''), 'pages.manage')) {
+    http_response_code(403);
+    exit('Sayfa önizleme yetkiniz bulunmuyor.');
+    exit;
+}
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
