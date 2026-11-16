@@ -21,6 +21,9 @@ $frontendTranslations = require dirname(__DIR__) . '/database/migrations/0019_fr
 $frontendTranslations($db);
 $contentEditorTranslations = require dirname(__DIR__) . '/database/migrations/0021_content_translation_admin_ui.php';
 $contentEditorTranslations($db);
+$adminErrorTranslations = require dirname(__DIR__) . '/database/migrations/0022_admin_validation_error_translations.php';
+$adminErrorTranslations($db);
+require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
 $adminUiExtras($db);
 $locales = new CoreCMS\Core\LocaleManager($db);
@@ -47,6 +50,10 @@ $assert($locales->translate('frontend.404.title', 'en') === 'Page not found', 'f
 $assert($locales->translate('frontend.language_switcher', 'en') === 'Select language', 'frontend language switcher English translation');
 $assert($locales->translate('admin.content.language_label', 'en') === 'Content language', 'content editor language label English translation');
 $assert($locales->translate('admin.content.translation_missing', 'en') === 'No translation exists for this language yet. Base-language content is shown as a starting point.', 'missing content translation helper English translation');
+$errorTranslator = static fn(string $key, string $fallback): string => $locales->translate($key, 'en', $fallback);
+$assert(CoreCMS\Core\AdminErrorTranslator::translate('Rol anahtarı 2-40 karakter olmalı; harf, rakam ve alt çizgi kullanılabilir.', $errorTranslator) === 'Role key must be 2–40 characters and contain only letters, numbers and underscores.', 'role validation error translated');
+$assert(CoreCMS\Core\AdminErrorTranslator::translate('Sayfa bağlantısı geçersiz.', $errorTranslator) === 'The page URL slug is invalid.', 'page validation error translated');
+$assert(CoreCMS\Core\AdminErrorTranslator::translate('Görsel sunucuya kaydedilemedi.', $errorTranslator) === 'The image could not be saved on the server.', 'media validation error translated');
 $locales->saveLanguage('en', 'English');
 $locales->saveLanguage('de', 'Deutsch');
 $locales->saveTranslation('en', 'admin.dashboard.title', 'Dashboard');
@@ -64,4 +71,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (29).\n";
+echo "Localization checks passed (32).\n";
