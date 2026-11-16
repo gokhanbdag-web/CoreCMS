@@ -12,7 +12,7 @@ require_once CORECMS_ROOT . '/app/Core/Database.php';
 require_once CORECMS_ROOT . '/app/Core/Migrator.php';
 require_once CORECMS_ROOT . '/app/Core/ModuleManager.php';
 
-$db = CoreCMS\\Core\\Database::connect($config['database']);
+$db = CoreCMS\Core\Database::connect($config['database']);
 $settings = [];
 try {
     $stmt = $db->query('SELECT setting_key, setting_value FROM core_settings');
