@@ -61,7 +61,7 @@ foreach ($modules as $module) {
 }
 if ($runtime->dispatch($path, (string)($_SERVER['REQUEST_METHOD'] ?? 'GET'))) exit;
 
-$contentRepository = new CoreCMS\\Core\\ContentManager($db);
+$contentRepository = new CoreCMS\Core\ContentManager($db);
 $slug = trim($path, '/');
 $page = $slug !== '' ? $contentRepository->publishedPage($slug, $currentLocale) : null;
 $menus = $contentRepository->menusForLocale('main', $currentLocale);
