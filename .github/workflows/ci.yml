@@ -34,8 +34,6 @@ jobs:
         run: php tests/module-lifecycle.php
       - name: Module update and rollback tests
         run: php tests/module-update.php
-      - name: Module update and rollback tests
-        run: php tests/module-update.php
       - name: Non-destructive module uninstall tests
         run: php tests/module-uninstall.php
       - name: Module runtime tests
