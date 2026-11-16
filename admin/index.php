@@ -55,12 +55,12 @@ try {
   if($action==='menu_delete') { $content->deleteMenu((int)($_POST['id']??0)); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=menus&deleted=1')); exit; }
   if($action==='run_core_migrations') { $notice=count($migrator->migrate()).' çekirdek migrasyonu uygulandı.'; $pending=$migrator->pending(); }
   if(in_array($action,['demo_install','demo_reset','demo_remove'],true)) {
-  $demoManager=new CoreCMS\\Core\\DemoPackageManager($db,dirname(__DIR__).'/modules');
+  $demoManager=new CoreCMS\Core\DemoPackageManager($db,dirname(__DIR__).'/modules');
   $moduleId=(string)($_POST['module_id']??''); $demoId=(string)($_POST['demo_id']??'');
   if($action==='demo_install') { $result=$demoManager->install($moduleId,$demoId); $notice=$result['already_installed']?'Demo paketi zaten kurulu.':'Demo paketi kuruldu: '.$result['created_pages'].' sayfa, '.$result['created_menus'].' menü.'; }
   elseif($action==='demo_reset') { $result=$demoManager->reset($moduleId,$demoId); $notice='Demo sıfırlandı. Korunan içerik: '.$result['preserved_pages'].' sayfa, '.$result['preserved_menus'].' menü.'; }
   else { $result=$demoManager->remove($moduleId,$demoId); $notice='Demo kaldırıldı. Korunan içerik: '.$result['preserved_pages'].' sayfa, '.$result['preserved_menus'].' menü.'; }
-  header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=demos&saved=1')); exit;
+  header('Location: '.CoreCMS\Core\Url::to('/admin/?section=demos&saved=1')); exit;
 }
 if(isset($_POST['module_id'])) { $id=(string)$_POST['module_id']; if($action==='install'){$modules->install($id);$notice='Modül kuruldu veya güncellendi.';} elseif($action==='enable'){$modules->enable($id);(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->syncContent($id);$notice='Modül etkinleştirildi ve içeriği eşitlendi.';} elseif($action==='disable'){$modules->disable($id);$notice='Modül devre dışı bırakıldı.';} elseif($action==='uninstall'){$result=(new CoreCMS\Core\ModuleRuntime($db,dirname(__DIR__).'/modules'))->uninstall($id);$notice='Modül kaldırıldı. Değiştirilmiş içerik korundu: '.$result['preserved_pages'].' sayfa, '.$result['preserved_menus'].' menü.';} }
  }
