@@ -26,6 +26,7 @@ try {
         'theme'=>['name'=>'Sample Theme','directory'=>'views/theme'],
     ], JSON_THROW_ON_ERROR));
     mkdir($dir . '/views',0700,true); mkdir($dir . '/views/theme',0700,true);
+    file_put_contents($dir . '/views/theme/layout.php', '<?php echo $contentHtml;');
     file_put_contents($dir . '/Frontend/item.php', "<?php return static function (PDO \$db, array \$params): string { return 'item:' . \$params['slug']; };");
     $db = new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
     $db->exec('CREATE TABLE core_modules (module_id TEXT PRIMARY KEY, version TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0)');
