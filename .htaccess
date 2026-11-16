@@ -1,8 +1,8 @@
 Options -Indexes
 
-<Files "config.php">
+<FilesMatch "^config\\.php(?:\\.install\\.lock)?$">
   Require all denied
-</Files>
+</FilesMatch>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
