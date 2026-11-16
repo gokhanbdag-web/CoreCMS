@@ -50,4 +50,4 @@ $assert($failed,'default locale email template uses base record');
 $failed=false;try{$emails->saveTranslation('contact.receipt','de','Betreff','Text');}catch(RuntimeException){$failed=true;}
 $assert($failed,'disabled locale email translation rejected');
 
-echo 'Forms and email template checks passed (12).'.PHP_EOL;
+echo 'Forms and email template checks passed (13).'.PHP_EOL;
