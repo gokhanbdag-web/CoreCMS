@@ -20,7 +20,7 @@ $assert(count($history) === 2, 'changed version stored');
 $restored = $manager->restore((int)$history[1]['id'], 9);
 $current = $db->query('SELECT title,body,status FROM core_pages WHERE id=1')->fetch();
 $assert($restored === 1 && $current['title'] === 'İlk başlık' && $current['body'] === 'ilk içerik' && $current['status'] === 'draft', 'revision restored');
-$assert(count($manager->history(1)) === 3, 'restore first snapshots current version');
+$assert(count($manager->history(1)) === 2, 'restore does not duplicate an already snapshotted current version');
 $failed = false;
 try { $manager->restore(999, 9); } catch (RuntimeException) { $failed = true; }
 $assert($failed, 'unknown revision rejected');
