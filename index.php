@@ -15,6 +15,7 @@ catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '
 
 
 $path = CoreCMS\Core\Url::path();
+require_once $root . '/app/Core/ContentManager.php';
 require_once $root . '/app/Core/TechnicalSeo.php';
 require_once $root . '/app/Core/MediaLibrary.php';
 if ($path === '/sitemap.xml') {
@@ -60,19 +61,17 @@ foreach ($modules as $module) {
 }
 if ($runtime->dispatch($path, (string)($_SERVER['REQUEST_METHOD'] ?? 'GET'))) exit;
 
+$contentRepository = new CoreCMS\\Core\\ContentManager($db);
 $slug = trim($path, '/');
-$page = null;
-if ($slug !== '') {
-    $stmt = $db->prepare("SELECT p.title,p.body,p.seo_title,p.seo_description,p.canonical_url,p.social_image_media_id,m.file_path AS social_image_path,m.alt_text AS social_image_alt FROM core_pages p LEFT JOIN core_media m ON m.id=p.social_image_media_id WHERE p.slug=? AND p.status='published' LIMIT 1");
-    $stmt->execute([$slug]);
-    $page = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+$page = $slug !== '' ? $contentRepository->publishedPage($slug, $currentLocale) : null;
+$menus = $contentRepository->menusForLocale('main', $currentLocale);
+$languagePaths = [];
+foreach ($availableLocales as $language) {
+    $code = (string)$language['locale_code'];
+    $languagePaths[$code] = $page
+        ? '/' . ($contentRepository->pageSlugForLocale((int)$page['id'], $code) ?? (string)$page['base_slug'])
+        : $path;
 }
-$menus = [];
-try {
-    $stmt = $db->prepare('SELECT label,url FROM core_menus WHERE menu_key=? ORDER BY sort_order,id');
-    $stmt->execute(['main']);
-    $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) { error_log('[CoreCMS] Menu load failed: ' . $e->getMessage()); }
 
 $siteName = (string)($settings['site_name'] ?? 'CoreCMS');
 $homeEyebrow = (string)($settings['home_eyebrow'] ?? 'MODÜLER İÇERİK YÖNETİMİ');
