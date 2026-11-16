@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 
 use PDO;
 use RuntimeException;
