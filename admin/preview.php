@@ -18,7 +18,7 @@ $title = trim((string)($_POST['title'] ?? ''));
 $slug = trim((string)($_POST['slug'] ?? ''));
 $body = (string)($_POST['body'] ?? '');
 $status = (string)($_POST['status'] ?? 'draft');
-if ($title === '' || strlen($title) > 1020 || strlen($body) > 1000000 || !in_array($status, ['draft','published'], true)) {
+if ($title === '' || strlen($title) > 1020 || strlen($body) > 1000000 || !in_array($status, ['draft','published','scheduled'], true)) {
     http_response_code(422);
     exit('Önizleme verileri geçersiz veya izin verilen boyutu aşıyor.');
 }
