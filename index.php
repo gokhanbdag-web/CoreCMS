@@ -15,6 +15,7 @@ catch (Throwable $e) { error_log('[CoreCMS] Scheduled publishing check failed: '
 
 $path = CoreCMS\Core\Url::path();
 require_once $root . '/app/Core/TechnicalSeo.php';
+require_once $root . '/app/Core/MediaLibrary.php';
 if ($path === '/sitemap.xml') {
     try {
         header('Content-Type: application/xml; charset=UTF-8');
