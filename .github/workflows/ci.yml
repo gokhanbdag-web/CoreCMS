@@ -32,3 +32,5 @@ jobs:
         run: php tests/module-runtime.php
       - name: Content manager tests
         run: php tests/content-manager.php
+      - name: Theme manager tests
+        run: php tests/theme-manager.php
