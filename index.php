@@ -44,10 +44,13 @@ $homeTitle = (string)($settings['home_title'] ?? 'Tek çekirdek.');
 $homeAccentTitle = (string)($settings['home_accent_title'] ?? 'Sınırsız sektör.');
 $homeDescription = (string)($settings['home_description'] ?? 'CoreCMS kurulumu tamamlandı. Sektör modülleri kendi sayfalarını, iş akışlarını ve tasarım katmanlarını bağımsız olarak ekler.');
 $pageTitle = $page ? (string)$page['title'] : $siteName;
+require_once $root . '/app/Core/MediaLibrary.php';
+require_once $root . '/app/Core/PageBodyRenderer.php';
+$pageBodyHtml = $page ? CoreCMS\Core\PageBodyRenderer::render($db, (string)$page['body'], new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath())) : '';
 ob_start();
 if ($page) {
     echo '<article class="content-page"><h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
-    echo '<div class="content-body">' . (string)$page['body'] . '</div></article>';
+    echo '<div class="content-body">' . $pageBodyHtml . '</div></article>';
 } elseif ($path === '/') {
     echo '<section class="hero"><span class="eyebrow">' . htmlspecialchars($homeEyebrow, ENT_QUOTES, 'UTF-8') . '</span><h1>' . htmlspecialchars($homeTitle, ENT_QUOTES, 'UTF-8') . '<br><em>' . htmlspecialchars($homeAccentTitle, ENT_QUOTES, 'UTF-8') . '</em></h1><p>' . htmlspecialchars($homeDescription, ENT_QUOTES, 'UTF-8') . '</p><a class="button" href="' . htmlspecialchars(CoreCMS\Core\Url::to('/admin/'), ENT_QUOTES, 'UTF-8') . '">Yönetim panelini aç</a></section><section class="module-grid"><h2>Etkin modüller</h2>';
     if (!$modules) echo '<p>Henüz etkin sektör modülü bulunmuyor.</p>';
