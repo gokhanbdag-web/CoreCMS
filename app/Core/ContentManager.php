@@ -34,25 +34,29 @@ final class ContentManager
         throw new RuntimeException('Bağlantı yalnızca site içi /yol veya HTTPS adresi olabilir.');
     }
 
-    public function savePage(?int $id, string $title, string $slug, string $body, string $status): int
+    public function savePage(?int $id, string $title, string $slug, string $body, string $status, string $seoTitle = '', string $seoDescription = '', string $canonicalUrl = '', ?string $scheduledAt = null): int
     {
         $title = trim($title);
         $slug = self::slug($slug !== '' ? $slug : $title);
         if ($title === '' || self::charLength($title) > 255) throw new RuntimeException('Sayfa başlığı zorunludur (en fazla 255 karakter).');
         if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) throw new RuntimeException('Sayfa bağlantısı geçersiz.');
-        if (!in_array($status, ['draft', 'published'], true)) throw new RuntimeException('Yayın durumu geçersiz.');
+        if (!in_array($status, ['draft', 'published', 'scheduled'], true)) throw new RuntimeException('Yayın durumu geçersiz.');
+        $seoTitle = trim($seoTitle); $seoDescription = trim($seoDescription); $canonicalUrl = trim($canonicalUrl);
+        if (self::charLength($seoTitle) > 255 || self::charLength($seoDescription) > 320 || strlen($canonicalUrl) > 500) throw new RuntimeException('SEO alanlarından biri izin verilen uzunluğu aşıyor.');
+        if ($canonicalUrl !== '' && !preg_match('#^(https://[^/\\s]+(?:/[^\\s]*)?|/(?!/)[^\\s]*)$#i', $canonicalUrl)) throw new RuntimeException('Canonical adresi HTTPS veya site içi yol olmalı.');
+        if ($status === 'scheduled') { if ($scheduledAt === null || strtotime($scheduledAt) === false || strtotime($scheduledAt) <= time()) throw new RuntimeException('Planlı yayın için gelecekte bir tarih ve saat seçin.'); } else { $scheduledAt = null; }
         $body = htmlspecialchars($body, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         if ($id !== null) {
             $check = $this->db->prepare('SELECT source_module FROM core_pages WHERE id=?');
             $check->execute([$id]);
             $source = $check->fetchColumn();
             if ($source === false) throw new RuntimeException('Sayfa bulunamadı.');
-            $stmt = $this->db->prepare('UPDATE core_pages SET title=?,slug=?,body=?,status=? WHERE id=?');
-            $stmt->execute([$title, $slug, $body, $status, $id]);
+            $stmt = $this->db->prepare('UPDATE core_pages SET title=?,slug=?,body=?,status=?,seo_title=?,seo_description=?,canonical_url=?,scheduled_at=? WHERE id=?');
+            $stmt->execute([$title, $slug, $body, $status, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $scheduledAt, $id]);
             return $id;
         }
-        $stmt = $this->db->prepare('INSERT INTO core_pages (title,slug,body,status,source_module,source_demo) VALUES (?,?,?,?,NULL,NULL)');
-        $stmt->execute([$title, $slug, $body, $status]);
+        $stmt = $this->db->prepare('INSERT INTO core_pages (title,slug,body,status,source_module,source_demo,seo_title,seo_description,canonical_url,scheduled_at) VALUES (?,?,?,?,NULL,NULL,?,?,?,?)');
+        $stmt->execute([$title, $slug, $body, $status, $seoTitle ?: null, $seoDescription ?: null, $canonicalUrl ?: null, $scheduledAt]);
         return (int)$this->db->lastInsertId();
     }
 
