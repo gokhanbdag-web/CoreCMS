@@ -98,8 +98,9 @@ final class RoleManager
         $stmt=$this->db->prepare('DELETE FROM core_roles WHERE id=?'); $stmt->execute([$id]);
     }
 
-    public function assignUser(int $userId, string $role): void
+    public function assignUser(int $userId, string $role, bool $allowAdminPromotion = false): void
     {
+        if ($role === 'admin' && !$allowAdminPromotion) throw new RuntimeException('Yönetici rolü yalnızca tam yetkili yöneticiler tarafından atanabilir.');
         if (!$this->roleExists($role)) throw new RuntimeException('Seçilen rol bulunamadı.');
         if ($role==='super_admin') throw new RuntimeException('Süper yönetici rolü bu ekrandan atanamaz.');
         $stmt=$this->db->prepare("UPDATE core_users SET role=? WHERE id=? AND role<>'super_admin'");
