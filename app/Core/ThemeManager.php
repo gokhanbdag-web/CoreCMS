@@ -22,7 +22,7 @@ final class ThemeManager
             if (!is_file($path . '/layout.php')) continue;
 
             $templates = ['layout' => 'layout.php'];
-            foreach (($theme['templates'] ?? []) as $key => $relative) {
+            foreach ((is_array($theme['templates'] ?? null) ? $theme['templates'] : []) as $key => $relative) {
                 if (!is_string($key) || !preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/',$key)
                     || !is_string($relative) || $relative === '' || str_starts_with($relative,'/')
                     || str_contains($relative,'..') || str_contains($relative,'\\')) continue;
