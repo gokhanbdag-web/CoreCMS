@@ -62,17 +62,17 @@ try {
    $fields=json_decode((string)($_POST['fields_json']??''),true);
    if(!is_array($fields))throw new RuntimeException($translate('admin.forms.fields_json_invalid','Form fields must be a valid JSON array.'));
    $formId=$formManager->save((int)($_POST['id']??0)?:null,(string)($_POST['form_key']??''),(string)($_POST['name']??''),$fields,(string)($_POST['recipient_email']??''),(string)($_POST['description']??''),(string)($_POST['success_message']??''),isset($_POST['enabled']));
-   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=forms&edit_form='.$formId.'&saved=1')); exit;
+   header('Location: '.CoreCMS\Core\Url::to('/admin/?section=forms&edit_form='.$formId.'&saved=1')); exit;
   }
   if($action==='form_delete') {
    if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
    $formManager->delete((int)($_POST['form_id']??0));
-   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=forms&deleted=1')); exit;
+   header('Location: '.CoreCMS\Core\Url::to('/admin/?section=forms&deleted=1')); exit;
   }
   if($action==='submission_status') {
    if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
    $formManager->updateSubmissionStatus((int)($_POST['submission_id']??0),(string)($_POST['status']??'new'));
-   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=submissions&saved=1')); exit;
+   header('Location: '.CoreCMS\Core\Url::to('/admin/?section=submissions&saved=1')); exit;
   }
   if($action==='email_template_save') {
    if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
@@ -81,7 +81,7 @@ try {
    if(!$localeManager->isEnabled($saveLocale))$saveLocale=$defaultLocale;
    if($saveLocale===$defaultLocale)$emailTemplates->save($templateKey,(string)($_POST['name']??''),(string)($_POST['subject']??''),(string)($_POST['body']??''));
    else $emailTemplates->saveTranslation($templateKey,$saveLocale,(string)($_POST['subject']??''),(string)($_POST['body']??''));
-   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=email_templates&template_key='.rawurlencode($templateKey).'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
+   header('Location: '.CoreCMS\Core\Url::to('/admin/?section=email_templates&template_key='.rawurlencode($templateKey).'&content_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
   }
 
   if($action==='page_save') {
