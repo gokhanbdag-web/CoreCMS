@@ -45,8 +45,8 @@ return static function (PDO $db): void {
         seo_description VARCHAR(320) NULL,
         canonical_url VARCHAR(500) NULL,
         saved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (page_id, user_id),
-        INDEX idx_page_autosaves_saved (saved_at)
+        PRIMARY KEY (page_id, user_id)
     )";
     $db->exec($driver === 'mysql' ? $autosaveSql.' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4' : $autosaveSql);
+    if ($driver === 'mysql') $db->exec('CREATE INDEX idx_page_autosaves_saved ON core_page_autosaves (saved_at)');
 };
