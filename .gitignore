@@ -1,0 +1,8 @@
+/config.php
+/storage/*
+!/storage/.gitkeep
+/vendor/
+/.env
+*.log
+*.sql
+*.zip
