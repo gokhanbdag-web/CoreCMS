@@ -16,11 +16,11 @@ final class RedirectManager
         if ($value === '' || strlen($value) > 500 || preg_match('/[\x00-\x20\x7F\\\\]/', $value)
             || !str_starts_with($value, '/') || str_starts_with($value, '//')
             || str_contains($value, '?') || str_contains($value, '#')
-            || preg_match('~(?:^|/)\.\.?(/|$)|%2f|%5c~i', $value)) {
+            || preg_match('~(?:^|/)\.\.?(/|$)|%2e|%2f|%5c~i', $value)) {
             throw new RuntimeException('Yönlendirme adresi güvenli bir site içi yol olmalı.');
         }
         if (!$allowRoot && $value === '/') throw new RuntimeException('Kaynak adres kök dizin olamaz.');
-        if (in_array($value, ['/admin','/admin/','/installer','/installer/','/sitemap.xml','/robots.txt'], true)) {
+        if ($value === '/admin' || str_starts_with($value, '/admin/') || $value === '/installer' || str_starts_with($value, '/installer/') || in_array($value, ['/sitemap.xml','/robots.txt'], true)) {
             throw new RuntimeException('Bu sistem adresi yönlendirme kaynağı olarak kullanılamaz.');
         }
         return $value;
