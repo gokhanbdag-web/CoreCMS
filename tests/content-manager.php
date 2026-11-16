@@ -82,7 +82,7 @@ $fallbackDb->exec("CREATE TABLE core_media(id INTEGER PRIMARY KEY,file_path TEXT
 $fallbackDb->exec("CREATE TABLE core_menus(id INTEGER PRIMARY KEY,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER)");
 $fallbackDb->exec("INSERT INTO core_pages(id,title,slug,body,status) VALUES(1,'Base title','base-title','Base body','published')");
 $fallbackDb->exec("INSERT INTO core_menus(id,menu_key,label,url,sort_order) VALUES(1,'main','Home','/',0)");
-$fallbackContent = new ContentManager($fallbackDb);
+$fallbackContent = new CoreCMS\Core\ContentManager($fallbackDb);
 $fallbackPage = $fallbackContent->publishedPage('base-title','en');
 $assert($fallbackPage && $fallbackPage['title']==='Base title','public page falls back while translation tables are missing');
 $assert($fallbackContent->menusForLocale('main','en')[0]['label']==='Home','public menu falls back while translation table is missing');
