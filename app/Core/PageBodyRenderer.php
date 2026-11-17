@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 use PDO;
 final class PageBodyRenderer {
  public static function render(PDO $db,string $storedBody,MediaLibrary $media,?FormRenderer $forms=null):string {
@@ -23,9 +23,9 @@ final class PageBodyRenderer {
   foreach($blocks as $block){$lines=preg_split('/\\R/u',$block)?:[];$first=trim($lines[0]??'');if($first==='')continue;
    if(isset($formHtml[$first])){$html.=$formHtml[$first];continue;}
    if(preg_match('/^(#{1,3})\\s+(.+)$/u',$first,$m)){$level=strlen($m[1])+1;$html.='<h'.$level.'>'.self::inline($m[2],$safeHtml).'</h'.$level.'>';}
-   elseif(preg_match('/^>\\s?(.*)$/u',$first,$m))$html.='<blockquote>'.self::inline(implode("\\n",array_map(static fn($v)=>preg_replace('/^>\\s?/u','',$v)??$v,$lines)),$safeHtml).'</blockquote>';
+   elseif(preg_match('/^>\\s?(.*)$/u',$first,$m))$html.='<blockquote>'.self::inline(implode("\n",array_map(static fn($v)=>preg_replace('/^>\\s?/u','',$v)??$v,$lines)),$safeHtml).'</blockquote>';
    elseif(preg_match('/^-\\s+/u',$first)){$html.='<ul>';foreach($lines as $line)if(preg_match('/^-\\s+(.+)$/u',$line,$m))$html.='<li>'.self::inline($m[1],$safeHtml).'</li>';$html.='</ul>';}
-   else $html.='<p>'.self::inline(implode("\\n",$lines),$safeHtml).'</p>';
+   else $html.='<p>'.self::inline(implode("\n",$lines),$safeHtml).'</p>';
   }return $html;
  }
  private static function inline(string $value,array $mediaHtml):string {
