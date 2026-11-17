@@ -25,10 +25,12 @@ $formId=$forms->save(null,'contact_request','Contact request',$fields,'hello@exa
 $form=$forms->findByKey('contact_request');
 $assert($form!==null&&count($form['fields'])===4,'form saved and fields decoded');
 $forms->saveFieldTranslations($formId,'en',[
+ '_form'=>['name'=>'Contact us','description'=>'Tell us how we can help.','success_message'=>'Thanks, we will reply soon.'],
  'name'=>['label'=>'Your name'],
  'interest'=>['label'=>'What are you interested in?','options'=>['Rent'=>'Lease','Buy'=>'Purchase']]
 ]);
 $translatedForm=$forms->findByKey('contact_request',true,'en');
+$assert($translatedForm['name']==='Contact us'&&$translatedForm['description']==='Tell us how we can help.'&&$translatedForm['success_message']==='Thanks, we will reply soon.','form name, description and success message translations are applied');
 $assert($translatedForm['fields'][0]['label']==='Your name','field label translation is applied for requested locale');
 $assert(($translatedForm['fields'][2]['option_labels']['Rent']??'')==='Lease','select option label translation is applied while value stays stable');
 $assert($forms->findByKey('contact_request',true,'tr')['fields'][0]['label']==='Name','default locale keeps original field labels');
@@ -36,6 +38,8 @@ $failed=false;try{$forms->saveFieldTranslations($formId,'de',['name'=>['label'=>
 $assert($failed,'disabled form translation locale rejected');
 $failed=false;try{$forms->saveFieldTranslations($formId,'en',['missing'=>['label'=>'Unknown']]);}catch(RuntimeException){$failed=true;}
 $assert($failed,'unknown form field translation rejected');
+$failed=false;try{$forms->saveFieldTranslations($formId,'en',['_form'=>['name'=>'']]);}catch(RuntimeException){$failed=true;}
+$assert($failed,'empty translated form name rejected');
 
 $submissionId=$forms->submit('contact_request','en',['name'=>'Alex','email'=>'alex@example.test','interest'=>'Rent','consent'=>'1','unexpected'=>'ignored']);
 $submission=$forms->submissions($formId,10)[0]??null;
@@ -65,4 +69,4 @@ $assert($failed,'default locale email template uses base record');
 $failed=false;try{$emails->saveTranslation('contact.receipt','de','Betreff','Text');}catch(RuntimeException){$failed=true;}
 $assert($failed,'disabled locale email translation rejected');
 
-echo 'Forms and email template checks passed (18).'.PHP_EOL;
+echo 'Forms and email template checks passed (20).'.PHP_EOL;
