@@ -54,7 +54,7 @@ final class MailQueue
             }
             $delays=[60,300,900,3600];
             $status=$attempts>=5?'failed':'pending';
-            $next=gmdate('Y-m-d H:i:s',time()+$delays[min($attempts-1,4)]);
+            $next=$status==='failed'?null:gmdate('Y-m-d H:i:s',time()+$delays[min($attempts-1,count($delays)-1)]);
             $update=$this->db->prepare('UPDATE core_mail_queue SET status=?,attempts=?,next_attempt_at=?,last_error=? WHERE id=?');
             $update->execute([$status,$attempts,$next,'Mail transport did not accept the message. '.($attempts>=5?'Manual retry is required.':'A retry has been scheduled.'),(int)$row['id']]);
             $failed++;
