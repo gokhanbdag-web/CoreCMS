@@ -33,8 +33,6 @@ $formMetadataTranslations = require dirname(__DIR__) . '/database/migrations/003
 $formMetadataTranslations($db);
 $formVisualEditorTranslations = require dirname(__DIR__) . '/database/migrations/0032_visual_form_translation_editor_labels.php';
 $formVisualEditorTranslations($db);
-$formVisualEditorTranslations = require dirname(__DIR__) . '/database/migrations/0032_visual_form_translation_editor_labels.php';
-$formVisualEditorTranslations($db);
 require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
 $adminUiExtras($db);
