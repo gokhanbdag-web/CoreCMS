@@ -14,7 +14,7 @@ Supported field types:
 - `select` (with an explicit option list)
 - `checkbox`
 
-Field keys are stable identifiers. Base labels and select option values are stored with the form. Locale-specific labels and select option labels can be edited from the form editor after choosing an enabled language. Option values remain unchanged for validation and stored submissions, while only their displayed labels are translated. The submission manager validates required fields, email addresses, select options, value lengths and enabled locale codes. Unknown submitted fields are discarded rather than persisted.
+Field keys are stable identifiers. Base labels and select option values are stored with the form. Locale-specific form names, descriptions, success messages, field labels and select option labels can be edited from the form editor after choosing an enabled language. Option values remain unchanged for validation and stored submissions, while only their displayed labels are translated. The submission manager validates required fields, email addresses, select options, value lengths and enabled locale codes. Unknown submitted fields are discarded rather than persisted.
 
 Submissions are stored in `core_form_submissions` with the form ID, locale, validated payload and a simple `new` / `read` / `archived` status. Raw IP addresses and user-agent strings are not stored. The public endpoint stores a keyed SHA-256 hash of the remote address for rate limiting; hashes older than 24 hours are pruned during submissions.
 
@@ -45,5 +45,5 @@ The queue schema is migration `0027_mail_queue.php`; its admin translations are 
 ## Remaining work
 
 - SMTP transport support for hosts that disable PHP `mail()`
-- Form labels and select option labels support per-language editing; per-language form name, description and success-message editing can be added separately
+- Form names, descriptions, success messages, field labels and select option labels support per-language editing
 - Retention controls and stronger concurrent rate-limit enforcement
