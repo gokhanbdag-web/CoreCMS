@@ -72,9 +72,29 @@ try {
    $formId=(int)($_POST['form_id']??0);
    $saveLocale=(string)($_POST['translation_locale']??'');
    if(!$localeManager->isEnabled($saveLocale))throw new RuntimeException('Form translation language must be enabled.');
-   $translations=json_decode((string)($_POST['translations_json']??''),true);
-   if(!is_array($translations))throw new RuntimeException('Form translations must be a valid JSON object.');
-   $formManager->saveFieldTranslations($formId,$saveLocale,$translations);
+   $translations=$_POST['translations']??[];
+   if(!is_array($translations))throw new RuntimeException('Form translations must be submitted as structured fields.');
+   $normalized=[];
+   $metadata=[];
+   foreach(['name','description','success_message'] as $property){
+    $value=trim((string)($translations['_form'][$property]??''));
+    if($value!=='')$metadata[$property]=$value;
+   }
+   if($metadata)$normalized['_form']=$metadata;
+   foreach($translations as $fieldKey=>$entry){
+    if($fieldKey==='_form'||!is_array($entry))continue;
+    $fieldTranslation=[];
+    $label=trim((string)($entry['label']??''));
+    if($label!=='')$fieldTranslation['label']=$label;
+    if(isset($entry['options'])&&is_array($entry['options'])){
+     foreach($entry['options'] as $optionValue=>$optionLabel){
+      $optionLabel=trim((string)$optionLabel);
+      if($optionLabel!=='')$fieldTranslation['options'][(string)$optionValue]=$optionLabel;
+     }
+    }
+    if($fieldTranslation)$normalized[(string)$fieldKey]=$fieldTranslation;
+   }
+   $formManager->saveFieldTranslations($formId,$saveLocale,$normalized);
    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=forms&edit_form='.$formId.'&translation_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
   }
   if($action==='form_delete') {
@@ -298,7 +318,21 @@ if(!$pending&&isset($_GET['template_key'])){
 <section class="content-admin"><h2><?= $adminText('admin.forms.translations_title','Translate form content') ?></h2>
 <p><?= $adminText('admin.forms.translations_help','Translate the form name, description, success message, field labels and select option labels. Original option values remain unchanged for validation.') ?></p>
 <form method="get" class="inline-form"><input type="hidden" name="section" value="forms"><input type="hidden" name="edit_form" value="<?= (int)$formEdit['id'] ?>"><label><?= $adminText('admin.content.language_label','Content language') ?><select name="translation_locale" required><option value="">—</option><?php foreach($availableLocales as $language): if($language['locale_code']===$defaultLocale)continue; ?><option value="<?= $h($language['locale_code']) ?>" <?= $formTranslationLocale===$language['locale_code']?'selected':'' ?>><?= $h($language['name']) ?> (<?= $h($language['locale_code']) ?>)</option><?php endforeach ?></select></label><button class="button secondary"><?= $adminText('admin.content.change_language','Load language') ?></button></form>
-<?php if($formTranslationLocale!==''): ?><form method="post" class="editor-form"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="form_translation_save"><input type="hidden" name="form_id" value="<?= (int)$formEdit['id'] ?>"><input type="hidden" name="translation_locale" value="<?= $h($formTranslationLocale) ?>"><label><?= $adminText('admin.forms.translations_json','Form and field translations (JSON)') ?><textarea name="translations_json" rows="12" spellcheck="false"><?= $h(json_encode($formFieldTranslations,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)) ?></textarea></label><small class="editor-help"><?= $adminText('admin.forms.translations_json_help','Example: {"_form":{"name":"Contact us","description":"Send a message","success_message":"Thanks!"},"name":{"label":"Your name"},"topic":{"label":"Topic","options":{"Sales":"Sales","Support":"Help"}}}') ?></small><button class="button"><?= $adminText('admin.common.save','Save translations') ?></button></form><?php endif ?>
+<?php if($formTranslationLocale!==''): ?>
+<form method="post" class="editor-form form-translation-editor"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="form_translation_save"><input type="hidden" name="form_id" value="<?= (int)$formEdit['id'] ?>"><input type="hidden" name="translation_locale" value="<?= $h($formTranslationLocale) ?>">
+<p class="editor-help"><?= $adminText('admin.forms.visual_translation_help','Enter translations below. Leave a field empty to keep its original text.') ?></p>
+<fieldset class="form-translation-group"><legend><?= $adminText('admin.forms.form_details','Form details') ?></legend>
+<label><?= $adminText('admin.forms.name','Form name') ?><input name="translations[_form][name]" maxlength="190" value="<?= $h($formFieldTranslations['_form']['name']??'') ?>" placeholder="<?= $h($formEdit['name']) ?>"></label>
+<label><?= $adminText('admin.forms.description','Description') ?><textarea name="translations[_form][description]" rows="2" maxlength="1000" placeholder="<?= $h($formEdit['description']??'') ?>"><?= $h($formFieldTranslations['_form']['description']??'') ?></textarea></label>
+<label><?= $adminText('admin.forms.success_message','Success message') ?><input name="translations[_form][success_message]" maxlength="500" value="<?= $h($formFieldTranslations['_form']['success_message']??'') ?>" placeholder="<?= $h($formEdit['success_message']??'') ?>"></label>
+</fieldset>
+<?php foreach($formEdit['fields'] as $translationField): $fieldKey=(string)$translationField['key']; $savedFieldTranslation=$formFieldTranslations[$fieldKey]??[]; ?>
+<fieldset class="form-translation-group"><legend><?= $h($translationField['label']) ?> <small>(<?= $h($fieldKey) ?>)</small></legend>
+<label><?= $adminText('admin.forms.field_label','Field label') ?><input name="translations[<?= $h($fieldKey) ?>][label]" maxlength="120" value="<?= $h($savedFieldTranslation['label']??'') ?>" placeholder="<?= $h($translationField['label']) ?>"></label>
+<?php if(($translationField['type']??'')==='select'): ?><div class="form-translation-options"><strong><?= $adminText('admin.forms.option_labels','Option labels') ?></strong><?php foreach(($translationField['options']??[]) as $optionValue): ?><label><?= $h($optionValue) ?><input name="translations[<?= $h($fieldKey) ?>][options][<?= $h($optionValue) ?>]" maxlength="120" value="<?= $h($savedFieldTranslation['options'][$optionValue]??'') ?>" placeholder="<?= $h($optionValue) ?>"></label><?php endforeach ?></div><?php endif ?>
+</fieldset>
+<?php endforeach ?>
+<button class="button"><?= $adminText('admin.common.save','Save translations') ?></button></form><?php endif ?>
 </section>
 <?php endif ?>
 <section class="content-admin"><h2><?= $adminText('admin.forms.list','Forms') ?></h2><div class="table-wrap"><table><thead><tr><th><?= $adminText('admin.forms.name','Name') ?></th><th><?= $adminText('admin.forms.key','Key') ?></th><th><?= $adminText('admin.forms.status','Status') ?></th><th><?= $adminText('admin.common.actions','Actions') ?></th></tr></thead><tbody><?php foreach($formRows as $formRow): ?><tr><td><?= $h($formRow['name']) ?></td><td><code><?= $h($formRow['form_key']) ?></code></td><td><?= (int)$formRow['enabled']===1?$adminText('admin.forms.enabled','Enabled'):$adminText('admin.forms.disabled','Disabled') ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=forms&edit_form='.(int)$formRow['id'])) ?>"><?= $adminText('admin.common.edit','Edit') ?></a> · <a href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=submissions&form_id='.(int)$formRow['id'])) ?>"><?= $adminText('admin.forms.view_submissions','View submissions') ?></a><form method="post" class="inline-form" onsubmit="return confirm(<?= $adminJs('admin.forms.confirm_delete','Delete this form and its submissions?') ?>)"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="form_delete"><input type="hidden" name="form_id" value="<?= (int)$formRow['id'] ?>"><button class="link-button danger"><?= $adminText('admin.common.delete','Delete') ?></button></form></td></tr><?php endforeach ?></tbody></table></div><?php if(!$formRows): ?><p><?= $adminText('admin.forms.empty','No forms have been created yet.') ?></p><?php endif ?></section>
