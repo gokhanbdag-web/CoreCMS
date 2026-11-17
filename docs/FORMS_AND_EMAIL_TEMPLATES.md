@@ -16,7 +16,7 @@ Supported field types:
 
 Field keys are stable identifiers. Labels are presentation text and can be localized in a later admin/editor phase. The submission manager validates required fields, email addresses, select options, value lengths and enabled locale codes. Unknown submitted fields are discarded rather than persisted.
 
-Submissions are stored in `core_form_submissions` with the form ID, locale, validated payload and a simple `new` / `read` / `archived` status. No IP address or user-agent is stored by this foundation.
+Submissions are stored in `core_form_submissions` with the form ID, locale, validated payload and a simple `new` / `read` / `archived` status. Raw IP addresses and user-agent strings are not stored. The public endpoint stores a keyed SHA-256 hash of the remote address for rate limiting; hashes older than 24 hours are pruned during submissions.
 
 ## Email templates
 
@@ -24,11 +24,19 @@ Base templates are stored in `core_email_templates`. Locale-specific subject/bod
 
 Templates support simple placeholders such as `{{name}}`. Placeholder values are HTML-escaped before insertion. Template content should therefore be authored as HTML email content when markup is required.
 
-## Current milestone boundary
+## Public rendering and submissions
 
-This commit provides schema, validation, persistence and regression tests. The following work remains before the feature is end-user complete:
-- Admin form builder and submission inbox
-- Admin email-template editor with locale selector
-- Public form rendering and submission endpoint
-- Mail transport configuration, delivery feedback and safe retry behavior
-- Anti-spam/rate-limit controls and retention settings
+Add a standalone shortcode to a page body on its own paragraph:
+
+`[[form:contact_request]]`
+
+The form key must match an enabled form in the admin panel. The renderer escapes labels, options and feedback; emits CSRF-protected POST forms; and includes a visually hidden honeypot. Public submissions are validated by the same form manager used by the admin layer. A keyed SHA-256 hash of the remote address is used for a per-form limit of five attempts per ten minutes; old rate-limit records are pruned after 24 hours. The secret is derived from the database password in the server-side configuration, so no extra setup is required.
+
+The rate-limit schema is migration `0025_form_submission_rate_limits.php`; public button/success translations are migration `0026_public_form_frontend_translations.php`. Apply pending core migrations from the admin dashboard before enabling public forms.
+
+## Remaining work
+
+- SMTP/PHP mail transport configuration and delivery feedback
+- Safe notification retry/queue behavior
+- Per-language field labels and option translations
+- Retention controls and stronger concurrent rate-limit enforcement
