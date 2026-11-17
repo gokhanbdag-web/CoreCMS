@@ -39,7 +39,10 @@ final class MailQueue
         $sent=0;$failed=0;
         foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
             $subject='=?UTF-8?B?'.base64_encode((string)$row['subject']).'?=';
-            $headers="From: ".$from."\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nX-Mailer: CoreCMS";
+            $fromName=trim((string)($settings['mail_from_name']??''));
+            if(preg_match('/[\\r\\n]/',$fromName))$fromName='';
+            $fromHeader=$fromName!==''?'=?UTF-8?B?'.base64_encode($fromName).'?= <'.$from.'>':$from;
+            $headers="From: ".$fromHeader."\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nX-Mailer: CoreCMS";
             $ok=false;
             try{$ok=($this->sender)((string)$row['recipient'],$subject,(string)$row['body'],$headers);}catch(\Throwable $e){error_log('[CoreCMS] Mail transport failed: '.$e->getMessage());}
             $attempts=(int)$row['attempts']+1;
