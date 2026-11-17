@@ -19,6 +19,7 @@ final class RoleManager
         'appearance.manage' => 'Tema ve görünümü yönetme',
         'settings.manage' => 'Site ayarlarını yönetme',
         'users.manage' => 'Kullanıcı ve rolleri yönetme',
+        'forms.manage' => 'Formları ve e-posta şablonlarını yönetme',
     ];
 
     public function __construct(private PDO $db) {}
