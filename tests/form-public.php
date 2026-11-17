@@ -9,8 +9,8 @@ require dirname(__DIR__).'/app/Core/PageBodyRenderer.php';
 
 if(!in_array('sqlite',PDO::getAvailableDrivers(),true))throw new RuntimeException('PDO SQLite required.');
 $db=new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
-$db->exec("CREATE TABLE core_languages(locale_code TEXT PRIMARY KEY,enabled INTEGER)");
-$db->exec("INSERT INTO core_languages VALUES('tr',1),('en',1)");
+$db->exec("CREATE TABLE core_languages(locale_code TEXT PRIMARY KEY,enabled INTEGER,is_default INTEGER DEFAULT 0)");
+$db->exec("INSERT INTO core_languages VALUES('tr',1,1),('en',1,0)");
 $migration=require dirname(__DIR__).'/database/migrations/0023_forms_and_email_templates.php';$migration($db);
 $fieldTranslationMigration=require dirname(__DIR__).'/database/migrations/0029_form_field_translations.php';$fieldTranslationMigration($db);
 $rateMigration=require dirname(__DIR__).'/database/migrations/0025_form_submission_rate_limits.php';$rateMigration($db);
