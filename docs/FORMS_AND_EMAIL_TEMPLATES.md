@@ -36,7 +36,7 @@ The rate-limit schema is migration `0025_form_submission_rate_limits.php`; publi
 
 ## Email notification delivery
 
-When a form has a notification recipient configured, a successful submission creates a `core_mail_queue` item. The notification uses the localized `forms.submission_notification` email template when present; otherwise CoreCMS creates a safe HTML summary of the submitted fields. Placeholder values and field content are HTML-escaped.
+When a form has a notification recipient configured, a successful submission creates a `core_mail_queue` item. The notification uses the localized `forms.submission_notification` email template when present; otherwise CoreCMS creates a localized safe HTML summary of the submitted fields. The template supports `{{form_name}}`, `{{submission_id}}`, `{{site_name}}` and `{{submission_data}}` placeholders. Placeholder values and field content are HTML-escaped.
 
 Configure **Sender name** and **Sender email address** under Administration → Site settings. Delivery uses PHP's native `mail()` function, so no Composer package or SSH setup is required. The hosting provider must permit PHP mail and accept the configured sender address. Messages are attempted immediately; failures are retried after increasing delays (1 minute, 5 minutes, 15 minutes and 1 hour). After five failed attempts, the item is marked failed and can be retried from Administration → Email templates → Email delivery queue. Pending retries are processed when the admin area is visited.
 
