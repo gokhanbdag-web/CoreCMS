@@ -30,7 +30,7 @@ if(!str_contains($pageHtml,'<section class="corecms-form"')||!str_contains($page
 foreach(['name="_corecms_form"','name="_csrf"','name="_website"','type="email"','<textarea','<select','type="checkbox"','Received &lt;ok&gt;'] as $expected)if(!str_contains($html,$expected))throw new RuntimeException('Missing rendered form output: '.$expected);
 if(str_contains($renderer->render('missing_form'),'form-field'))throw new RuntimeException('Disabled or missing forms must not render.');
 
-$service=new CoreCMS\Core\FormSubmissionService($db,'test-secret',2,600);
+$service=new CoreCMS\Core\FormSubmissionService($db,'test-secret',1,600);
 $id=$service->submit('contact_form','en',['name'=>'Alex','email'=>'alex@example.test','message'=>'Hello','topic'=>'Sales','consent'=>'1'],'203.0.113.8');
 if(!$id)throw new RuntimeException('Valid public submission was not stored.');
 $honeypot=$service->submit('contact_form','en',['_website'=>'bot'],'203.0.113.9');
