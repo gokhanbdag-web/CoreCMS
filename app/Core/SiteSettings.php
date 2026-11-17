@@ -13,6 +13,8 @@ final class SiteSettings
         'site_name' => 'CoreCMS',
         'site_language' => 'tr',
         'timezone' => 'Europe/Istanbul',
+        'mail_from_name' => '',
+        'mail_from_email' => '',
         'home_eyebrow' => 'MODÜLER İÇERİK YÖNETİMİ',
         'home_title' => 'Tek çekirdek.',
         'home_accent_title' => 'Sınırsız sektör.',
@@ -50,6 +52,8 @@ final class SiteSettings
                 'site_name' => 120,
                 'site_language' => 12,
                 'timezone' => 64,
+                'mail_from_name' => 160,
+                'mail_from_email' => 190,
                 'home_eyebrow' => 100,
                 'home_title', 'home_accent_title' => 120,
                 'home_description' => 600,
@@ -66,6 +70,8 @@ final class SiteSettings
         if ($values['site_name'] === '' || $values['home_title'] === '') throw new RuntimeException('Site adı ve ana sayfa başlığı boş bırakılamaz.');
         if (!preg_match('/^[a-z]{2}(?:-[A-Z]{2})?$/', $values['site_language'])) throw new RuntimeException('Dil kodu geçersiz.');
         if (!in_array($values['timezone'], DateTimeZone::listIdentifiers(), true)) throw new RuntimeException('Saat dilimi geçersiz.');
+        if ($values['mail_from_email'] !== '' && !filter_var($values['mail_from_email'], FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Gönderici e-posta adresi geçersiz.');
+        if (preg_match('/[\\r\\n]/', $values['mail_from_name'])) throw new RuntimeException('Gönderici adı geçersiz.');
         foreach (['site_url', 'seo_social_image', 'seo_logo_url'] as $urlKey) {
             if ($values[$urlKey] === '') continue;
             $parts = parse_url($values[$urlKey]);
