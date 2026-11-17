@@ -92,6 +92,9 @@ require_once $root . '/app/Core/PageBodyRenderer.php';
 require_once $root . '/app/Core/FormManager.php';
 require_once $root . '/app/Core/FormRenderer.php';
 require_once $root . '/app/Core/FormSubmissionService.php';
+require_once $root . '/app/Core/EmailTemplateManager.php';
+require_once $root . '/app/Core/MailQueue.php';
+require_once $root . '/app/Core/FormNotificationService.php';
 $formRenderer=null;
 if($page && preg_match('/\[\[form:[a-z][a-z0-9_-]{1,99}\]\]/',(string)$page['body'])){
     CoreCMS\Core\Auth::startSession();
@@ -104,7 +107,15 @@ if($page && preg_match('/\[\[form:[a-z][a-z0-9_-]{1,99}\]\]/',(string)$page['bod
             $form=$formManager->findByKey($formKey,true);
             if(!$form)throw new RuntimeException('This form is not available.');
             $service=new CoreCMS\Core\FormSubmissionService($db,(string)($config['database']['password']??''));
-            $service->submit($formKey,$currentLocale,$_POST,(string)($_SERVER['REMOTE_ADDR']??''));
+            $submissionId=$service->submit($formKey,$currentLocale,$_POST,(string)($_SERVER['REMOTE_ADDR']??''));
+            if($submissionId!==null && !empty($form['recipient_email'])){
+                try{
+                    $mailQueue=new CoreCMS\Core\MailQueue($db);
+                    $notifications=new CoreCMS\Core\FormNotificationService($db,$mailQueue,new CoreCMS\Core\EmailTemplateManager($db));
+                    $notifications->queueSubmission($form,$submissionId,$_POST,$currentLocale,(string)($settings['site_name']??'CoreCMS'));
+                    $mailQueue->process($settings,1);
+                }catch(Throwable $mailError){error_log('[CoreCMS] Form notification queue failed: '.$mailError->getMessage());}
+            }
             $_SESSION['corecms_form_feedback'][$formKey]=['success'=>true,'message'=>(string)($form['success_message']?:$translate('frontend.forms.success','Your message has been received.'))];
         }catch(PDOException $e){
             error_log('[CoreCMS] Public form database error: '.$e->getMessage());
