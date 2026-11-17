@@ -33,6 +33,8 @@ $formMetadataTranslations = require dirname(__DIR__) . '/database/migrations/003
 $formMetadataTranslations($db);
 $formVisualEditorTranslations = require dirname(__DIR__) . '/database/migrations/0032_visual_form_translation_editor_labels.php';
 $formVisualEditorTranslations($db);
+$formVisualEditorTranslations = require dirname(__DIR__) . '/database/migrations/0032_visual_form_translation_editor_labels.php';
+$formVisualEditorTranslations($db);
 require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
 $adminUiExtras($db);
@@ -72,6 +74,8 @@ $assert($locales->translate('admin.email.retry', 'tr') === 'Yeniden dene', 'mail
 $assert($locales->translate('frontend.forms.notification_subject', 'tr') === 'Yeni form gönderimi: {form_name}', 'form notification subject Turkish translation');
 $assert($locales->translate('admin.email.status_failed', 'en') === 'Failed', 'mail queue failed status English translation');
 $assert($locales->translate('admin.forms.translations_title', 'tr') === 'Form içeriği çevirileri', 'form metadata translation editor Turkish label');
+$assert($locales->translate('admin.forms.visual_translation_help', 'tr') === 'Çevirileri aşağıdaki alanlara girin. Boş bıraktığınız alanlar özgün metni kullanır.', 'visual form translation editor Turkish guidance');
+$assert($locales->translate('admin.forms.option_labels', 'en') === 'Option labels', 'visual form option editor English label');
 $assert($locales->translate('admin.forms.translations_help', 'en') === 'Translate the form name, description, success message, field labels and select option labels. Original option values remain unchanged for validation.', 'form metadata translation editor English help');
 $assert($locales->translate('admin.forms.visual_translation_help', 'tr') === 'Çevirileri aşağıdaki alanlara girin. Boş bıraktığınız alanlar özgün metni kullanır.', 'visual form translation editor Turkish guidance');
 $assert($locales->translate('admin.forms.option_labels', 'en') === 'Option labels', 'visual form option editor English label');
