@@ -87,9 +87,10 @@ try {
     $label=trim((string)($entry['label']??''));
     if($label!=='')$fieldTranslation['label']=$label;
     if(isset($entry['options'])&&is_array($entry['options'])){
-     foreach($entry['options'] as $optionValue=>$optionLabel){
+     foreach($entry['options'] as $optionIndex=>$optionLabel){
+      $optionValue=(string)($_POST['option_values'][$fieldKey][$optionIndex]??'');
       $optionLabel=trim((string)$optionLabel);
-      if($optionLabel!=='')$fieldTranslation['options'][(string)$optionValue]=$optionLabel;
+      if($optionValue!==''&&$optionLabel!=='')$fieldTranslation['options'][$optionValue]=$optionLabel;
      }
     }
     if($fieldTranslation)$normalized[(string)$fieldKey]=$fieldTranslation;
@@ -329,7 +330,7 @@ if(!$pending&&isset($_GET['template_key'])){
 <?php foreach($formEdit['fields'] as $translationField): $fieldKey=(string)$translationField['key']; $savedFieldTranslation=$formFieldTranslations[$fieldKey]??[]; ?>
 <fieldset class="form-translation-group"><legend><?= $h($translationField['label']) ?> <small>(<?= $h($fieldKey) ?>)</small></legend>
 <label><?= $adminText('admin.forms.field_label','Field label') ?><input name="translations[<?= $h($fieldKey) ?>][label]" maxlength="120" value="<?= $h($savedFieldTranslation['label']??'') ?>" placeholder="<?= $h($translationField['label']) ?>"></label>
-<?php if(($translationField['type']??'')==='select'): ?><div class="form-translation-options"><strong><?= $adminText('admin.forms.option_labels','Option labels') ?></strong><?php foreach(($translationField['options']??[]) as $optionValue): ?><label><?= $h($optionValue) ?><input name="translations[<?= $h($fieldKey) ?>][options][<?= $h($optionValue) ?>]" maxlength="120" value="<?= $h($savedFieldTranslation['options'][$optionValue]??'') ?>" placeholder="<?= $h($optionValue) ?>"></label><?php endforeach ?></div><?php endif ?>
+<?php if(($translationField['type']??'')==='select'): ?><div class="form-translation-options"><strong><?= $adminText('admin.forms.option_labels','Option labels') ?></strong><?php foreach(($translationField['options']??[]) as $optionValue): ?><label><?= $h($optionValue) ?><input name="translations[<?= $h($fieldKey) ?>][options][<?= (int)$optionIndex ?>]" maxlength="120" value="<?= $h($savedFieldTranslation['options'][$optionValue]??'') ?>" placeholder="<?= $h($optionValue) ?>"><input type="hidden" name="option_values[<?= $h($fieldKey) ?>][<?= (int)$optionIndex ?>]" value="<?= $h($optionValue) ?>"></label><?php endforeach ?></div><?php endif ?>
 </fieldset>
 <?php endforeach ?>
 <button class="button"><?= $adminText('admin.common.save','Save translations') ?></button></form><?php endif ?>
