@@ -48,7 +48,7 @@ $pending=$migrator->pending(); $notice=$error=null; $action=(string)($_POST['act
 if(!$pending){try{$mailQueue->process($siteSettings->all(),3);}catch(Throwable $mailError){error_log('[CoreCMS] Mail queue processing failed: '.$mailError->getMessage());}}
 $roleManager=new CoreCMS\Core\RoleManager($db);
 $role=(string)($_SESSION['corecms_user_role']??'');
-$actionPermissions=['media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','locale_save'=>'settings.manage','locale_default'=>'settings.manage','translation_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage','uninstall'=>'modules.manage','update'=>'modules.manage','rollback'=>'modules.manage','demo_install'=>'demos.manage','demo_reset'=>'demos.manage','demo_remove'=>'demos.manage','form_save'=>'forms.manage','form_delete'=>'forms.manage','submission_status'=>'forms.manage','email_template_save'=>'forms.manage','mail_queue_retry'=>'forms.manage'];
+$actionPermissions=['media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','locale_save'=>'settings.manage','locale_default'=>'settings.manage','translation_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage','uninstall'=>'modules.manage','update'=>'modules.manage','rollback'=>'modules.manage','demo_install'=>'demos.manage','demo_reset'=>'demos.manage','demo_remove'=>'demos.manage','form_save'=>'forms.manage','form_translation_save'=>'forms.manage','form_delete'=>'forms.manage','submission_status'=>'forms.manage','email_template_save'=>'forms.manage','mail_queue_retry'=>'forms.manage'];
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST' && isset($actionPermissions[$action]) && !$roleManager->can($role,$actionPermissions[$action])) { http_response_code(403); exit($translate('admin.access.action_forbidden','You are not allowed to perform this action.')); }
 if($action==='run_core_migrations' && !in_array($role,['admin','super_admin'],true)) { http_response_code(403); exit($translate('admin.access.migrations_admin_only','Only administrators can apply database updates.')); }
 try {
@@ -66,6 +66,16 @@ try {
    if(!is_array($fields))throw new RuntimeException($translate('admin.forms.fields_json_invalid','Form fields must be a valid JSON array.'));
    $formId=$formManager->save((int)($_POST['id']??0)?:null,(string)($_POST['form_key']??''),(string)($_POST['name']??''),$fields,(string)($_POST['recipient_email']??''),(string)($_POST['description']??''),(string)($_POST['success_message']??''),isset($_POST['enabled']));
    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=forms&edit_form='.$formId.'&saved=1')); exit;
+  }
+  if($action==='form_translation_save') {
+   if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
+   $formId=(int)($_POST['form_id']??0);
+   $saveLocale=(string)($_POST['translation_locale']??'');
+   if(!$localeManager->isEnabled($saveLocale))throw new RuntimeException('Form translation language must be enabled.');
+   $translations=json_decode((string)($_POST['translations_json']??''),true);
+   if(!is_array($translations))throw new RuntimeException('Form translations must be a valid JSON object.');
+   $formManager->saveFieldTranslations($formId,$saveLocale,$translations);
+   header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=forms&edit_form='.$formId.'&translation_locale='.rawurlencode($saveLocale).'&saved=1')); exit;
   }
   if($action==='form_delete') {
    if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
@@ -176,6 +186,10 @@ $pageRevisions=[]; $compareRevision=null;
 if($ep && !$pending && $contentLocale===$defaultLocale){$pageRevisions=$revisions->history((int)$ep['id']);$compareId=(int)($_GET['compare_revision']??0);if($compareId>0)$compareRevision=$revisions->find($compareId,(int)$ep['id']);}
 $formRows=$pending?[]:$formManager->forms();
 $formEdit=(!$pending&&isset($_GET['edit_form']))?$formManager->findById((int)$_GET['edit_form']):null;
+$formTranslationLocale=(string)($_GET['translation_locale']??'');
+if(!$localeManager->isEnabled($formTranslationLocale)||$formTranslationLocale===$defaultLocale)$formTranslationLocale='';
+$formFieldTranslations=(!$pending&&$formEdit&&$formTranslationLocale!=='')?$formManager->fieldTranslations((int)$formEdit['id'],$formTranslationLocale):[];
+
 $submissionRows=$pending?[]:$formManager->submissions(isset($_GET['form_id'])?(int)$_GET['form_id']:null,200);
 $emailTemplateRows=$pending?[]:$emailTemplates->templates();
 $mailQueueRows=$pending?[]:$mailQueue->recent(50);
@@ -280,6 +294,13 @@ if(!$pending&&isset($_GET['template_key'])){
 <small class="editor-help"><?= $adminText('admin.forms.fields_help','Supported types: text, email, tel, textarea, select and checkbox. Select fields require an options array.') ?></small>
 <label><input type="checkbox" name="enabled" value="1" <?= !$formEdit||(int)$formEdit['enabled']===1?'checked':'' ?>> <?= $adminText('admin.forms.enabled','Enabled') ?></label>
 <button class="button"><?= $adminText('admin.common.save','Save') ?></button></form></section>
+<?php if($formEdit): ?>
+<section class="content-admin"><h2><?= $adminText('admin.forms.translations_title','Translate form fields') ?></h2>
+<p><?= $adminText('admin.forms.translations_help','Choose a language and translate field labels and select option labels. Original option values remain unchanged for validation.') ?></p>
+<form method="get" class="inline-form"><input type="hidden" name="section" value="forms"><input type="hidden" name="edit_form" value="<?= (int)$formEdit['id'] ?>"><label><?= $adminText('admin.content.language_label','Content language') ?><select name="translation_locale" required><option value="">—</option><?php foreach($availableLocales as $language): if($language['locale_code']===$defaultLocale)continue; ?><option value="<?= $h($language['locale_code']) ?>" <?= $formTranslationLocale===$language['locale_code']?'selected':'' ?>><?= $h($language['name']) ?> (<?= $h($language['locale_code']) ?>)</option><?php endforeach ?></select></label><button class="button secondary"><?= $adminText('admin.content.change_language','Load language') ?></button></form>
+<?php if($formTranslationLocale!==''): ?><form method="post" class="editor-form"><?= CoreCMS\\Core\\Csrf::field() ?><input type="hidden" name="action" value="form_translation_save"><input type="hidden" name="form_id" value="<?= (int)$formEdit['id'] ?>"><input type="hidden" name="translation_locale" value="<?= $h($formTranslationLocale) ?>"><label><?= $adminText('admin.forms.translations_json','Field translations (JSON)') ?><textarea name="translations_json" rows="12" spellcheck="false"><?= $h(json_encode($formFieldTranslations,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)) ?></textarea></label><small class="editor-help"><?= $adminText('admin.forms.translations_json_help','Example: {"name":{"label":"Your name"},"topic":{"label":"Topic","options":{"Sales":"Sales","Support":"Help"}}}') ?></small><button class="button"><?= $adminText('admin.common.save','Save translations') ?></button></form><?php endif ?>
+</section>
+<?php endif ?>
 <section class="content-admin"><h2><?= $adminText('admin.forms.list','Forms') ?></h2><div class="table-wrap"><table><thead><tr><th><?= $adminText('admin.forms.name','Name') ?></th><th><?= $adminText('admin.forms.key','Key') ?></th><th><?= $adminText('admin.forms.status','Status') ?></th><th><?= $adminText('admin.common.actions','Actions') ?></th></tr></thead><tbody><?php foreach($formRows as $formRow): ?><tr><td><?= $h($formRow['name']) ?></td><td><code><?= $h($formRow['form_key']) ?></code></td><td><?= (int)$formRow['enabled']===1?$adminText('admin.forms.enabled','Enabled'):$adminText('admin.forms.disabled','Disabled') ?></td><td><a href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=forms&edit_form='.(int)$formRow['id'])) ?>"><?= $adminText('admin.common.edit','Edit') ?></a> · <a href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=submissions&form_id='.(int)$formRow['id'])) ?>"><?= $adminText('admin.forms.view_submissions','View submissions') ?></a><form method="post" class="inline-form" onsubmit="return confirm(<?= $adminJs('admin.forms.confirm_delete','Delete this form and its submissions?') ?>)"><?= CoreCMS\Core\Csrf::field() ?><input type="hidden" name="action" value="form_delete"><input type="hidden" name="form_id" value="<?= (int)$formRow['id'] ?>"><button class="link-button danger"><?= $adminText('admin.common.delete','Delete') ?></button></form></td></tr><?php endforeach ?></tbody></table></div><?php if(!$formRows): ?><p><?= $adminText('admin.forms.empty','No forms have been created yet.') ?></p><?php endif ?></section>
 <?php endif ?>
 <?php endif ?>
