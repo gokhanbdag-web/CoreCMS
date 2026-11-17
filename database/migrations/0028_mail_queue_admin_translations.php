@@ -21,6 +21,13 @@ return static function (PDO $db): void {
         'admin.email.last_error'=>['Son gönderim notu','Last delivery note'],
         'admin.email.retry'=>['Yeniden dene','Retry'],
         'admin.email.queue_empty'=>['Henüz e-posta bildirimi kuyruğa alınmadı.','No email notifications have been queued.'],
+        'admin.email.status_pending'=>['Bekliyor','Pending'],
+        'admin.email.status_sent'=>['Gönderildi','Sent'],
+        'admin.email.status_failed'=>['Başarısız','Failed'],
+        'frontend.forms.notification_subject'=>['Yeni form gönderimi: {form_name}','New form submission: {form_name}'],
+        'frontend.forms.notification_heading'=>['Yeni form gönderimi','New form submission'],
+        'frontend.forms.yes'=>['Evet','Yes'],
+        'frontend.forms.no'=>['Hayır','No'],
     ];
     foreach($entries as $key=>$values){
         $insert->execute(['tr',$key,$values[0]]);
