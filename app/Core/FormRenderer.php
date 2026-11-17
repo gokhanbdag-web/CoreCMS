@@ -11,7 +11,8 @@ final class FormRenderer
         private PDO $db,
         private string $locale,
         private string $csrfToken,
-        private string $returnPath
+        private string $returnPath,
+        private string $submitLabel='Gönder'
     ) {}
 
     public function render(string $key): string
@@ -49,7 +50,7 @@ final class FormRenderer
             }
             $html.='</div>';
         }
-        $html.='<button type="submit">'.$escape($form['submit_label']??'Send').'</button></form></section>';
+        $html.='<button type="submit">'.$escape($this->submitLabel).'</button></form></section>';
         return $html;
     }
 }
