@@ -29,3 +29,5 @@
   nav.admin-nav.corecms-nav-open a{font-size:14px}
 }
 @media(min-width:769px){.corecms-nav-toggle{display:none!important}}
+
+.corecms-form{max-width:760px;margin:28px 0;padding:24px;background:#fff;border:1px solid #e8ebf2;border-radius:16px}.corecms-form .form-field{margin:0 0 16px}.corecms-form .form-field label{display:block;margin:0 0 6px}.corecms-form input:not([type=checkbox]),.corecms-form textarea,.corecms-form select{display:block;width:100%;padding:12px 13px;border:1px solid #dce2ed;border-radius:9px;font:inherit}.corecms-form textarea{min-height:120px;resize:vertical}.corecms-form input[type=checkbox]{display:inline-block;width:auto;margin:0 8px 0 0}.corecms-form button{border:0;border-radius:10px;padding:12px 18px;background:#4169e1;color:#fff;font:inherit;font-weight:700;cursor:pointer}.corecms-form-trap{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}
