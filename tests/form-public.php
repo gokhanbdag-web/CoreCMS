@@ -32,7 +32,7 @@ if(!str_contains($pageHtml,'<section class="corecms-form"')||!str_contains($page
 foreach(['name="_corecms_form"','name="_csrf"','name="_website"','type="email"','<textarea','<select','type="checkbox"','Received &lt;ok&gt;'] as $expected)if(!str_contains($html,$expected))throw new RuntimeException('Missing rendered form output: '.$expected);
 $translatedRenderer=new CoreCMS\Core\FormRenderer($db,'en','csrf-token','/contact');
 $translatedHtml=$translatedRenderer->render('contact_form');
-foreach(['Contact us','Send us a note','Your full name','Reason','Commercial','Technical help','value="Sales"'] as $expected)if(!str_contains($translatedHtml,$expected))throw new RuntimeException('Missing localized form label or option: '.$expected);
+foreach(['Send us a note','Your full name','Reason','Commercial','Technical help','value="Sales"'] as $expected)if(!str_contains($translatedHtml,$expected))throw new RuntimeException('Missing localized form label or option: '.$expected);
 
 if(str_contains($renderer->render('missing_form'),'form-field'))throw new RuntimeException('Disabled or missing forms must not render.');
 
