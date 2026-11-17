@@ -35,7 +35,9 @@ final class MailQueue
         $from=trim((string)($settings['mail_from_email']??''));
         if(!filter_var($from,FILTER_VALIDATE_EMAIL))return ['sent'=>0,'failed'=>0,'skipped'=>true];
         $limit=max(1,min(25,$limit));
-        $stmt=$this->db->query("SELECT * FROM core_mail_queue WHERE status='pending' AND (next_attempt_at IS NULL OR next_attempt_at<=CURRENT_TIMESTAMP) ORDER BY id ASC LIMIT ".$limit);
+        $now=gmdate('Y-m-d H:i:s');
+        $stmt=$this->db->prepare("SELECT * FROM core_mail_queue WHERE status='pending' AND (next_attempt_at IS NULL OR next_attempt_at<=?) ORDER BY id ASC LIMIT ".$limit);
+        $stmt->execute([$now]);
         $sent=0;$failed=0;
         foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $row){
             $subject='=?UTF-8?B?'.base64_encode((string)$row['subject']).'?=';
@@ -52,7 +54,7 @@ final class MailQueue
             }
             $delays=[60,300,900,3600,21600];
             $status=$attempts>=5?'failed':'pending';
-            $next=date('Y-m-d H:i:s',time()+$delays[min($attempts-1,4)]);
+            $next=gmdate('Y-m-d H:i:s',time()+$delays[min($attempts-1,4)]);
             $update=$this->db->prepare('UPDATE core_mail_queue SET status=?,attempts=?,next_attempt_at=?,last_error=? WHERE id=?');
             $update->execute([$status,$attempts,$next,'Mail transport did not accept the message. '.($attempts>=5?'Manual retry is required.':'A retry has been scheduled.'),(int)$row['id']]);
             $failed++;
@@ -62,8 +64,8 @@ final class MailQueue
 
     public function retry(int $id):void
     {
-        $stmt=$this->db->prepare("UPDATE core_mail_queue SET status='pending',attempts=0,next_attempt_at=CURRENT_TIMESTAMP,last_error=NULL WHERE id=? AND status IN ('failed','pending')");
-        $stmt->execute([$id]);
+        $stmt=$this->db->prepare("UPDATE core_mail_queue SET status='pending',attempts=0,next_attempt_at=?,last_error=NULL WHERE id=? AND status IN ('failed','pending')");
+        $stmt->execute([gmdate('Y-m-d H:i:s'),$id]);
         if($stmt->rowCount()<1){$check=$this->db->prepare('SELECT id FROM core_mail_queue WHERE id=?');$check->execute([$id]);if(!$check->fetchColumn())throw new RuntimeException('Mail queue item was not found.');}
     }
 
