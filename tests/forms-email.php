@@ -9,6 +9,8 @@ $db->exec("CREATE TABLE core_languages(locale_code TEXT PRIMARY KEY,name TEXT,is
 $db->exec("INSERT INTO core_languages(locale_code,name,is_default,enabled) VALUES('tr','Türkçe',1,1),('en','English',0,1),('de','Deutsch',0,0)");
 $migration=require dirname(__DIR__).'/database/migrations/0023_forms_and_email_templates.php';
 $migration($db);
+$fieldTranslationMigration=require dirname(__DIR__).'/database/migrations/0029_form_field_translations.php';
+$fieldTranslationMigration($db);
 $forms=new CoreCMS\Core\FormManager($db);
 $emails=new CoreCMS\Core\EmailTemplateManager($db);
 $checks=0;
@@ -22,6 +24,19 @@ $fields=[
 $formId=$forms->save(null,'contact_request','Contact request',$fields,'hello@example.test','Send us a message','Thank you for contacting us.',true);
 $form=$forms->findByKey('contact_request');
 $assert($form!==null&&count($form['fields'])===4,'form saved and fields decoded');
+$forms->saveFieldTranslations($formId,'en',[
+ 'name'=>['label'=>'Your name'],
+ 'interest'=>['label'=>'What are you interested in?','options'=>['Rent'=>'Lease','Buy'=>'Purchase']]
+]);
+$translatedForm=$forms->findByKey('contact_request',true,'en');
+$assert($translatedForm['fields'][0]['label']==='Your name','field label translation is applied for requested locale');
+$assert(($translatedForm['fields'][2]['option_labels']['Rent']??'')==='Lease','select option label translation is applied while value stays stable');
+$assert($forms->findByKey('contact_request',true,'tr')['fields'][0]['label']==='Name','default locale keeps original field labels');
+$failed=false;try{$forms->saveFieldTranslations($formId,'de',['name'=>['label'=>'Dein Name']]);}catch(RuntimeException){$failed=true;}
+$assert($failed,'disabled form translation locale rejected');
+$failed=false;try{$forms->saveFieldTranslations($formId,'en',['missing'=>['label'=>'Unknown']]);}catch(RuntimeException){$failed=true;}
+$assert($failed,'unknown form field translation rejected');
+
 $submissionId=$forms->submit('contact_request','en',['name'=>'Alex','email'=>'alex@example.test','interest'=>'Rent','consent'=>'1','unexpected'=>'ignored']);
 $submission=$forms->submissions($formId,10)[0]??null;
 $assert($submission!==null&&(int)$submission['id']===$submissionId&&$submission['payload']['name']==='Alex','form submission stored and unknown fields ignored');
@@ -50,4 +65,4 @@ $assert($failed,'default locale email template uses base record');
 $failed=false;try{$emails->saveTranslation('contact.receipt','de','Betreff','Text');}catch(RuntimeException){$failed=true;}
 $assert($failed,'disabled locale email translation rejected');
 
-echo 'Forms and email template checks passed (13).'.PHP_EOL;
+echo 'Forms and email template checks passed (18).'.PHP_EOL;
