@@ -89,7 +89,31 @@ if ($page && !empty($page['social_image_path'])) {
 
 require_once $root . '/app/Core/MediaLibrary.php';
 require_once $root . '/app/Core/PageBodyRenderer.php';
-$pageBodyHtml = $page ? CoreCMS\Core\PageBodyRenderer::render($db, (string)$page['body'], new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath())) : '';
+require_once $root . '/app/Core/FormManager.php';
+require_once $root . '/app/Core/FormRenderer.php';
+require_once $root . '/app/Core/FormSubmissionService.php';
+$formRenderer=null;
+if($page && preg_match('/\\[\\[form:[a-z][a-z0-9_-]{1,99}\\]\\]/',(string)$page['body'])){
+    CoreCMS\Core\Auth::startSession();
+    if(($_SERVER['REQUEST_METHOD']??'GET')==='POST' && isset($_POST['_corecms_form'])){
+        CoreCMS\Core\Csrf::requireValidPost();
+        $formKey=(string)$_POST['_corecms_form'];
+        if(!str_contains((string)$page['body'],'[[form:'.$formKey.']]')){http_response_code(400);exit('Invalid form target.');}
+        try{
+            $formManager=new CoreCMS\Core\FormManager($db);
+            $form=$formManager->findByKey($formKey,true);
+            if(!$form)throw new RuntimeException('This form is not available.');
+            $service=new CoreCMS\Core\FormSubmissionService($db,(string)($config['database']['password']??''));
+            $service->submit($formKey,$currentLocale,$_POST,(string)($_SERVER['REMOTE_ADDR']??''));
+            $_SESSION['corecms_form_feedback'][$formKey]=['success'=>true,'message'=>(string)($form['success_message']?:$translate('frontend.forms.success','Your message has been received.'))];
+        }catch(Throwable $e){
+            $_SESSION['corecms_form_feedback'][$formKey]=['error'=>true,'message'=>$e->getMessage()];
+        }
+        header('Location: '.CoreCMS\Core\Url::to($path).'#form-'.rawurlencode($formKey),true,303);exit;
+    }
+    $formRenderer=new CoreCMS\Core\FormRenderer($db,$currentLocale,CoreCMS\Core\Csrf::token(),CoreCMS\Core\Url::to($path),$translate('frontend.forms.submit','Gönder'));
+}
+$pageBodyHtml = $page ? CoreCMS\Core\PageBodyRenderer::render($db, (string)$page['body'], new CoreCMS\Core\MediaLibrary($db, $root, CoreCMS\Core\Url::basePath()),$formRenderer) : '';
 ob_start();
 if ($page) {
     echo '<article class="content-page"><h1>' . htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') . '</h1>';
