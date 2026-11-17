@@ -44,6 +44,8 @@ jobs:
         run: php tests/content-manager.php
       - name: Forms and email template tests
         run: php tests/forms-email.php
+      - name: Visual form translation editor tests
+        run: php tests/form-translation-editor.php
       - name: Public form rendering and submission tests
         run: php tests/form-public.php
       - name: Mail queue and notification tests
