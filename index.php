@@ -106,6 +106,9 @@ if($page && preg_match('/\\[\\[form:[a-z][a-z0-9_-]{1,99}\\]\\]/',(string)$page[
             $service=new CoreCMS\Core\FormSubmissionService($db,(string)($config['database']['password']??''));
             $service->submit($formKey,$currentLocale,$_POST,(string)($_SERVER['REMOTE_ADDR']??''));
             $_SESSION['corecms_form_feedback'][$formKey]=['success'=>true,'message'=>(string)($form['success_message']?:$translate('frontend.forms.success','Your message has been received.'))];
+        }catch(PDOException $e){
+            error_log('[CoreCMS] Public form database error: '.$e->getMessage());
+            $_SESSION['corecms_form_feedback'][$formKey]=['error'=>true,'message'=>$translate('frontend.forms.error','The form could not be submitted. Please try again.')];
         }catch(Throwable $e){
             $_SESSION['corecms_form_feedback'][$formKey]=['error'=>true,'message'=>$e->getMessage()];
         }
