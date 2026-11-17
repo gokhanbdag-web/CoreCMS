@@ -116,7 +116,8 @@ if($page && preg_match('/\[\[form:[a-z][a-z0-9_-]{1,99}\]\]/',(string)$page['bod
                     $mailQueue->process($settings,1);
                 }catch(Throwable $mailError){error_log('[CoreCMS] Form notification queue failed: '.$mailError->getMessage());}
             }
-            $_SESSION['corecms_form_feedback'][$formKey]=['success'=>true,'message'=>(string)($form['success_message']?:$translate('frontend.forms.success','Your message has been received.'))];
+            $localizedForm=$formManager->findByKey($formKey,true,$currentLocale)??$form;
+            $_SESSION['corecms_form_feedback'][$formKey]=['success'=>true,'message'=>(string)($localizedForm['success_message']?:$translate('frontend.forms.success','Your message has been received.'))];
         }catch(PDOException $e){
             error_log('[CoreCMS] Public form database error: '.$e->getMessage());
             $_SESSION['corecms_form_feedback'][$formKey]=['error'=>true,'message'=>$translate('frontend.forms.error','The form could not be submitted. Please try again.')];
