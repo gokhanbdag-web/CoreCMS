@@ -17,7 +17,7 @@ final class FormRenderer
 
     public function render(string $key): string
     {
-        $form=(new FormManager($this->db))->findByKey($key,true);
+        $form=(new FormManager($this->db))->findByKey($key,true,$this->locale);
         if(!$form)return '';
         $escape=static fn($value):string=>htmlspecialchars((string)$value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
         $feedback=$_SESSION['corecms_form_feedback'][$key]??null;
@@ -40,7 +40,7 @@ final class FormRenderer
             if($field['type']==='textarea')$html.='<textarea id="'.$escape($id).'" name="'.$escape($name).'" maxlength="10000"'.$requiredAttr.'></textarea>';
             elseif($field['type']==='select'){
                 $html.='<select id="'.$escape($id).'" name="'.$escape($name).'"'.$requiredAttr.'><option value="">—</option>';
-                foreach($field['options'] as $option)$html.='<option value="'.$escape($option).'">'.$escape($option).'</option>';
+                foreach($field['options'] as $option){$optionLabel=$field['option_labels'][$option]??$option;$html.='<option value="'.$escape($option).'">'.$escape($optionLabel).'</option>';}
                 $html.='</select>';
             }elseif($field['type']==='checkbox'){
                 $html.='<input id="'.$escape($id).'" type="checkbox" name="'.$escape($name).'" value="1"'.($required?' required':'').'>';

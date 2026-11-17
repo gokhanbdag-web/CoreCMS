@@ -16,8 +16,10 @@ final class FormNotificationService
         $escape=static fn($value):string=>htmlspecialchars((string)$value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
         $localeManager=new LocaleManager($this->db);
         $text=static fn(string $key,string $fallback):string=>$localeManager->translate($key,$locale,$fallback);
+        $localizedForm=$form;
+        if(!empty($form['form_key']))$localizedForm=(new FormManager($this->db))->findByKey((string)$form['form_key'],true,$locale)??$form;
         $rows=[];$plain=[];
-        foreach(($form['fields']??[]) as $field){
+        foreach(($localizedForm['fields']??[]) as $field){
             $key=(string)($field['key']??'');$value=$input[$key]??'';
             if(($field['type']??'')==='checkbox')$value=in_array($value,[true,1,'1','on','yes'],true)?$text('frontend.forms.yes','Yes'):$text('frontend.forms.no','No');
             if(is_array($value)||is_object($value))continue;
