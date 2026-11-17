@@ -10,9 +10,9 @@ $db->exec("CREATE TABLE core_mail_queue(id INTEGER PRIMARY KEY AUTOINCREMENT,rec
 $db->exec("CREATE TABLE core_email_templates(template_key TEXT PRIMARY KEY,name TEXT,subject TEXT,body TEXT,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 $db->exec("CREATE TABLE core_email_template_translations(template_key TEXT,locale_code TEXT,subject TEXT,body TEXT,updated_at TEXT DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(template_key,locale_code))");
 $sent=[];
-$queue=new CoreCMS\\Core\\MailQueue($db,static function($to,$subject,$body,$headers)use(&$sent){$sent[]=compact('to','subject','body','headers');return true;});
-$templates=new CoreCMS\\Core\\EmailTemplateManager($db);
-$service=new CoreCMS\\Core\\FormNotificationService($db,$queue,$templates);
+$queue=new CoreCMS\Core\MailQueue($db,static function($to,$subject,$body,$headers)use(&$sent){$sent[]=compact('to','subject','body','headers');return true;});
+$templates=new CoreCMS\Core\EmailTemplateManager($db);
+$service=new CoreCMS\Core\FormNotificationService($db,$queue,$templates);
 $form=['name'=>'Contact form','recipient_email'=>'owner@example.test','fields'=>[['key'=>'name','label'=>'Name','type'=>'text'],['key'=>'message','label'=>'Message','type'=>'textarea']]];
 $id=$service->queueSubmission($form,42,['name'=>'<Alex>','message'=>'Hello'], 'en','Example site');
 if(!$id)throw new RuntimeException('Notification was not queued.');
@@ -21,7 +21,7 @@ if($result['sent']!==1||count($sent)!==1)throw new RuntimeException('Queued noti
 if(!str_contains($sent[0]['body'],'&lt;Alex&gt;')||!str_contains($sent[0]['headers'],'Content-Type: text/html'))throw new RuntimeException('Notification content or headers were not safely prepared.');
 if(($queue->recent(1)[0]['status']??'')!=='sent')throw new RuntimeException('Successful mail was not marked sent.');
 
-$failedQueue=new CoreCMS\\Core\\MailQueue($db,static fn()=>false);
+$failedQueue=new CoreCMS\Core\MailQueue($db,static fn()=>false);
 $failedId=$failedQueue->enqueue('owner@example.test','Retry me','<p>Retry</p>');
 $out=$failedQueue->process(['mail_from_email'=>'noreply@example.test'],5);
 $row=$db->query('SELECT status,attempts,last_error FROM core_mail_queue WHERE id='.(int)$failedId)->fetch(PDO::FETCH_ASSOC);
