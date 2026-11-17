@@ -27,7 +27,7 @@ final class FormManager
         return $row;
     }
 
-    public function findByKey(string $key, bool $enabledOnly = true): ?array
+    public function findByKey(string $key, bool $enabledOnly = true, ?string $locale = null): ?array
     {
         $sql='SELECT * FROM core_forms WHERE form_key=?'.($enabledOnly?' AND enabled=1':'').' LIMIT 1';
         $stmt=$this->db->prepare($sql);
@@ -35,7 +35,75 @@ final class FormManager
         $row=$stmt->fetch(PDO::FETCH_ASSOC);
         if(!is_array($row))return null;
         $row['fields']=$this->decodeFields((string)$row['fields_json']);
+        if ($locale !== null) $row['fields']=$this->applyFieldTranslations((int)$row['id'],$row['fields'],$locale);
         return $row;
+    }
+
+    public function fieldTranslations(int $formId, string $locale): array
+    {
+        $stmt=$this->db->prepare('SELECT translations_json FROM core_form_field_translations WHERE form_id=? AND locale_code=? LIMIT 1');
+        $stmt->execute([$formId,$locale]);
+        $json=$stmt->fetchColumn();
+        if(!is_string($json)||$json==='')return [];
+        $value=json_decode($json,true);
+        return is_array($value)?$value:[];
+    }
+
+    public function saveFieldTranslations(int $formId, string $locale, array $translations): void
+    {
+        $form=$this->findById($formId);
+        if(!$form)throw new RuntimeException('Form was not found.');
+        $language=$this->db->prepare('SELECT enabled,is_default FROM core_languages WHERE locale_code=?');
+        $language->execute([$locale]);
+        $languageRow=$language->fetch(PDO::FETCH_ASSOC);
+        if(!$languageRow||(int)$languageRow['enabled']!==1)throw new RuntimeException('Form translation language must be enabled.');
+        if((int)$languageRow['is_default']===1)throw new RuntimeException('The default language uses the base form labels.');
+        $allowed=[];
+        foreach($form['fields'] as $field)$allowed[$field['key']]=$field;
+        $normalized=[];
+        foreach($translations as $fieldKey=>$translation){
+            if(!is_string($fieldKey)||!isset($allowed[$fieldKey])||!is_array($translation))throw new RuntimeException('Unknown form field translation.');
+            $entry=[];
+            if(array_key_exists('label',$translation)){
+                $label=trim((string)$translation['label']);
+                if($label===''||self::length($label,'UTF-8')>120)throw new RuntimeException('Translated field labels must be between 1 and 120 characters.');
+                $entry['label']=$label;
+            }
+            if(array_key_exists('options',$translation)){
+                if($allowed[$fieldKey]['type']!=='select'||!is_array($translation['options']))throw new RuntimeException('Only select fields can have translated options.');
+                $options=[];
+                foreach($translation['options'] as $original=>$translated){
+                    if(!is_string($original)||!in_array($original,$allowed[$fieldKey]['options'],true))throw new RuntimeException('Unknown select option translation.');
+                    $translated=trim((string)$translated);
+                    if($translated===''||self::length($translated,'UTF-8')>120)throw new RuntimeException('Translated options must be between 1 and 120 characters.');
+                    $options[$original]=$translated;
+                }
+                $entry['options']=$options;
+            }
+            if($entry)$normalized[$fieldKey]=$entry;
+        }
+        $json=json_encode($normalized,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);
+        $driver=(string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $sql=$driver==='sqlite'
+            ? 'INSERT INTO core_form_field_translations(form_id,locale_code,translations_json) VALUES(?,?,?) ON CONFLICT(form_id,locale_code) DO UPDATE SET translations_json=excluded.translations_json,updated_at=CURRENT_TIMESTAMP'
+            : 'INSERT INTO core_form_field_translations(form_id,locale_code,translations_json) VALUES(?,?,?) ON DUPLICATE KEY UPDATE translations_json=VALUES(translations_json),updated_at=CURRENT_TIMESTAMP';
+        $this->db->prepare($sql)->execute([$formId,$locale,$json]);
+    }
+
+    private function applyFieldTranslations(int $formId,array $fields,string $locale): array
+    {
+        $translations=$this->fieldTranslations($formId,$locale);
+        foreach($fields as &$field){
+            $translation=$translations[$field['key']]??null;
+            if(!is_array($translation))continue;
+            if(isset($translation['label'])&&is_string($translation['label']))$field['label']=$translation['label'];
+            if($field['type']==='select'&&isset($translation['options'])&&is_array($translation['options'])){
+                $field['option_labels']=[];
+                foreach($field['options'] as $option)$field['option_labels'][$option]=(string)($translation['options'][$option]??$option);
+            }
+        }
+        unset($field);
+        return $fields;
     }
 
     public function save(?int $id, string $key, string $name, array $fields, string $recipientEmail = '', string $description = '', string $successMessage = '', bool $enabled = true): int
