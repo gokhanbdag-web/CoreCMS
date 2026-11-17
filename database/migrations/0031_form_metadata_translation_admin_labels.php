@@ -4,8 +4,8 @@ declare(strict_types=1);
 return static function (PDO $db): void {
     $driver=(string)$db->getAttribute(PDO::ATTR_DRIVER_NAME);
     $sql=$driver==='sqlite'
-        ? 'INSERT OR IGNORE INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?)'
-        : 'INSERT IGNORE INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?)';
+        ? 'INSERT INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?) ON CONFLICT(locale_code,translation_key) DO UPDATE SET translation_value=excluded.translation_value,updated_at=CURRENT_TIMESTAMP'
+        : 'INSERT INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?) ON DUPLICATE KEY UPDATE translation_value=VALUES(translation_value),updated_at=CURRENT_TIMESTAMP';
     $insert=$db->prepare($sql);
     $entries=[
         'admin.forms.translations_title'=>['Form içeriği çevirileri','Form content translations'],
