@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace CoreCMS\\Core;
+namespace CoreCMS\Core;
 
 use Closure;
 use PDO;
@@ -23,7 +23,7 @@ final class MailQueue
     {
         $recipient=trim($recipient);
         if(!filter_var($recipient,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Mail recipient address is invalid.');
-        if($subject===''||strlen($subject)>500||preg_match('/[\\r\\n]/',$subject))throw new RuntimeException('Mail subject is invalid.');
+        if($subject===''||strlen($subject)>500||preg_match('/[\r\n]/',$subject))throw new RuntimeException('Mail subject is invalid.');
         if(trim($body)===''||strlen($body)>100000)throw new RuntimeException('Mail body is empty or too long.');
         $stmt=$this->db->prepare("INSERT INTO core_mail_queue(recipient,subject,body,status,attempts,next_attempt_at) VALUES(?,?,?,'pending',0,CURRENT_TIMESTAMP)");
         $stmt->execute([$recipient,$subject,$body]);
@@ -41,7 +41,7 @@ final class MailQueue
             $subject='=?UTF-8?B?'.base64_encode((string)$row['subject']).'?=';
             $headers="From: ".$from."\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nX-Mailer: CoreCMS";
             $ok=false;
-            try{$ok=($this->sender)((string)$row['recipient'],$subject,(string)$row['body'],$headers);}catch(\\Throwable $e){error_log('[CoreCMS] Mail transport failed: '.$e->getMessage());}
+            try{$ok=($this->sender)((string)$row['recipient'],$subject,(string)$row['body'],$headers);}catch(\Throwable $e){error_log('[CoreCMS] Mail transport failed: '.$e->getMessage());}
             $attempts=(int)$row['attempts']+1;
             if($ok){
                 $update=$this->db->prepare("UPDATE core_mail_queue SET status='sent',attempts=?,sent_at=CURRENT_TIMESTAMP,last_error=NULL WHERE id=?");
