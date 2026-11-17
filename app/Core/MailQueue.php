@@ -25,8 +25,8 @@ final class MailQueue
         if(!filter_var($recipient,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Mail recipient address is invalid.');
         if($subject===''||strlen($subject)>500||preg_match('/[\r\n]/',$subject))throw new RuntimeException('Mail subject is invalid.');
         if(trim($body)===''||strlen($body)>100000)throw new RuntimeException('Mail body is empty or too long.');
-        $stmt=$this->db->prepare("INSERT INTO core_mail_queue(recipient,subject,body,status,attempts,next_attempt_at) VALUES(?,?,?,'pending',0,CURRENT_TIMESTAMP)");
-        $stmt->execute([$recipient,$subject,$body]);
+        $stmt=$this->db->prepare("INSERT INTO core_mail_queue(recipient,subject,body,status,attempts,next_attempt_at) VALUES(?,?,?,'pending',0,?)");
+        $stmt->execute([$recipient,$subject,$body,gmdate('Y-m-d H:i:s')]);
         return (int)$this->db->lastInsertId();
     }
 
@@ -52,7 +52,7 @@ final class MailQueue
                 $update=$this->db->prepare("UPDATE core_mail_queue SET status='sent',attempts=?,sent_at=CURRENT_TIMESTAMP,last_error=NULL WHERE id=?");
                 $update->execute([$attempts,(int)$row['id']]);$sent++;continue;
             }
-            $delays=[60,300,900,3600,21600];
+            $delays=[60,300,900,3600];
             $status=$attempts>=5?'failed':'pending';
             $next=gmdate('Y-m-d H:i:s',time()+$delays[min($attempts-1,4)]);
             $update=$this->db->prepare('UPDATE core_mail_queue SET status=?,attempts=?,next_attempt_at=?,last_error=? WHERE id=?');
