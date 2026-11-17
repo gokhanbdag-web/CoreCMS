@@ -65,6 +65,8 @@ $assert($locales->translate('frontend.forms.success', 'en') === 'Your message ha
 $assert($locales->translate('admin.settings.mail_from_email', 'tr') === 'Gönderici e-posta adresi', 'mail sender settings Turkish translation');
 $assert($locales->translate('admin.email.queue_title', 'en') === 'Email delivery queue', 'mail queue English translation');
 $assert($locales->translate('admin.email.retry', 'tr') === 'Yeniden dene', 'mail retry Turkish translation');
+$assert($locales->translate('frontend.forms.notification_subject', 'tr') === 'Yeni form gönderimi: {form_name}', 'form notification subject Turkish translation');
+$assert($locales->translate('admin.email.status_failed', 'en') === 'Failed', 'mail queue failed status English translation');
 $errorTranslator = static fn(string $key, string $fallback): string => $locales->translate($key, 'en', $fallback);
 $assert(CoreCMS\Core\AdminErrorTranslator::translate('Rol anahtarı 2-40 karakter olmalı; harf, rakam ve alt çizgi kullanılabilir.', $errorTranslator) === 'Role key must be 2–40 characters and contain only letters, numbers and underscores.', 'role validation error translated');
 $assert(CoreCMS\Core\AdminErrorTranslator::translate('Sayfa bağlantısı geçersiz.', $errorTranslator) === 'The page URL slug is invalid.', 'page validation error translated');
