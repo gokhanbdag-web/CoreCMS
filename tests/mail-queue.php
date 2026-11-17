@@ -40,6 +40,12 @@ if($out['failed']!==1||$row['status']!=='pending'||(int)$row['attempts']!==1||!$
 $failedQueue->retry($failedId);
 $row=$db->query('SELECT status,attempts FROM core_mail_queue WHERE id='.(int)$failedId)->fetch(PDO::FETCH_ASSOC);
 if($row['status']!=='pending'||(int)$row['attempts']!==0)throw new RuntimeException('Manual retry did not reset queue state.');
+for($attempt=0;$attempt<5;$attempt++){
+    if($attempt>0)$db->prepare('UPDATE core_mail_queue SET next_attempt_at=? WHERE id=?')->execute([gmdate('Y-m-d H:i:s',time()-1),$failedId]);
+    $failedQueue->process(['mail_from_email'=>'noreply@example.test'],5);
+}
+$row=$db->query('SELECT status,attempts,next_attempt_at FROM core_mail_queue WHERE id='.(int)$failedId)->fetch(PDO::FETCH_ASSOC);
+if($row['status']!=='failed'||(int)$row['attempts']!==5||$row['next_attempt_at']!==null)throw new RuntimeException('Mail queue did not stop cleanly after five failed attempts.');
 $skipped=$queue->process([],5);
 if(!$skipped['skipped'])throw new RuntimeException('Missing sender address must not attempt delivery.');
 echo "Mail queue and notification checks passed.\n";
