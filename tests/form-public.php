@@ -12,15 +12,17 @@ $db=new PDO('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTI
 $db->exec("CREATE TABLE core_languages(locale_code TEXT PRIMARY KEY,enabled INTEGER)");
 $db->exec("INSERT INTO core_languages VALUES('tr',1),('en',1)");
 $migration=require dirname(__DIR__).'/database/migrations/0023_forms_and_email_templates.php';$migration($db);
+$fieldTranslationMigration=require dirname(__DIR__).'/database/migrations/0029_form_field_translations.php';$fieldTranslationMigration($db);
 $rateMigration=require dirname(__DIR__).'/database/migrations/0025_form_submission_rate_limits.php';$rateMigration($db);
 $forms=new CoreCMS\Core\FormManager($db);
-$forms->save(null,'contact_form','Contact form',[
+$formId=$forms->save(null,'contact_form','Contact form',[
  ['key'=>'name','type'=>'text','label'=>'Your name','required'=>true],
  ['key'=>'email','type'=>'email','label'=>'Email address','required'=>true],
  ['key'=>'message','type'=>'textarea','label'=>'Message','required'=>true],
  ['key'=>'topic','type'=>'select','label'=>'Topic','required'=>false,'options'=>['Sales','Support']],
  ['key'=>'consent','type'=>'checkbox','label'=>'I agree','required'=>true]
 ]);
+$forms->saveFieldTranslations($formId,'en',['name'=>['label'=>'Your full name'],'topic'=>['label'=>'Reason','options'=>['Sales'=>'Commercial','Support'=>'Technical help']]]);
 $_SESSION=['corecms_form_feedback'=>['contact_form'=>['success'=>true,'message'=>'Received <ok>']]];
 $renderer=new CoreCMS\Core\FormRenderer($db,'en','csrf-token','/contact');
 $html=$renderer->render('contact_form');
@@ -28,6 +30,10 @@ $db->exec("CREATE TABLE core_media(id INTEGER PRIMARY KEY,file_path TEXT,alt_tex
 $pageHtml=CoreCMS\Core\PageBodyRenderer::render($db,"Intro text.\n\n[[form:contact_form]]",new CoreCMS\Core\MediaLibrary($db,dirname(__DIR__),''),$renderer);
 if(!str_contains($pageHtml,'<section class="corecms-form"')||!str_contains($pageHtml,'name="message"'))throw new RuntimeException('Page body renderer did not expand form shortcode.');
 foreach(['name="_corecms_form"','name="_csrf"','name="_website"','type="email"','<textarea','<select','type="checkbox"','Received &lt;ok&gt;'] as $expected)if(!str_contains($html,$expected))throw new RuntimeException('Missing rendered form output: '.$expected);
+$translatedRenderer=new CoreCMS\Core\FormRenderer($db,'en','csrf-token','/contact');
+$translatedHtml=$translatedRenderer->render('contact_form');
+foreach(['Your full name','Reason','Commercial','Technical help','value="Sales"'] as $expected)if(!str_contains($translatedHtml,$expected))throw new RuntimeException('Missing localized form label or option: '.$expected);
+
 if(str_contains($renderer->render('missing_form'),'form-field'))throw new RuntimeException('Disabled or missing forms must not render.');
 
 $service=new CoreCMS\Core\FormSubmissionService($db,'test-secret',1,600);
