@@ -22,17 +22,17 @@ $formId=$forms->save(null,'contact_form','Contact form',[
  ['key'=>'topic','type'=>'select','label'=>'Topic','required'=>false,'options'=>['Sales','Support']],
  ['key'=>'consent','type'=>'checkbox','label'=>'I agree','required'=>true]
 ]);
-$forms->saveFieldTranslations($formId,'en',['name'=>['label'=>'Your full name'],'topic'=>['label'=>'Reason','options'=>['Sales'=>'Commercial','Support'=>'Technical help']]]);
+$forms->saveFieldTranslations($formId,'en',['_form'=>['name'=>'Contact us','description'=>'Send us a note','success_message'=>'Thank you!'],'name'=>['label'=>'Your full name'],'topic'=>['label'=>'Reason','options'=>['Sales'=>'Commercial','Support'=>'Technical help']]]);
 $_SESSION=['corecms_form_feedback'=>['contact_form'=>['success'=>true,'message'=>'Received <ok>']]];
 $renderer=new CoreCMS\Core\FormRenderer($db,'en','csrf-token','/contact');
 $html=$renderer->render('contact_form');
 $db->exec("CREATE TABLE core_media(id INTEGER PRIMARY KEY,file_path TEXT,alt_text TEXT)");
 $pageHtml=CoreCMS\Core\PageBodyRenderer::render($db,"Intro text.\n\n[[form:contact_form]]",new CoreCMS\Core\MediaLibrary($db,dirname(__DIR__),''),$renderer);
-if(!str_contains($pageHtml,'<section class="corecms-form"')||!str_contains($pageHtml,'name="message"'))throw new RuntimeException('Page body renderer did not expand form shortcode.');
+if(!str_contains($pageHtml,'<section class="corecms-form"')||!str_contains($pageHtml,'name="message"')||!str_contains($pageHtml,'Send us a note'))throw new RuntimeException('Page body renderer did not expand localized form shortcode and description.');
 foreach(['name="_corecms_form"','name="_csrf"','name="_website"','type="email"','<textarea','<select','type="checkbox"','Received &lt;ok&gt;'] as $expected)if(!str_contains($html,$expected))throw new RuntimeException('Missing rendered form output: '.$expected);
 $translatedRenderer=new CoreCMS\Core\FormRenderer($db,'en','csrf-token','/contact');
 $translatedHtml=$translatedRenderer->render('contact_form');
-foreach(['Your full name','Reason','Commercial','Technical help','value="Sales"'] as $expected)if(!str_contains($translatedHtml,$expected))throw new RuntimeException('Missing localized form label or option: '.$expected);
+foreach(['Send us a note','Your full name','Reason','Commercial','Technical help','value="Sales"'] as $expected)if(!str_contains($translatedHtml,$expected))throw new RuntimeException('Missing localized form label or option: '.$expected);
 
 if(str_contains($renderer->render('missing_form'),'form-field'))throw new RuntimeException('Disabled or missing forms must not render.');
 

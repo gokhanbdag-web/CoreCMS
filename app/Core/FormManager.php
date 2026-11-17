@@ -35,7 +35,16 @@ final class FormManager
         $row=$stmt->fetch(PDO::FETCH_ASSOC);
         if(!is_array($row))return null;
         $row['fields']=$this->decodeFields((string)$row['fields_json']);
-        if ($locale !== null) $row['fields']=$this->applyFieldTranslations((int)$row['id'],$row['fields'],$locale);
+        if ($locale !== null) {
+            $translations=$this->fieldTranslations((int)$row['id'],$locale);
+            $metadata=$translations['_form']??[];
+            if(is_array($metadata)){
+                foreach(['name','description','success_message'] as $property){
+                    if(isset($metadata[$property])&&is_string($metadata[$property]))$row[$property]=$metadata[$property];
+                }
+            }
+            $row['fields']=$this->applyFieldTranslations((int)$row['id'],$row['fields'],$locale);
+        }
         return $row;
     }
 
@@ -62,6 +71,18 @@ final class FormManager
         foreach($form['fields'] as $field)$allowed[$field['key']]=$field;
         $normalized=[];
         foreach($translations as $fieldKey=>$translation){
+            if($fieldKey==='_form'){
+                if(!is_array($translation))throw new RuntimeException('Form metadata translation must be an object.');
+                $metadata=[];
+                foreach(['name'=>190,'description'=>1000,'success_message'=>500] as $property=>$maxLength){
+                    if(!array_key_exists($property,$translation))continue;
+                    $value=trim((string)$translation[$property]);
+                    if(($property==='name'&&$value==='')||self::length($value,'UTF-8')>$maxLength)throw new RuntimeException('Translated form '.$property.' is empty or too long.');
+                    $metadata[$property]=$value;
+                }
+                if($metadata)$normalized['_form']=$metadata;
+                continue;
+            }
             if(!is_string($fieldKey)||!isset($allowed[$fieldKey])||!is_array($translation))throw new RuntimeException('Unknown form field translation.');
             $entry=[];
             if(array_key_exists('label',$translation)){
