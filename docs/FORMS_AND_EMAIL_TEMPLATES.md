@@ -34,9 +34,16 @@ The form key must match an enabled form in the admin panel. The renderer escapes
 
 The rate-limit schema is migration `0025_form_submission_rate_limits.php`; public button/success translations are migration `0026_public_form_frontend_translations.php`. Apply pending core migrations from the admin dashboard before enabling public forms.
 
+## Email notification delivery
+
+When a form has a notification recipient configured, a successful submission creates a `core_mail_queue` item. The notification uses the localized `forms.submission_notification` email template when present; otherwise CoreCMS creates a safe HTML summary of the submitted fields. Placeholder values and field content are HTML-escaped.
+
+Configure **Sender name** and **Sender email address** under Administration → Site settings. Delivery uses PHP's native `mail()` function, so no Composer package or SSH setup is required. The hosting provider must permit PHP mail and accept the configured sender address. Messages are attempted immediately; failures are retried after increasing delays (1 minute, 5 minutes, 15 minutes, 1 hour and 6 hours). After five failed attempts, the item is marked failed and can be retried from Administration → Email templates → Email delivery queue. Pending retries are processed when the admin area is visited.
+
+The queue schema is migration `0027_mail_queue.php`; its admin translations are migration `0028_mail_queue_admin_translations.php`. Apply pending core migrations before using notifications.
+
 ## Remaining work
 
-- SMTP/PHP mail transport configuration and delivery feedback
-- Safe notification retry/queue behavior
-- Per-language field labels and option translations
+- SMTP transport support for hosts that disable PHP `mail()`
+- Per-language form field labels and option translations
 - Retention controls and stronger concurrent rate-limit enforcement
