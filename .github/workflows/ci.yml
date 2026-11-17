@@ -46,6 +46,8 @@ jobs:
         run: php tests/forms-email.php
       - name: Public form rendering and submission tests
         run: php tests/form-public.php
+      - name: Mail queue and notification tests
+        run: php tests/mail-queue.php
       - name: Theme manager tests
         run: php tests/theme-manager.php
       - name: Site settings tests
