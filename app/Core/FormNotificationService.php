@@ -14,10 +14,12 @@ final class FormNotificationService
         $recipient=trim((string)($form['recipient_email']??''));
         if($recipient==='')return null;
         $escape=static fn($value):string=>htmlspecialchars((string)$value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
+        $localeManager=new LocaleManager($this->db);
+        $text=static fn(string $key,string $fallback):string=>$localeManager->translate($key,$locale,$fallback);
         $rows=[];$plain=[];
         foreach(($form['fields']??[]) as $field){
             $key=(string)($field['key']??'');$value=$input[$key]??'';
-            if(($field['type']??'')==='checkbox')$value=in_array($value,[true,1,'1','on','yes'],true)?'Yes':'No';
+            if(($field['type']??'')==='checkbox')$value=in_array($value,[true,1,'1','on','yes'],true)?$text('frontend.forms.yes','Yes'):$text('frontend.forms.no','No');
             if(is_array($value)||is_object($value))continue;
             $value=trim((string)$value);
             $label=(string)($field['label']??$key);
@@ -29,8 +31,9 @@ final class FormNotificationService
         if($template){
             $subject=(string)$template['subject'];$body=(string)$template['body'];
         }else{
-            $subject='New form submission: '.(string)($form['name']??'');
-            $body='<h2>New form submission</h2><p>'. $escape($form['name']??'Form') .' · #'.(int)$submissionId.'</p><table cellpadding="0" cellspacing="0" style="border-collapse:collapse">'.implode('',$rows).'</table><p>'.$escape($siteName).'</p>';
+            $formName=(string)($form['name']??'Form');
+            $subject=str_replace('{form_name}',$formName,$text('frontend.forms.notification_subject','New form submission: {form_name}'));
+            $body='<h2>'.$escape($text('frontend.forms.notification_heading','New form submission')).'</h2><p>'. $escape($formName) .' · #'.(int)$submissionId.'</p><table cellpadding="0" cellspacing="0" style="border-collapse:collapse">'.implode('',$rows).'</table><p>'.$escape($siteName).'</p>';
         }
         return $this->queue->enqueue($recipient,$subject,$body);
     }
