@@ -24,7 +24,7 @@ final class MailQueue
         $recipient=trim($recipient);
         if(!filter_var($recipient,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Mail recipient address is invalid.');
         if($subject===''||strlen($subject)>500||preg_match('/[\r\n]/',$subject))throw new RuntimeException('Mail subject is invalid.');
-        if(trim($body)===''||strlen($body)>100000)throw new RuntimeException('Mail body is empty or too long.');
+        if(trim($body)===''||strlen($body)>500000)throw new RuntimeException('Mail body is empty or too long.');
         $stmt=$this->db->prepare("INSERT INTO core_mail_queue(recipient,subject,body,status,attempts,next_attempt_at) VALUES(?,?,?,'pending',0,?)");
         $stmt->execute([$recipient,$subject,$body,gmdate('Y-m-d H:i:s')]);
         return (int)$this->db->lastInsertId();
