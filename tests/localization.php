@@ -25,6 +25,8 @@ $adminErrorTranslations = require dirname(__DIR__) . '/database/migrations/0022_
 $adminErrorTranslations($db);
 $formsUiTranslations = require dirname(__DIR__) . '/database/migrations/0024_forms_email_admin_ui_translations.php';
 $formsUiTranslations($db);
+$publicFormTranslations = require dirname(__DIR__) . '/database/migrations/0026_public_form_frontend_translations.php';
+$publicFormTranslations($db);
 require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $adminUiExtras = require dirname(__DIR__) . '/database/migrations/0018_admin_ui_extra_translations.php';
 $adminUiExtras($db);
@@ -55,6 +57,9 @@ $assert($locales->translate('admin.content.translation_missing', 'en') === 'No t
 $assert($locales->translate('admin.nav.forms', 'tr') === 'Formlar', 'forms navigation Turkish translation');
 $assert($locales->translate('admin.nav.email_templates', 'en') === 'Email templates', 'email templates navigation English translation');
 $assert($locales->translate('admin.email.create_base_first', 'en') === 'Create the email template in the default language before adding translations.', 'email translation base-template guidance');
+$assert($locales->translate('frontend.forms.submit', 'tr') === 'Gönder', 'public form submit Turkish translation');
+$assert($locales->translate('frontend.forms.submit', 'en') === 'Send', 'public form submit English translation');
+$assert($locales->translate('frontend.forms.success', 'en') === 'Your message has been received.', 'public form success English translation');
 $errorTranslator = static fn(string $key, string $fallback): string => $locales->translate($key, 'en', $fallback);
 $assert(CoreCMS\Core\AdminErrorTranslator::translate('Rol anahtarı 2-40 karakter olmalı; harf, rakam ve alt çizgi kullanılabilir.', $errorTranslator) === 'Role key must be 2–40 characters and contain only letters, numbers and underscores.', 'role validation error translated');
 $assert(CoreCMS\Core\AdminErrorTranslator::translate('Sayfa bağlantısı geçersiz.', $errorTranslator) === 'The page URL slug is invalid.', 'page validation error translated');
@@ -76,4 +81,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (38).\n";
+echo "Localization checks passed (41).\n";
