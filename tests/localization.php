@@ -52,6 +52,9 @@ $assert($locales->translate('frontend.404.title', 'en') === 'Page not found', 'f
 $assert($locales->translate('frontend.language_switcher', 'en') === 'Select language', 'frontend language switcher English translation');
 $assert($locales->translate('admin.content.language_label', 'en') === 'Content language', 'content editor language label English translation');
 $assert($locales->translate('admin.content.translation_missing', 'en') === 'No translation exists for this language yet. Base-language content is shown as a starting point.', 'missing content translation helper English translation');
+$assert($locales->translate('admin.nav.forms', 'tr') === 'Formlar', 'forms navigation Turkish translation');
+$assert($locales->translate('admin.nav.email_templates', 'en') === 'Email templates', 'email templates navigation English translation');
+$assert($locales->translate('admin.email.create_base_first', 'en') === 'Create the email template in the default language before adding translations.', 'email translation base-template guidance');
 $errorTranslator = static fn(string $key, string $fallback): string => $locales->translate($key, 'en', $fallback);
 $assert(CoreCMS\Core\AdminErrorTranslator::translate('Rol anahtarı 2-40 karakter olmalı; harf, rakam ve alt çizgi kullanılabilir.', $errorTranslator) === 'Role key must be 2–40 characters and contain only letters, numbers and underscores.', 'role validation error translated');
 $assert(CoreCMS\Core\AdminErrorTranslator::translate('Sayfa bağlantısı geçersiz.', $errorTranslator) === 'The page URL slug is invalid.', 'page validation error translated');
@@ -73,4 +76,4 @@ $failed = false; try { $locales->saveTranslation('en', '../bad', 'No'); } catch 
 $assert($failed, 'unsafe translation key rejected');
 $rows = $locales->translations('en', 'admin.dashboard');
 $assert(count($rows) === 1 && $rows[0]['translation_key'] === 'admin.dashboard.title', 'translation search');
-echo "Localization checks passed (35).\n";
+echo "Localization checks passed (38).\n";
