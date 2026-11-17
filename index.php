@@ -93,7 +93,7 @@ require_once $root . '/app/Core/FormManager.php';
 require_once $root . '/app/Core/FormRenderer.php';
 require_once $root . '/app/Core/FormSubmissionService.php';
 $formRenderer=null;
-if($page && preg_match('/\\[\\[form:[a-z][a-z0-9_-]{1,99}\\]\\]/',(string)$page['body'])){
+if($page && preg_match('/\[\[form:[a-z][a-z0-9_-]{1,99}\]\]/',(string)$page['body'])){
     CoreCMS\Core\Auth::startSession();
     if(($_SERVER['REQUEST_METHOD']??'GET')==='POST' && isset($_POST['_corecms_form'])){
         CoreCMS\Core\Csrf::requireValidPost();
