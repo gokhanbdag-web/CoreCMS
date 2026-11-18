@@ -1,30 +1,65 @@
 {
   "id": "tourism",
   "name": "Turizm ve Tur",
-  "description": "Tur, aktivite, destinasyon, rezervasyon ve tur detayları için sektör modülü.",
+  "description": "Turlar, destinasyonlar, kalkış takvimi, kapasite yönetimi ve rezervasyon talepleri.",
   "category": "Turizm",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "minimum_core_version": "0.1.0",
   "dependencies": [],
-  "permissions": ["tours.view", "tours.manage", "bookings.manage"],
-  "routes": [],
+  "permissions": [
+    "tours.view",
+    "tours.manage",
+    "destinations.manage",
+    "departures.manage",
+    "bookings.manage"
+  ],
+  "routes": [
+    {
+      "path": "/turlar",
+      "methods": [
+        "GET"
+      ],
+      "handler": "Frontend/listings.php"
+    },
+    {
+      "path": "/turlar/rezervasyon",
+      "methods": [
+        "POST"
+      ],
+      "handler": "Frontend/booking-submit.php"
+    },
+    {
+      "path": "/turlar/{slug}",
+      "methods": [
+        "GET"
+      ],
+      "handler": "Frontend/detail.php"
+    }
+  ],
+  "assets": [
+    "css/tourism.css"
+  ],
+  "templates": [],
   "migrations": "migrations/",
-  "provisioning": {"pages": [], "menus": []},
+  "provisioning": {
+    "pages": [],
+    "menus": [
+      {
+        "key": "tourism-tours",
+        "menu_key": "main",
+        "label": "Turlar",
+        "url": "/turlar",
+        "sort_order": 16
+      }
+    ]
+  },
   "demo_packages": [
     {
       "id": "coastal",
       "name": "Sahil Turizmi Demo Paketi",
-      "description": "Turlar, destinasyonlar ve iletişim sayfaları ile örnek turizm sitesi oluşturur.",
-      "pages": {
-        "tours": {"title":"Günlük Turlar","slug":"ornek-gunluk-turlar","body":"Bölgedeki günlük tekne, doğa ve kültür turlarını keşfedin.\n\nTur açıklamalarını ve programlarını yönetim panelinden güncelleyebilirsiniz.","status":"published","seo_title":"Günlük Turlar ve Aktiviteler"},
-        "destinations": {"title":"Destinasyonlar","slug":"ornek-destinasyonlar","body":"Keşfedilecek koyları, plajları ve tarihi noktaları tanıyın.","status":"published"},
-        "contact": {"title":"Rezervasyon ve İletişim","slug":"turizm-rezervasyon-iletisim","body":"Tur ve rezervasyon taleplerinizi bize iletin.","status":"published"}
-      },
-      "menus": {
-        "tours": {"menu_key":"main","label":"Turlar","url":"/ornek-gunluk-turlar","sort_order":10},
-        "destinations": {"menu_key":"main","label":"Destinasyonlar","url":"/ornek-destinasyonlar","sort_order":20},
-        "contact": {"menu_key":"main","label":"Rezervasyon","url":"/turizm-rezervasyon-iletisim","sort_order":30}
-      }
+      "description": "Turlar, destinasyonlar ve rezervasyon sayfalarını ana menüye ekler.",
+      "pages": {},
+      "menus": {}
     }
   ]
 }
