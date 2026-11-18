@@ -41,6 +41,7 @@ final class RealEstateManager
   $features=array_slice(array_values(array_filter(array_map('trim',preg_split('/\r\n|\r|\n/',(string)($d['features']??''))?:[]))),0,40);
   $gallery=array_slice(array_values(array_filter(array_map('trim',preg_split('/\r\n|\r|\n/',(string)($d['gallery']??''))?:[]))),0,20);
   foreach($gallery as $image)if(!preg_match('#^(https://|/)(?!/)[^\r\n]*$#i',$image))throw new RuntimeException('Galeri görselleri HTTPS veya site içi yollar olmalıdır.');
+  if($id>0){$exists=$this->db->prepare('SELECT 1 FROM re_listings WHERE id=?');$exists->execute([$id]);if(!$exists->fetchColumn())throw new RuntimeException('İlan bulunamadı.');}
   $values=[$agent,$title,$slug,$type,$property,$price,$currency,$city,$district,trim((string)($d['neighborhood']??'')),trim((string)($d['address']??'')),$this->nullableInt($d['bedrooms']??null),$this->nullableInt($d['bathrooms']??null),$this->nullableInt($d['area_gross']??null),$this->nullableInt($d['area_net']??null),$this->nullableInt($d['building_age']??null),$this->nullableInt($d['floor_number']??null),$this->nullableInt($d['total_floors']??null),trim((string)($d['heating']??'')),$description,json_encode($features,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),$cover,json_encode($gallery,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),(string)($d['status']??'draft')==='published'?'published':'draft',isset($d['featured'])?1:0,trim((string)($d['seo_title']??'')),trim((string)($d['seo_description']??''))];
   if(!in_array($values[23],['published','draft'],true))$values[23]='draft';
   if($id>0){$values[]=$id;$sql='UPDATE re_listings SET agent_id=?,title=?,slug=?,listing_type=?,property_type=?,price=?,currency=?,city=?,district=?,neighborhood=?,address=?,bedrooms=?,bathrooms=?,area_gross=?,area_net=?,building_age=?,floor_number=?,total_floors=?,heating=?,description=?,features_json=?,cover_image=?,gallery_json=?,status=?,featured=?,seo_title=?,seo_description=?,published_at=CASE WHEN ?=1 THEN COALESCE(published_at,CURRENT_TIMESTAMP) ELSE NULL END WHERE id=?';array_splice($values,27,0,[($values[23]==='published'?1:0)]);}
@@ -54,6 +55,7 @@ final class RealEstateManager
   $id=(int)($d['id']??0);$name=trim((string)($d['name']??''));if($name===''||mb_strlen($name)>160)throw new RuntimeException('Danışman adı zorunludur.');
   $email=trim((string)($d['email']??''));if($email!==''&&!filter_var($email,FILTER_VALIDATE_EMAIL))throw new RuntimeException('Danışman e-posta adresi geçersiz.');
   $photo=trim((string)($d['photo_url']??''));if($photo!==''&&!preg_match('#^(https://|/)(?!/)[^\r\n]*$#i',$photo))throw new RuntimeException('Fotoğraf HTTPS veya site içi yol olmalıdır.');
+  if($id>0){$exists=$this->db->prepare('SELECT 1 FROM re_agents WHERE id=?');$exists->execute([$id]);if(!$exists->fetchColumn())throw new RuntimeException('Danışman bulunamadı.');}
   $values=[$name,$email?:null,trim((string)($d['phone']??'')),trim((string)($d['title']??'')),trim((string)($d['bio']??'')),$photo?:null,($d['status']??'active')==='inactive'?'inactive':'active'];
   if($id>0){$values[]=$id;$s=$this->db->prepare('UPDATE re_agents SET name=?,email=?,phone=?,title=?,bio=?,photo_url=?,status=? WHERE id=?');}
   else{$s=$this->db->prepare('INSERT INTO re_agents (name,email,phone,title,bio,photo_url,status) VALUES (?,?,?,?,?,?,?)');}
@@ -65,6 +67,7 @@ final class RealEstateManager
   if($name===''||mb_strlen($name)>160||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($email)>190||$message===''||mb_strlen($message)>5000)throw new RuntimeException('Lütfen ad, geçerli e-posta ve mesaj alanlarını doldurun.');
   if($listing>0){$s=$this->db->prepare("SELECT 1 FROM re_listings WHERE id=? AND status='published'");$s->execute([$listing]);if(!$s->fetchColumn())$listing=null;}else $listing=null;
   $hash=$ip!==''?hash('sha256',$ip.'|'.(string)($_SERVER['HTTP_USER_AGENT']??'')):null;
+  if($hash!==null){$sqlite=(string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME)==='sqlite';$limit=$this->db->prepare($sqlite?"SELECT COUNT(*) FROM re_leads WHERE ip_hash=? AND created_at>=datetime('now','-1 hour')":"SELECT COUNT(*) FROM re_leads WHERE ip_hash=? AND created_at>=DATE_SUB(NOW(),INTERVAL 1 HOUR)");$limit->execute([$hash]);if((int)$limit->fetchColumn()>=5)throw new RuntimeException('Çok fazla talep gönderildi. Lütfen daha sonra tekrar deneyin.');}
   $s=$this->db->prepare("INSERT INTO re_leads (listing_id,name,email,phone,message,source,status,ip_hash) VALUES (?,?,?,?,?,'website','new',?)");
   $s->execute([$listing,$name,$email,$phone,$message,$hash]);return (int)$this->db->lastInsertId();
  }
