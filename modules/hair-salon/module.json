@@ -1,30 +1,57 @@
 {
   "id": "hair-salon",
   "name": "Kuaför ve Güzellik Salonu",
-  "description": "Hizmetler, ekip profilleri, fiyat listesi ve randevu akışları için sektör modülü.",
+  "description": "Hizmetler, uzman ekip, çalışma takvimi ve çakışma korumalı online randevu yönetimi.",
   "category": "Güzellik",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "minimum_core_version": "0.1.0",
   "dependencies": [],
-  "permissions": ["services.manage", "staff.manage", "appointments.manage"],
-  "routes": [],
+  "permissions": [
+    "services.manage",
+    "staff.manage",
+    "appointments.manage"
+  ],
+  "routes": [
+    {
+      "path": "/salon",
+      "methods": [
+        "GET"
+      ],
+      "handler": "Frontend/index.php"
+    },
+    {
+      "path": "/salon/randevu",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "handler": "Frontend/booking.php"
+    }
+  ],
+  "assets": [
+    "css/hair-salon.css"
+  ],
+  "templates": [],
   "migrations": "migrations/",
-  "provisioning": {"pages": [], "menus": []},
+  "provisioning": {
+    "pages": [],
+    "menus": [
+      {
+        "key": "hair-salon-services",
+        "menu_key": "main",
+        "label": "Salon Hizmetleri",
+        "url": "/salon",
+        "sort_order": 17
+      }
+    ]
+  },
   "demo_packages": [
     {
       "id": "salon",
       "name": "Salon Başlangıç Demo Paketi",
-      "description": "Hizmetler, ekip ve randevu sayfaları ile örnek salon sitesi oluşturur.",
-      "pages": {
-        "services": {"title":"Hizmetlerimiz","slug":"salon-hizmetler","body":"Saç kesimi, renklendirme, bakım ve güzellik hizmetlerimizi inceleyin.","status":"published"},
-        "team": {"title":"Ekibimiz","slug":"salon-ekibimiz","body":"Uzman ekibimizi ve hizmet alanlarımızı tanıyın.","status":"published"},
-        "appointment": {"title":"Randevu Al","slug":"salon-randevu","body":"Size uygun gün ve saat için randevu talebi oluşturun.","status":"published"}
-      },
-      "menus": {
-        "services": {"menu_key":"main","label":"Hizmetler","url":"/salon-hizmetler","sort_order":10},
-        "team": {"menu_key":"main","label":"Ekibimiz","url":"/salon-ekibimiz","sort_order":20},
-        "appointment": {"menu_key":"main","label":"Randevu","url":"/salon-randevu","sort_order":30}
-      }
+      "description": "Hizmetler, ekip ve randevu sayfalarını ana menüye ekler.",
+      "pages": {},
+      "menus": {}
     }
   ]
 }
