@@ -24,6 +24,14 @@ $process = null;
 $createdDatabase = false;
 $createdConfig = false;
 $createdLock = false;
+$subdirRoot = $root . '/subdir_test';
+$subdirConfigFile = $subdirRoot . '/config.php';
+$subdirLockFile = $subdirConfigFile . '.install.lock';
+$subdirDatabase = $database . '_subdir';
+$createdSubdirRoot = false;
+$createdSubdirDatabase = false;
+$createdSubdirConfig = false;
+$createdSubdirLock = false;
 $checks = 0;
 
 $assert = static function (bool $condition, string $message) use (&$checks): void {
@@ -136,6 +144,81 @@ try {
     [$secondInstallerStatus, $headers] = $request($baseUrl . '/installer/');
     $assert($secondInstallerStatus === 302 && stripos($headers, 'Location: /admin/') !== false, 'revisiting installer redirects to admin after installation');
 
+    // Repeat the complete flow from a nested installation path.
+    if (is_file($subdirConfigFile) || is_file($subdirLockFile) || is_dir($subdirRoot)) {
+        throw new RuntimeException('Subdirectory installer test path already exists; refusing to modify it.');
+    }
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $subdirDatabase)) {
+        throw new RuntimeException('Subdirectory installer database name is invalid.');
+    }
+    mkdir($subdirRoot, 0700, true);
+    $createdSubdirRoot = true;
+    foreach (['admin','app','assets','database','installer','modules'] as $directory) {
+        $source = $root . '/' . $directory;
+        if (!is_dir($source)) throw new RuntimeException('Required application directory is missing: ' . $directory);
+        $target = $subdirRoot . '/' . $directory;
+        mkdir($target, 0700, true);
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($iterator as $item) {
+            if ($item->isLink()) continue;
+            $relative = substr($item->getPathname(), strlen($source) + 1);
+            $destination = $target . '/' . $relative;
+            if ($item->isDir()) {
+                if (!is_dir($destination)) mkdir($destination, 0700, true);
+            } elseif ($item->isFile()) {
+                if (!copy($item->getPathname(), $destination)) throw new RuntimeException('Could not copy subdirectory test file: ' . $relative);
+            }
+        }
+    }
+    foreach (['index.php','.htaccess'] as $file) {
+        if (!copy($root . '/' . $file, $subdirRoot . '/' . $file)) throw new RuntimeException('Could not copy subdirectory entry file: ' . $file);
+    }
+
+    $server->exec('CREATE DATABASE `' . $subdirDatabase . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    $createdSubdirDatabase = true;
+    $subdirUrl = $baseUrl . '/subdir_test/installer/';
+    [$subdirGetStatus, , $subdirHtml] = $request($subdirUrl);
+    $assert($subdirGetStatus === 200, 'installer page loads from a nested path');
+    $assert(str_contains($subdirHtml, '/subdir_test/assets/css/site.css'), 'installer asset URLs retain the nested base path');
+    if (!preg_match('/name="_csrf"\s+value="([a-f0-9]{64})"/', $subdirHtml, $subdirMatches)) {
+        throw new RuntimeException('Subdirectory installer CSRF token was not rendered.');
+    }
+
+    [$subdirPostStatus, , $subdirResult] = $request($subdirUrl, [
+        '_csrf' => $subdirMatches[1],
+        'db_host' => $host,
+        'db_port' => (string)$port,
+        'db_name' => $subdirDatabase,
+        'db_user' => $user,
+        'db_pass' => $password,
+        'admin_name' => 'CoreCMS Subdirectory Admin',
+        'admin_email' => 'subdir-installer-test@example.test',
+        'admin_password' => 'Subdirectory-Test-Password-2026!',
+    ]);
+    $createdSubdirConfig = is_file($subdirConfigFile);
+    $createdSubdirLock = is_file($subdirLockFile);
+    $assert($subdirPostStatus === 200 && str_contains($subdirResult, 'Kurulum tamamlandı'), 'browser installer completes from a nested path');
+    $assert($createdSubdirConfig, 'nested installer writes config.php inside its own directory');
+
+    [$subdirAdminStatus, , $subdirAdminHtml] = $request($baseUrl . '/subdir_test/admin/');
+    $assert($subdirAdminStatus === 200 && str_contains($subdirAdminHtml, 'name="email"'), 'nested admin login page is reachable');
+
+    $subdirInstalledDb = new PDO(
+        sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $subdirDatabase),
+        $user,
+        $password,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    $subdirAdmin = $subdirInstalledDb->prepare("SELECT COUNT(*) FROM core_users WHERE email=? AND status='active'");
+    $subdirAdmin->execute(['subdir-installer-test@example.test']);
+    $assert((int)$subdirAdmin->fetchColumn() === 1, 'nested installer creates the active administrator account');
+
+    [$subdirSecondStatus, $subdirHeaders] = $request($subdirUrl);
+    $assert($subdirSecondStatus === 302 && stripos($subdirHeaders, 'Location: /subdir_test/admin/') !== false, 'nested installer redirects to the nested admin path after installation');
+
     echo 'Browser installer HTTP integration checks passed (' . $checks . ').' . PHP_EOL;
 } finally {
     if (is_resource($process)) {
@@ -144,12 +227,20 @@ try {
     }
     if ($createdConfig && is_file($configFile)) @unlink($configFile);
     if ($createdLock && is_file($lockFile)) @unlink($lockFile);
+    if ($createdSubdirConfig && is_file($subdirConfigFile)) @unlink($subdirConfigFile);
+    if ($createdSubdirLock && is_file($subdirLockFile)) @unlink($subdirLockFile);
     if (is_file($cookieFile)) @unlink($cookieFile);
     if (is_file($logFile)) @unlink($logFile);
     try {
         $server = $connectServer();
         if ($createdDatabase) $server->exec('DROP DATABASE IF EXISTS `' . $database . '`');
+        if ($createdSubdirDatabase) $server->exec('DROP DATABASE IF EXISTS `' . $subdirDatabase . '`');
     } catch (Throwable $e) {
         error_log('[CoreCMS] Installer integration cleanup failed: ' . $e->getMessage());
+    }
+    if ($createdSubdirRoot && is_dir($subdirRoot)) {
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($subdirRoot, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($iterator as $item) $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        @rmdir($subdirRoot);
     }
 }
