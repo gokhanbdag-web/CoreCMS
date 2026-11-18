@@ -5,7 +5,9 @@ namespace CoreCMS\Core;
 
 use Closure;
 use PDO;
-use RuntimeException;\n\nrequire_once __DIR__ . '/SmtpTransport.php';
+use RuntimeException;
+
+require_once __DIR__ . '/SmtpTransport.php';
 
 final class MailQueue
 {
@@ -13,7 +15,8 @@ final class MailQueue
 
     public function __construct(private PDO $db, ?callable $sender=null)
     {
-        $this->sender=$sender!==null?Closure::fromCallable($sender):static function(string $to,string $subject,string $body,string $headers):bool {
+        $this->sender=$sender!==null?Closure::fromCallable($sender):static function(string $to,string $subject,string $body,string $headers,array $settings=[]):bool {
+            if(($settings['smtp_enabled']??'0')==='1')return (new SmtpTransport())->send($to,$subject,$body,$settings);
             if(!function_exists('mail'))return false;
             return mail($to,$subject,$body,$headers);
         };
