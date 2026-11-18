@@ -41,7 +41,7 @@ $updated=$re->findListing($listingId);
 $assert($updated['title']==='Çankaya Satılık Daire Güncel'&&$updated['status']==='draft','listing updated and unpublished');
 $failed=false;try{$re->saveListing(['title'=>'Invalid','slug'=>'../bad','listing_type'=>'sale','property_type'=>'apartment','price'=>1,'city'=>'Ankara','district'=>'Çankaya','description'=>'x']);}catch(RuntimeException){$failed=true;}
 $assert($failed,'invalid slug rejected');
-$re->saveListing(['id'=>$listingId,'title'=>'Çankaya Satılık Daire','slug'=>'cankaya-satilik-daire','listing_type'=>'sale','property_type'=>'apartment','price'=>'4250000','currency'=>'TRY','city'=>'Ankara','district'=>'Çankaya','description'=>'Açıklama','status'=>'published']);
+$re->saveListing(['id'=>$listingId,'title'=>'Çankaya Satılık Daire','slug'=>'cankaya-satilik-daire','listing_type'=>'sale','property_type'=>'apartment','price'=>'4250000','currency'=>'TRY','city'=>'Ankara','district'=>'Çankaya','description'=>'Açıklama','area_gross'=>'145','area_net'=>'125','bedrooms'=>'3','bathrooms'=>'1','features'=>"Balkon\nAsansör",'status'=>'published']);
 $leadId=$re->createLead(['listing_id'=>$listingId,'name'=>'Müşteri Adı','email'=>'customer@example.test','phone'=>'5551234567','message'=>'İlan hakkında bilgi almak istiyorum.'],'127.0.0.1');
 $assert($leadId>0&&count($re->leads())===1,'public lead stored');
 $re->updateLeadStatus($leadId,'contacted');$assert($re->leads()[0]['status']==='contacted','lead status updated');
