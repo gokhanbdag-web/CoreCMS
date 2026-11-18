@@ -93,7 +93,8 @@ final class SiteSettings
             if ($values['smtp_host'] === '' || preg_match('/[\\r\\n\\s\/\\\\]/', $values['smtp_host'])) throw new RuntimeException('SMTP sunucu adresi geçersiz.');
             if ($values['mail_from_email'] === '') throw new RuntimeException('SMTP için gönderici e-posta adresi gereklidir.');
             if (preg_match('/[\\r\\n]/', $values['smtp_username']) || preg_match('/[\\r\\n]/', $values['smtp_password'])) throw new RuntimeException('SMTP kimlik bilgileri geçersiz karakter içeriyor.');
-            if ($values['smtp_username'] !== '' && $values['smtp_password'] === '' && trim((string)($this->all()['smtp_password'] ?? '')) === '') throw new RuntimeException('SMTP parolası gereklidir.');\n        }
+            if ($values['smtp_username'] !== '' && $values['smtp_password'] === '' && trim((string)($this->all()['smtp_password'] ?? '')) === '') throw new RuntimeException('SMTP parolası gereklidir.');
+        }
         if (preg_match('/[\\r\\n]/', $values['mail_from_name'])) throw new RuntimeException('Gönderici adı geçersiz.');
         foreach (['site_url', 'seo_social_image', 'seo_logo_url'] as $urlKey) {
             if ($values[$urlKey] === '') continue;
