@@ -2,6 +2,12 @@
 declare(strict_types=1);
 
 require dirname(__DIR__).'/app/Core/ModuleManager.php';
+require dirname(__DIR__).'/app/Core/Url.php';
+require dirname(__DIR__).'/app/Core/Auth.php';
+require dirname(__DIR__).'/app/Core/Csrf.php';
+require dirname(__DIR__).'/app/Core/SiteSettings.php';
+require dirname(__DIR__).'/app/Core/ContentManager.php';
+require dirname(__DIR__).'/app/Core/LocaleManager.php';
 require dirname(__DIR__).'/modules/real-estate/Admin/RealEstateManager.php';
 
 use CoreCMS\Core\ModuleManager;
@@ -39,6 +45,17 @@ $re->saveListing(['id'=>$listingId,'title'=>'Çankaya Satılık Daire','slug'=>'
 $leadId=$re->createLead(['listing_id'=>$listingId,'name'=>'Müşteri Adı','email'=>'customer@example.test','phone'=>'5551234567','message'=>'İlan hakkında bilgi almak istiyorum.'],'127.0.0.1');
 $assert($leadId>0&&count($re->leads())===1,'public lead stored');
 $re->updateLeadStatus($leadId,'contacted');$assert($re->leads()[0]['status']==='contacted','lead status updated');
+$db->exec('CREATE TABLE core_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT NOT NULL)');
+$db->exec('CREATE TABLE core_languages(locale_code TEXT PRIMARY KEY,name TEXT,is_default INTEGER,enabled INTEGER)');
+$db->exec('CREATE TABLE core_menus(id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER)');
+$db->exec("INSERT INTO core_languages(locale_code,name,is_default,enabled) VALUES('tr','Türkçe',1,1)");
+$db->exec("INSERT INTO core_settings(setting_key,setting_value) VALUES('site_name','Test Emlak')");
+$detailHandler=require dirname(__DIR__).'/modules/real-estate/Frontend/detail.php';
+$detailHtml=$detailHandler($db,['slug'=>'cankaya-satilik-daire'],[],[]);
+$assert(str_contains($detailHtml,'Öne çıkan özellikler')&&str_contains($detailHtml,'Balkon'),'listing detail renders property features');
+$assert(str_contains($detailHtml,'Brüt m²')&&str_contains($detailHtml,'145'),'listing detail renders property specifications');
+$assert(str_contains($detailHtml,'Ayşe Danışman')&&str_contains($detailHtml,'Bilgi talep et'),'listing detail renders assigned agent and enquiry form');
+
 $failed=false;try{$re->createLead(['name'=>'Bad','email'=>'not-an-email','message'=>'x']);}catch(RuntimeException){$failed=true;}
 $assert($failed,'invalid lead rejected');
 for($i=0;$i<5;$i++)$re->createLead(['listing_id'=>$listingId,'name'=>'Rate Test '.$i,'email'=>'rate'.$i.'@example.test','message'=>'Rate limit test'],'127.0.0.2');
