@@ -28,6 +28,9 @@ final class RoleManager
         'destinations.manage' => 'Turizm destinasyonlarını yönetme',
         'departures.manage' => 'Tur kalkış ve kapasite takvimini yönetme',
         'bookings.manage' => 'Tur rezervasyon taleplerini yönetme',
+        'services.manage' => 'Salon hizmetlerini yönetme',
+        'staff.manage' => 'Salon ekibini yönetme',
+        'appointments.manage' => 'Salon randevularını yönetme',
     ];
 
     public function __construct(private PDO $db) {}
