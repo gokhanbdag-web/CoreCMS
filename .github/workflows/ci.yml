@@ -82,3 +82,5 @@ jobs:
         run: php tests/seo-bulk-editor.php
       - name: Real estate module tests
         run: php tests/real-estate-module.php
+      - name: Tourism module tests
+        run: php tests/tourism-module.php
