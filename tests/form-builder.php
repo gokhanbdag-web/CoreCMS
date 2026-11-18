@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/app/bootstrap.php';
+require_once dirname(__DIR__) . '/app/Core/FormFieldEditor.php';
 
 use CoreCMS\Core\FormFieldEditor;
 
