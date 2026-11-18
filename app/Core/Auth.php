@@ -27,15 +27,30 @@ final class Auth
 
     public static function attempt(PDO $db, string $email, string $password): bool
     {
+        require_once __DIR__ . '/LoginRateLimiter.php';
+        $email = trim($email);
+        $remoteAddress = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        $limiter = new LoginRateLimiter($db);
+
+        if (!$limiter->isAllowed($remoteAddress, $email)) return false;
+
         $stmt = $db->prepare(
             "SELECT id, name, password_hash, role FROM core_users WHERE email=? AND status='active' LIMIT 1"
         );
-        $stmt->execute([trim($email)]);
+        $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$user || !password_verify($password, (string)$user['password_hash'])) return false;
-        $role = (string)$user['role'];
-        if (!in_array($role, ['admin', 'super_admin'], true) && !(new RoleManager($db))->roleExists($role)) return false;
+        if (!$user || !password_verify($password, (string)$user['password_hash'])) {
+            $limiter->recordFailure($remoteAddress, $email);
+            return false;
+        }
 
+        $role = (string)$user['role'];
+        if (!in_array($role, ['admin', 'super_admin'], true) && !(new RoleManager($db))->roleExists($role)) {
+            $limiter->recordFailure($remoteAddress, $email);
+            return false;
+        }
+
+        $limiter->clearSuccessfulPair($remoteAddress, $email);
         session_regenerate_id(true);
         unset($_SESSION['_corecms_csrf']);
         $_SESSION['corecms_user_id'] = (int)$user['id'];
