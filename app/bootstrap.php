@@ -30,7 +30,7 @@ try {
 }
 $appSecret = '';
 try {
-    $appSecret = CoreCMS\\Core\\AppSecret::ensure($db);
+    $appSecret = CoreCMS\Core\AppSecret::ensure($db);
 } catch (Throwable $e) {
     error_log('[CoreCMS] Application secret initialization failed: ' . $e->getMessage());
 }
