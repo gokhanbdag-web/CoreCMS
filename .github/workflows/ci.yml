@@ -84,3 +84,5 @@ jobs:
         run: php tests/real-estate-module.php
       - name: Tourism module tests
         run: php tests/tourism-module.php
+      - name: Hair salon module tests
+        run: php tests/hair-salon-module.php
