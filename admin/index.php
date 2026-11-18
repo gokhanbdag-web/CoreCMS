@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 $adminText = static fn(string $key, string $fallback): string => htmlspecialchars($translate($key, $fallback), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $adminJs = static fn(string $key, string $fallback): string => json_encode($translate($key, $fallback), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 CoreCMS\Core\Auth::startSession();
+CoreCMS\Core\Auth::refreshSession($db);
 CoreCMS\Core\Csrf::requireValidPost();
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'logout') {
     CoreCMS\Core\Auth::logout(); header('Location: ' . CoreCMS\Core\Url::to('/admin/')); exit;
