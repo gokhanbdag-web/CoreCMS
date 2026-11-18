@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-use CoreCMS\\Core\\Url;
-use CoreCMS\\Modules\\RealEstate\\RealEstateManager;
-use CoreCMS\\Modules\\RealEstate\\RealEstateSiteShell;
+use CoreCMS\Core\Url;
+use CoreCMS\Modules\RealEstate\RealEstateManager;
+use CoreCMS\Modules\RealEstate\RealEstateSiteShell;
 
 require_once dirname(__DIR__).'/Admin/RealEstateManager.php';
 require_once __DIR__.'/RealEstateSiteShell.php';
 
 return static function (PDO $db,array $params,array $request,array $module): string {
  require_once dirname(__DIR__,3).'/app/Core/Csrf.php';
- CoreCMS\\Core\\Auth::startSession();
+ CoreCMS\Core\Auth::startSession();
  $manager=new RealEstateManager($db);
  $listing=$manager->findListing((string)($params['slug']??''));
  $shell=new RealEstateSiteShell($db);
@@ -51,6 +51,6 @@ return static function (PDO $db,array $params,array $request,array $module): str
   if(!empty($listing['agent_phone']))$html.='<a href="tel:'.$e(preg_replace('/[^0-9+]/','',$listing['agent_phone'])).'">'.$e($listing['agent_phone']).'</a>';
   $html.='</div>';
  }
- $html.='<form method="post" action="'.Url::to('/emlak/talep').'"><input type="hidden" name="listing_id" value="'.(int)$listing['id'].'"><label>Adınız<input name="name" maxlength="160" required></label><label>E-posta<input name="email" type="email" maxlength="190" required></label><label>Telefon<input name="phone" maxlength="60"></label><label>Mesajınız<textarea name="message" rows="4" maxlength="5000" required>Bu ilan hakkında bilgi almak istiyorum.</textarea></label><label class="re-honey">Web sitesi<input name="website" tabindex="-1" autocomplete="off"></label>'.CoreCMS\\Core\\Csrf::field().'<button class="re-button">Bilgi talep et</button></form></aside></div></article>';
+ $html.='<form method="post" action="'.Url::to('/emlak/talep').'"><input type="hidden" name="listing_id" value="'.(int)$listing['id'].'"><label>Adınız<input name="name" maxlength="160" required></label><label>E-posta<input name="email" type="email" maxlength="190" required></label><label>Telefon<input name="phone" maxlength="60"></label><label>Mesajınız<textarea name="message" rows="4" maxlength="5000" required>Bu ilan hakkında bilgi almak istiyorum.</textarea></label><label class="re-honey">Web sitesi<input name="website" tabindex="-1" autocomplete="off"></label>'.CoreCMS\Core\Csrf::field().'<button class="re-button">Bilgi talep et</button></form></aside></div></article>';
  return $html.$shell->footer();
 };
