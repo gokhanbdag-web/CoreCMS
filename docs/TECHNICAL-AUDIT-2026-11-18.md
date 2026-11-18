@@ -2,52 +2,25 @@
 
 ## Scope and method
 
-This is a repository-level static audit of the current `main` branch. It reviewed the installer, bootstrap, authentication and authorization flow, migration runner, CI workflow, module runtime, media handling, public forms, email queue, sector module workflows, and existing regression tests.
+This repository-level audit reviewed the installer, bootstrap, authentication and authorization flow, migration runner, CI workflow, module runtime, media handling, public forms, email queue, sector module workflows, and regression tests.
 
-The latest CI run on the audited baseline completed successfully across PHP 8.1, 8.2, 8.3, 8.4 and 8.5. Static review is not a substitute for a production-like MySQL installation/upgrade test or a penetration test.
+The audit now has automated coverage for PHP 8.1–8.5, MySQL 8.0, and MariaDB 10.11. The browser installer is exercised over HTTP with a real database, and core migrations are tested on fresh and upgrade paths. Static review and automated tests are not a substitute for a production penetration test or load test.
 
-## Resolved during this audit
+## Resolved findings
 
 | ID | Priority | Finding | Resolution |
 |---|---|---|---|
-| R-01 | P1 | PHP 8.4 was declared compatible by the PHP 8.1+ requirement but was missing from the CI matrix. | Added PHP 8.4 to CI. PR #59 merged; the full matrix passed. |
-| R-02 | P1 | Active admin sessions trusted the role and account status captured at login. A role downgrade or account deactivation did not invalidate the old session. | Added database-backed session revalidation to dashboard, role manager, autosave and preview endpoints; added regression tests. PR #60 merged; PHP 8.1–8.5 passed. |
+| R-01 | P1 | PHP 8.4 was missing from the compatibility matrix. | Added PHP 8.4. PR #59 merged; all PHP matrix jobs passed. |
+| R-02 | P1 | Active admin sessions retained stale roles and account status after account changes. | Added database-backed session revalidation to admin dashboard, role manager, autosave and preview endpoints. PR #60 merged; PHP 8.1–8.5 passed. |
+| R-03 | P1 | Admin login had no brute-force throttling. | Added persistent limits of 5 failures per IP/email pair and 30 per IP per 15-minute window, hashed identifiers, and successful-login reset. PR #62 merged; PHP 8.1–8.5 passed. |
+| R-04 | P1 | CI did not exercise actual MySQL/MariaDB migrations or upgrade paths. | Added MySQL 8.0 and MariaDB 10.11 jobs, fresh core migrations, module installation, repeat-run checks, and upgrade from migration 0020. PR #63 merged. |
+| R-05 | P1 | The actual browser installer form was not tested against MySQL. | Added HTTP-level installer test covering session cookie, CSRF, database connection, config creation, admin creation, admin login page, application secret, and repeat-visit redirect. PR #66 merged; both database engines passed. |
+| R-06 | P2 | Form rate limiting reused the database password as its HMAC secret. | Added a separate random application secret in core settings, preserving existing non-empty secrets. PR #64 merged; PHP 8.1–8.5 passed. |
+| R-07 | P2 | Public form rate-limit count and insert were not atomic and used PHP-local cutoffs against database timestamps. | Added per-form transaction locking and database-time windows for MySQL and SQLite. PR #65 merged; PHP 8.1–8.5 and MySQL/MariaDB jobs passed. |
 
-## Open findings
+## Remaining findings
 
-### A-01 — Admin login has no brute-force throttling
-
-- **Priority:** P1
-- **Evidence:** `app/Core/Auth.php::attempt()` performs a user lookup and password verification but does not record or limit failed attempts. The login handler in `admin/index.php` returns the same error for failed credentials, but there is no request/IP/email throttle.
-- **Risk:** Repeated password guesses can be attempted against the administrator login endpoint.
-- **Recommended action:** Add a database-backed limiter keyed by a one-way hash of the remote IP and normalized email, with a short rolling window, bounded retention, and generic responses. Ensure the limiter works before and after pending migrations.
-- **Validation required:** Parallel-attempt tests, expiry tests, successful-login reset tests, and MySQL integration tests.
-
-### A-02 — CI does not exercise a real MySQL installation or upgrade
-
-- **Priority:** P1
-- **Evidence:** `.github/workflows/ci.yml` enables `pdo_mysql` but does not start a MySQL/MariaDB service. The installer hardening test checks locking, exclusive file creation and Apache deny rules; it does not execute the browser installer against MySQL. Sector-module tests construct in-memory SQLite databases.
-- **Risk:** MySQL-specific DDL, implicit commits, foreign keys, collation behavior, SQL dialect differences, and fresh-install/upgrade recovery can regress while the current CI remains green.
-- **Recommended action:** Add a MySQL service job that runs the ordered core migrations from an empty database, installs/enables each sector module, verifies the resulting schema and key CRUD workflows, then exercises an upgrade from a representative prior migration state. Keep SQLite tests for fast unit/regression coverage.
-- **Validation required:** MySQL 8.x and a supported MariaDB version; fresh install, interrupted migration retry, upgrade, and repeat-run idempotency.
-
-### A-03 — Public form rate-limit check and insert are not atomic
-
-- **Priority:** P2
-- **Evidence:** `app/Core/FormSubmissionService.php::submit()` counts recent attempts and inserts a new rate-limit row in separate statements without a transaction or database-side atomic limiter.
-- **Risk:** Concurrent submissions from the same address can all observe a count below the threshold and exceed the intended limit.
-- **Recommended action:** Use an atomic database-side rate-limit operation or a transaction/locking strategy supported by both MySQL and SQLite. Preserve per-form isolation and retention cleanup.
-- **Validation required:** Concurrent submission test that proves the configured maximum cannot be exceeded.
-
-### A-04 — Public form rate-limit HMAC key reuses the database password
-
-- **Priority:** P2
-- **Evidence:** `index.php` constructs `FormSubmissionService` using `$config['database']['password']` as its HMAC secret.
-- **Risk:** The rate-limit hashing key is coupled to a credential with a different purpose. Rotating the database password changes all IP hashes and resets the effective rate-limit history; an empty database password causes form submissions to be rejected by the service's non-empty-secret check.
-- **Recommended action:** Generate a separate random application secret during installation, store it in protected application configuration, and use it exclusively for rate-limit hashing. Add a backward-compatible upgrade path for existing installations.
-- **Validation required:** Existing config compatibility, empty DB password handling, secret rotation behavior, and form submission regression tests.
-
-### A-05 — Admin controller is a large monolithic entry point
+### A-01 — Admin controller is a large monolithic entry point
 
 - **Priority:** P2
 - **Evidence:** `admin/index.php` is approximately 115 KB and contains authentication, action dispatch, module workflows, settings, content, forms, email, and rendering logic.
@@ -55,29 +28,28 @@ The latest CI run on the audited baseline completed successfully across PHP 8.1,
 - **Recommended action:** Extract action handlers and view rendering incrementally by domain. Preserve existing routes, request names, UI, and permission checks. Do not perform a wholesale rewrite.
 - **Validation required:** Existing regression suite plus request/permission tests for every extracted action.
 
-### A-06 — Migration filename sequence contains duplicate numeric prefixes
+### A-02 — Historical migration files have duplicate numeric prefixes
 
-- **Priority:** P2
+- **Priority:** P2 (maintenance)
 - **Evidence:** Both `database/migrations/0002_module_content_registry.php` and `database/migrations/0002_role_permissions.php` use the `0002` prefix.
-- **Risk:** The current migrator sorts and records complete filenames, so this is not a demonstrated runtime collision. However, duplicate sequence numbers make ordering less obvious and increase the chance of future migration-order mistakes.
-- **Recommended action:** Do not rename already-applied migrations, because the migration ledger stores their filenames. Adopt a unique next migration number for all new migrations and document the filename convention.
-- **Validation required:** Migration ordering test that verifies deterministic ordering and unique filenames.
+- **Risk:** The current migrator sorts and records complete filenames, so this is not a demonstrated runtime collision. It makes the historical ordering less obvious.
+- **Resolution policy:** Never rename or edit already-applied migrations because the migration ledger stores their filenames. New migrations must use the next unique numeric prefix. This is now documented in `docs/MIGRATIONS.md`; migration `0037_login_rate_limits.php` follows the unique sequence.
+- **Validation required:** Continue checking deterministic filename order and unique numeric prefixes for every new migration.
 
 ## Additional observations
 
-- The installer already uses a non-blocking exclusive lock and exclusive creation of `config.php`; its regression test covers those filesystem guarantees.
+- The installer uses a non-blocking exclusive lock and exclusive creation of `config.php`; its filesystem regression tests cover those guarantees.
 - The module runtime validates module paths and constrains route handlers, templates and assets to their module directories.
 - Tourism capacity reservation uses a conditional atomic update; salon appointment creation serializes booking attempts through a staff-row update within a transaction.
 - The media library validates MIME type and image structure, generates random filenames, and blocks script execution in its upload directory on Apache.
+- The public form rate limiter now serializes concurrent requests per form and uses database time, avoiding PHP/database timezone mismatches.
 - These observations are code-review notes, not claims of a complete security certification.
 
-## Recommended next sequence
+## Next development order
 
-1. A-01: admin login brute-force throttling.
-2. A-02: MySQL/MariaDB integration coverage for fresh install and upgrades.
-3. A-04: dedicated application secret for form rate limiting.
-4. A-03: make public form rate limiting concurrency-safe.
-5. A-06: enforce unique migration numbering for future migrations.
-6. A-05: incremental extraction of the admin controller after behavior is covered by tests.
+1. Incrementally split `admin/index.php` into domain controllers and views, beginning with a low-risk, well-tested area.
+2. Continue installer and upgrade resilience testing, including interrupted migration recovery and subdirectory installation.
+3. Perform a focused authorization review across every admin action and module permission boundary.
+4. Add production-like performance and security tests before release.
 
-Each item should be implemented on its own branch, tested on the supported PHP matrix, reviewed for regressions, and merged only after the required checks pass.
+Each change should use its own branch, preserve existing behavior, run the full PHP and database test matrices, and merge only after all required checks pass.
