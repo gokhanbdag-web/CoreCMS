@@ -41,6 +41,10 @@ $assert($leadId>0&&count($re->leads())===1,'public lead stored');
 $re->updateLeadStatus($leadId,'contacted');$assert($re->leads()[0]['status']==='contacted','lead status updated');
 $failed=false;try{$re->createLead(['name'=>'Bad','email'=>'not-an-email','message'=>'x']);}catch(RuntimeException){$failed=true;}
 $assert($failed,'invalid lead rejected');
+for($i=0;$i<5;$i++)$re->createLead(['listing_id'=>$listingId,'name'=>'Rate Test '.$i,'email'=>'rate'.$i.'@example.test','message'=>'Rate limit test'],'127.0.0.2');
+$failed=false;try{$re->createLead(['listing_id'=>$listingId,'name'=>'Rate Test blocked','email'=>'blocked@example.test','message'=>'Too many'],'127.0.0.2');}catch(RuntimeException){$failed=true;}
+$assert($failed,'per-IP enquiry rate limit enforced');
+foreach($re->leads() as $lead)$re->updateLeadStatus((int)$lead['id'],'closed');
 $re->deleteAgent($agentId);$assert($re->findListing($listingId)['agent_id']===null,'deleting agent preserves listing and nulls relation');
 $re->deleteListing($listingId);$assert($re->leads()[0]['listing_id']===null,'deleting listing preserves lead and nulls relation');
 $assert($re->stats()['leads']===0,'lead dashboard counters reflect workflow state');
