@@ -188,17 +188,31 @@ final class FormManager
         return (int)$this->db->lastInsertId();
     }
 
-    public function submissions(?int $formId = null, int $limit = 100): array
+    public function submissions(?int $formId = null, int $limit = 100, array $filters = []): array
     {
         $limit=max(1,min(500,$limit));
-        if($formId!==null){
-            $stmt=$this->db->prepare('SELECT s.*,f.form_key,f.name AS form_name FROM core_form_submissions s INNER JOIN core_forms f ON f.id=s.form_id WHERE s.form_id=? ORDER BY s.id DESC LIMIT '.$limit);
-            $stmt->execute([$formId]);
-        }else{
-            $stmt=$this->db->query('SELECT s.*,f.form_key,f.name AS form_name FROM core_form_submissions s INNER JOIN core_forms f ON f.id=s.form_id ORDER BY s.id DESC LIMIT '.$limit);
+        $where=[];$params=[];
+        if($formId!==null&&$formId>0){$where[]='s.form_id=?';$params[]=$formId;}
+        $status=(string)($filters['status']??'');
+        if(in_array($status,['new','read','archived'],true)){$where[]='s.status=?';$params[]=$status;}
+        $locale=trim((string)($filters['locale']??''));
+        if($locale!==''&&preg_match('/^[a-zA-Z]{2,3}(?:[-_][a-zA-Z0-9]{2,8})?$/',$locale)){$where[]='s.locale_code=?';$params[]=$locale;}
+        $from=(string)($filters['from']??'');
+        if(preg_match('/^\d{4}-\d{2}-\d{2}$/',$from)){$where[]='s.created_at>=?';$params[]=$from.' 00:00:00';}
+        $to=(string)($filters['to']??'');
+        if(preg_match('/^\d{4}-\d{2}-\d{2}$/',$to)){$where[]='s.created_at<=?';$params[]=$to.' 23:59:59';}
+        $search=trim((string)($filters['search']??''));
+        if($search!==''){
+            $where[]='(f.name LIKE ? OR f.form_key LIKE ? OR s.payload_json LIKE ?)';
+            $like='%'.$search.'%';array_push($params,$like,$like,$like);
         }
+        $sql='SELECT s.*,f.form_key,f.name AS form_name FROM core_form_submissions s INNER JOIN core_forms f ON f.id=s.form_id';
+        if($where)$sql.=' WHERE '.implode(' AND ',$where);
+        $sql.=' ORDER BY s.id DESC LIMIT '.$limit;
+        $stmt=$this->db->prepare($sql);$stmt->execute($params);
         $rows=$stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach($rows as &$row)$row['payload']=$this->decodePayload((string)$row['payload_json']);
+        unset($row);
         return $rows;
     }
 
