@@ -17,14 +17,39 @@ final class FormSubmissionService
         if(trim((string)($input['_website']??''))!=='')return null;
         if($this->rateLimitSecret===''||$remoteAddress==='')throw new RuntimeException('Form submission could not be verified.');
         $ipHash=hash_hmac('sha256',$remoteAddress,$this->rateLimitSecret);
-        $cutoff=date('Y-m-d H:i:s',time()-$this->windowSeconds);
-        $cleanup=$this->db->prepare('DELETE FROM core_form_rate_limits WHERE created_at < ?');
-        $cleanup->execute([date('Y-m-d H:i:s',time()-86400)]);
-        $count=$this->db->prepare('SELECT COUNT(*) FROM core_form_rate_limits WHERE form_id=? AND ip_hash=? AND created_at>=?');
-        $count->execute([(int)$form['id'],$ipHash,$cutoff]);
-        if((int)$count->fetchColumn()>=$this->maxAttempts)throw new RuntimeException('Too many submissions. Please wait a few minutes and try again.');
-        $insert=$this->db->prepare('INSERT INTO core_form_rate_limits(form_id,ip_hash) VALUES(?,?)');
-        $insert->execute([(int)$form['id'],$ipHash]);
+        $driver=(string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $window=max(1,min(86400,$this->windowSeconds));
+        $cleanup=$driver==='sqlite'
+            ? $this->db->prepare("DELETE FROM core_form_rate_limits WHERE created_at < datetime('now','-1 day')")
+            : $this->db->prepare('DELETE FROM core_form_rate_limits WHERE created_at < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 DAY)');
+        $cleanup->execute();
+
+        if(!$this->db->beginTransaction())throw new RuntimeException('Form rate limit transaction could not be started.');
+        try{
+            // Lock the form row so simultaneous requests for the same form cannot
+            // all pass the count check before any of them records an attempt.
+            if($driver==='sqlite'){
+                $lock=$this->db->prepare('UPDATE core_forms SET id=id WHERE id=?');
+                $lock->execute([(int)$form['id']]);
+                $exists=$this->db->prepare('SELECT id FROM core_forms WHERE id=? LIMIT 1');
+                $exists->execute([(int)$form['id']]);
+                if(!$exists->fetchColumn())throw new RuntimeException('This form is not available.');
+                $count=$this->db->prepare("SELECT COUNT(*) FROM core_form_rate_limits WHERE form_id=? AND ip_hash=? AND created_at>=datetime('now','-".$window." seconds')");
+            }else{
+                $lock=$this->db->prepare('SELECT id FROM core_forms WHERE id=? FOR UPDATE');
+                $lock->execute([(int)$form['id']]);
+                if(!$lock->fetchColumn())throw new RuntimeException('This form is not available.');
+                $count=$this->db->prepare('SELECT COUNT(*) FROM core_form_rate_limits WHERE form_id=? AND ip_hash=? AND created_at>=DATE_SUB(CURRENT_TIMESTAMP, INTERVAL '.$window.' SECOND)');
+            }
+            $count->execute([(int)$form['id'],$ipHash]);
+            if((int)$count->fetchColumn()>=$this->maxAttempts)throw new RuntimeException('Too many submissions. Please wait a few minutes and try again.');
+            $insert=$this->db->prepare('INSERT INTO core_form_rate_limits(form_id,ip_hash) VALUES(?,?)');
+            $insert->execute([(int)$form['id'],$ipHash]);
+            $this->db->commit();
+        }catch(\Throwable $e){
+            if($this->db->inTransaction())$this->db->rollBack();
+            throw $e;
+        }
         return (new FormManager($this->db))->submit($key,$locale,$input);
     }
 }

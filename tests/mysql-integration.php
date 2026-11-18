@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/Core/Migrator.php';
 require dirname(__DIR__) . '/app/Core/ModuleManager.php';
+require dirname(__DIR__) . '/app/Core/FormManager.php';
+require dirname(__DIR__) . '/app/Core/FormSubmissionService.php';
 
 use CoreCMS\Core\Migrator;
 use CoreCMS\Core\ModuleManager;
@@ -44,6 +46,23 @@ $assert($freshMigrator->migrate() === [], 're-running the core migrator is idemp
 foreach (['core_users','core_settings','core_pages','core_roles','core_translations','core_login_attempts'] as $table) {
     $assert($tableExists($fresh, $table), 'fresh installation creates ' . $table);
 }
+
+date_default_timezone_set('Europe/Istanbul');
+$formManager = new CoreCMS\Core\FormManager($fresh);
+$formManager->save(null, 'mysql_rate_check', 'MySQL rate check', [
+    ['key'=>'name','type'=>'text','label'=>'Name','required'=>true],
+    ['key'=>'email','type'=>'email','label'=>'Email','required'=>true],
+], '', '', 'Received', true);
+$formService = new CoreCMS\Core\FormSubmissionService($fresh, bin2hex(random_bytes(32)), 1, 600);
+$formService->submit('mysql_rate_check', 'tr', ['name'=>'Test','email'=>'test@example.test'], '203.0.113.45');
+$rateLimited = false;
+try {
+    $formService->submit('mysql_rate_check', 'tr', ['name'=>'Test','email'=>'test@example.test'], '203.0.113.45');
+} catch (RuntimeException $e) {
+    $rateLimited = str_contains($e->getMessage(), 'Too many submissions');
+}
+$assert($rateLimited, 'MySQL form rate limiting uses database time and row locking');
+$assert(!$fresh->inTransaction(), 'MySQL form limiter leaves no open transaction');
 
 $modules = new ModuleManager($fresh, $root . '/modules');
 foreach (['real-estate','tourism','hair-salon'] as $moduleId) {

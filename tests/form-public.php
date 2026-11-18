@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+date_default_timezone_set('Europe/Istanbul');
+
 require dirname(__DIR__).'/app/Core/FormManager.php';
 require dirname(__DIR__).'/app/Core/FormRenderer.php';
 require dirname(__DIR__).'/app/Core/FormSubmissionService.php';
@@ -39,12 +41,14 @@ if(str_contains($renderer->render('missing_form'),'form-field'))throw new Runtim
 $service=new CoreCMS\Core\FormSubmissionService($db,'test-secret',1,600);
 $id=$service->submit('contact_form','en',['name'=>'Alex','email'=>'alex@example.test','message'=>'Hello','topic'=>'Sales','consent'=>'1'],'203.0.113.8');
 if(!$id)throw new RuntimeException('Valid public submission was not stored.');
+if($db->inTransaction())throw new RuntimeException('Rate limit transaction must be committed before form processing.');
 $honeypot=$service->submit('contact_form','en',['_website'=>'bot'],'203.0.113.9');
 if($honeypot!==null)throw new RuntimeException('Honeypot submission should be silently discarded.');
 $service->submit('contact_form','en',['name'=>'Alex','email'=>'alex@example.test','message'=>'Hello','consent'=>'1'],'203.0.113.10');
 $blocked=false;
 try{$service->submit('contact_form','en',['name'=>'Alex','email'=>'alex@example.test','message'=>'Hello','consent'=>'1'],'203.0.113.10');}catch(RuntimeException $e){$blocked=str_contains($e->getMessage(),'Too many submissions');}
 if(!$blocked)throw new RuntimeException('Rate limit did not block repeated submissions.');
+if($db->inTransaction())throw new RuntimeException('Blocked rate limit request must not leave an open transaction.');
 $hashes=$db->query('SELECT ip_hash FROM core_form_rate_limits')->fetchAll(PDO::FETCH_COLUMN);
 foreach($hashes as $hash)if($hash==='203.0.113.10'||strlen($hash)!==64)throw new RuntimeException('Raw IP address must not be stored.');
 echo "Public form rendering and submission checks passed.\n";
