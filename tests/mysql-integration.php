@@ -52,7 +52,7 @@ $formManager = new CoreCMS\Core\FormManager($fresh);
 $formManager->save(null, 'mysql_rate_check', 'MySQL rate check', [
     ['key'=>'name','type'=>'text','label'=>'Name','required'=>true],
     ['key'=>'email','type'=>'email','label'=>'Email','required'=>true],
-], null, '', 'Received', true);
+], '', '', 'Received', true);
 $formService = new CoreCMS\Core\FormSubmissionService($fresh, bin2hex(random_bytes(32)), 1, 600);
 $formService->submit('mysql_rate_check', 'tr', ['name'=>'Test','email'=>'test@example.test'], '203.0.113.45');
 $rateLimited = false;
