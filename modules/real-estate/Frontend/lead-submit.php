@@ -4,8 +4,10 @@ declare(strict_types=1);
 use CoreCMS\Core\Csrf;
 use CoreCMS\Core\Url;
 use CoreCMS\Modules\RealEstate\RealEstateManager;
+use CoreCMS\Modules\RealEstate\RealEstateSiteShell;
 
 require_once dirname(__DIR__).'/Admin/RealEstateManager.php';
+require_once __DIR__.'/RealEstateSiteShell.php';
 
 return static function (PDO $db,array $params,array $request,array $module): string {
  CoreCMS\Core\Auth::startSession();
@@ -21,5 +23,6 @@ return static function (PDO $db,array $params,array $request,array $module): str
  $listingId=(int)($_POST['listing_id']??0);$listing=$listingId>0?$manager->findListing($listingId):null;
  $back=$listing&&$listing['status']==='published'?$base.'/ilan/'.rawurlencode($listing['slug']):$base;
  $message=(string)$_SESSION['re_lead_feedback'];unset($_SESSION['re_lead_feedback']);
- return '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="'.Url::to('/modules/real-estate/assets/css/real-estate.css').'"><title>Talebiniz alındı</title></head><body class="re-site"><main class="re-container"><section class="re-empty"><h1>'.$e($message).'</h1><a class="re-button" href="'.$e($back).'">Portföye dön</a></section></main></body></html>';
+ $shell=new RealEstateSiteShell($db);
+ return $shell->header('Talebiniz alındı',$message,$base).'<section class="re-empty"><h1>'.$e($message).'</h1><a class="re-button" href="'.$e($back).'">Portföye dön</a></section>'.$shell->footer();
 };
