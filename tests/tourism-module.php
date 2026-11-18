@@ -26,6 +26,7 @@ $departureDate=(new DateTimeImmutable('+2 days'))->format('Y-m-d\TH:i');
 $departure=$tm->saveDeparture(['tour_id'=>$tour,'departure_at'=>$departureDate,'seats_total'=>3,'status'=>'open']);
 $assert($departure>0&&count($tm->departures($tour,true))===1,'departure schedule created');
 $debugDeparture=$db->query('SELECT id,tour_id,departure_at,status,seats_total,seats_reserved FROM tm_departures WHERE id='.(int)$departure)->fetch(PDO::FETCH_ASSOC);echo 'DEPARTURE DEBUG '.json_encode($debugDeparture).' NOW '.date('Y-m-d H:i:s').PHP_EOL;
+$eligibility=$db->prepare("SELECT COUNT(*) FROM tm_departures WHERE id=? AND tour_id=? AND status='open' AND departure_at>? AND seats_total-seats_reserved>=?");$eligibility->execute([$departure,$tour,date('Y-m-d H:i:s'),3]);echo 'ELIGIBILITY '.(int)$eligibility->fetchColumn().' PARAMS '.json_encode([$departure,$tour,date('Y-m-d H:i:s'),3]).PHP_EOL;
 $booking=$tm->createBooking(['tour_id'=>$tour,'departure_id'=>$departure,'name'=>'Test Müşteri','email'=>'customer@example.test','adults'=>2,'children'=>1,'message'=>'Bilgi rica ederim.'],'127.0.0.1');
 $assert($booking>0,'booking request created');
 $assert((int)$db->query('SELECT seats_reserved FROM tm_departures WHERE id='.(int)$departure)->fetchColumn()===3,'booking reserves seats');
