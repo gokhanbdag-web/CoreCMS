@@ -263,7 +263,7 @@ if(!$pending&&isset($_GET['template_key'])){
 <?php if(!$reModuleStatus['enabled']): ?><section class="content-admin"><h2><?= $adminText('re.admin.title','Emlak yönetimi') ?></h2><p><?= $adminText('re.admin.enable_module','Emlak modülünü kullanmak için önce Modüller bölümünden kurup etkinleştirin.') ?></p><a class="button" href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=modules')) ?>"><?= $adminText('admin.nav.modules','Modüller') ?></a></section><?php else: $reManager=new CoreCMS\Modules\RealEstate\RealEstateManager($db); require dirname(__DIR__).'/modules/real-estate/Admin/index.php'; endif ?>
 <?php endif ?>
 
-new CoreCMS\Core\DemoPackageManager($db,dirname(__DIR__).'/modules'); ?>
+<?php if($section==='demos'): $demoManager=new CoreCMS\Core\DemoPackageManager($db,dirname(__DIR__).'/modules'); ?>
 <section class="content-admin"><h2><?= $adminText('admin.demos.title','Demo packages') ?></h2><p><?= $adminText('admin.demos.intro','The preview shows package contents and installation status. Packages can only be installed for enabled modules. Edited content and content with revision history is preserved when resetting or removing a package.') ?></p></section>
 <div class="module-grid">
 <?php foreach($modules->discover() as $demoModule): foreach($demoManager->packages($demoModule['id']) as $demoPackage): $demoPreview=$demoManager->preview($demoModule['id'],$demoPackage['id']); ?>
