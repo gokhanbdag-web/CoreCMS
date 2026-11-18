@@ -32,7 +32,7 @@ final class RealEstateSiteShell
 
     private function menuUrl(string $url): string
     {
-        return preg_match('#^https://#i',$url) ? $url : \\CoreCMS\\Core\\Url::to($url);
+        return preg_match('#^https://#i',$url) ? $url : \CoreCMS\Core\Url::to($url);
     }
 
     public function header(string $title,string $description,string $base): string
