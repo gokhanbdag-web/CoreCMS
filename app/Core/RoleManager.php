@@ -24,6 +24,10 @@ final class RoleManager
         'listings.manage' => 'Emlak ilanlarını yönetme',
         'agents.manage' => 'Emlak danışmanlarını yönetme',
         'leads.manage' => 'Emlak müşteri taleplerini yönetme',
+        'tours.manage' => 'Tur ve deneyimleri yönetme',
+        'destinations.manage' => 'Turizm destinasyonlarını yönetme',
+        'departures.manage' => 'Tur kalkış ve kapasite takvimini yönetme',
+        'bookings.manage' => 'Tur rezervasyon taleplerini yönetme',
     ];
 
     public function __construct(private PDO $db) {}
