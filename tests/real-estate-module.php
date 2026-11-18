@@ -53,6 +53,9 @@ $detailHtml=$detailHandler($db,['slug'=>'cankaya-satilik-daire'],[],[]);
 $assert(str_contains($detailHtml,'Öne çıkan özellikler')&&str_contains($detailHtml,'Balkon'),'listing detail renders property features');
 $assert(str_contains($detailHtml,'Brüt m²')&&str_contains($detailHtml,'145'),'listing detail renders property specifications');
 $assert(str_contains($detailHtml,'Ayşe Danışman')&&str_contains($detailHtml,'Bilgi talep et'),'listing detail renders assigned agent and enquiry form');
+$listingHandler=require dirname(__DIR__).'/modules/real-estate/Frontend/listings.php';
+$searchHtml=$listingHandler($db,[],['query'=>[]],[]);
+$assert(str_contains($searchHtml,'name="district"')&&str_contains($searchHtml,'name="min_price"')&&str_contains($searchHtml,'name="max_price"'),'portfolio search exposes district and price range filters');
 
 $failed=false;try{$re->createLead(['name'=>'Bad','email'=>'not-an-email','message'=>'x']);}catch(RuntimeException){$failed=true;}
 $assert($failed,'invalid lead rejected');
