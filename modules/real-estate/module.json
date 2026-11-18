@@ -55,10 +55,54 @@
   "demo_packages": [
     {
       "id": "starter",
-      "name": "Emlak Başlangıç Paketi",
-      "description": "Portföy sayfasını ana menüye ekler; gerçek ilan yönetimi modül ekranından yapılır.",
-      "pages": {},
-      "menus": {}
+      "name": "Emlak Ofisi Başlangıç Sitesi",
+      "description": "Emlak ofisi için düzenlenebilir kurumsal sayfalar ve ana menü bağlantıları. Portföy sayfası ilan modülünden dinamik olarak çalışır.",
+      "pages": {
+        "about": {
+          "title": "Hakkımızda",
+          "slug": "hakkimizda",
+          "body": "# Güvenilir gayrimenkul danışmanlığı\n\nGayrimenkul kararları, yalnızca bir mülk seçmekten ibaret değildir. Doğru bilgi, şeffaf iletişim ve ihtiyaçlarınızı anlayan bir danışmanlık süreci gerektirir.\n\n## Çalışma yaklaşımımız\n\n- İhtiyaçlarınızı ve bütçenizi birlikte netleştiririz.\n- Satılık ve kiralık portföyümüzü güncel tutarız.\n- Her ilan için doğru ve anlaşılır bilgi sunarız.\n- Görüşme ve teklif sürecinde size eşlik ederiz.\n\n## Sizin için buradayız\n\nEkibimizi ve güncel portföyümüzü incelemek için [emlak portföyümüze göz atın](/emlak). Bu örnek metni işletmenizin kuruluş hikâyesi, uzmanlık alanları ve hizmet bölgesiyle güncelleyebilirsiniz.",
+          "status": "published",
+          "seo_title": "Hakkımızda | Gayrimenkul Danışmanlığı",
+          "seo_description": "Gayrimenkul danışmanlık yaklaşımımızı, hizmet anlayışımızı ve çalışma ilkelerimizi keşfedin."
+        },
+        "services": {
+          "title": "Hizmetlerimiz",
+          "slug": "hizmetlerimiz",
+          "body": "# Gayrimenkul süreçlerinizde yanınızdayız\n\nİhtiyacınıza uygun gayrimenkulü bulmanız veya mülkünüzü doğru şekilde değerlendirmeniz için uçtan uca danışmanlık sunuyoruz.\n\n## Satılık gayrimenkul\n\nDaire, villa, müstakil ev, arsa ve ticari gayrimenkul seçeneklerini inceleyin. İlan detaylarında fiyat, konum, özellikler ve fotoğraf galerisini görüntüleyebilirsiniz.\n\n## Kiralık gayrimenkul\n\nKonut ve ticari kiralama ihtiyaçlarınız için güncel portföyü filtreleyerek size uygun seçeneklere ulaşın.\n\n## Portföy danışmanlığı\n\nMülkünüzün tanıtımı, ilan hazırlığı, doğru alıcı veya kiracıyla buluşması ve görüşme sürecinin takibinde destek alın.\n\n## Güncel ilanlar\n\n[Satılık ve kiralık portföyümüzü görüntüleyin](/emlak). Hizmet başlıklarını, kapsamını ve hizmet verdiğiniz bölgeleri yönetim panelinden bu sayfayı düzenleyerek kendinize göre uyarlayın.",
+          "status": "published",
+          "seo_title": "Gayrimenkul Hizmetlerimiz | Satılık ve Kiralık",
+          "seo_description": "Satılık ve kiralık gayrimenkul, portföy yönetimi ve danışmanlık hizmetlerimizi inceleyin."
+        },
+        "contact": {
+          "title": "İletişim",
+          "slug": "iletisim",
+          "body": "# Bizimle iletişime geçin\n\nBir ilan hakkında bilgi almak, mülkünüzü portföyümüze eklemek veya danışmanlık görüşmesi planlamak için bize ulaşın.\n\n## İlan hakkında bilgi\n\nİlgilendiğiniz ilanı [portföy sayfamızda](/emlak) açın ve ilan detayındaki bilgi talep formunu gönderin. Talebiniz yönetim panelindeki müşteri talepleri bölümüne kaydedilir.\n\n## Ofis bilgileri\n\nBu alanı yönetim panelinden işletmenizin telefon numarası, e-posta adresi, açık adresi ve çalışma saatleriyle güncelleyin.\n\n**Not:** Bu başlangıç içeriği örnektir. Yayına almadan önce iletişim bilgilerinizi ve hizmet bölgenizi ekleyin.",
+          "status": "published",
+          "seo_title": "İletişim | Gayrimenkul Danışmanlığı",
+          "seo_description": "Gayrimenkul ilanları ve danışmanlık hizmetleri hakkında bizimle iletişime geçin."
+        }
+      },
+      "menus": {
+        "about": {
+          "menu_key": "main",
+          "label": "Hakkımızda",
+          "url": "/hakkimizda",
+          "sort_order": 20
+        },
+        "services": {
+          "menu_key": "main",
+          "label": "Hizmetlerimiz",
+          "url": "/hizmetlerimiz",
+          "sort_order": 30
+        },
+        "contact": {
+          "menu_key": "main",
+          "label": "İletişim",
+          "url": "/iletisim",
+          "sort_order": 40
+        }
+      }
     }
   ]
 }
