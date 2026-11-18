@@ -36,7 +36,7 @@ $failed=false;try{$m->createAppointment(['service_id'=>$service,'staff_id'=>$sta
 $assert($failed,'past date rejected');
 $staff2=$m->saveStaff(['name'=>'Uzman Deniz','working_days'=>[0,1,2,3,4,5,6],'work_start'=>'09:00','work_end'=>'18:00','service_ids'=>[$service]]);
 $slots2=$m->availableSlots($service,$staff2,$date);$assert(count($slots2)>5,'second staff schedule is independent');
-$times=array_slice($slots2,0,5);
+$times=['09:00','10:00','11:00','12:00','13:00'];
 foreach($times as $i=>$time)$m->createAppointment(['service_id'=>$service,'staff_id'=>$staff2,'date'=>$date,'time'=>$time,'customer_name'=>'Rate '.$i,'email'=>'rate'.$i.'@example.test'],'127.0.0.9');
 $failed=false;try{$m->createAppointment(['service_id'=>$service,'staff_id'=>$staff2,'date'=>$date,'time'=>'16:00','customer_name'=>'Rate blocked','email'=>'blocked@example.test'],'127.0.0.9');}catch(RuntimeException){$failed=true;}
 $assert($failed,'per-IP appointment request rate limit enforced');
