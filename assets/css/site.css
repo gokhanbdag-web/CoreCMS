@@ -60,3 +60,23 @@
 .form-builder-actions .button{width:auto;margin:0;padding:9px 12px;font-size:12px}
 .form-builder [data-add-field]{width:auto}
 @media(max-width:600px){.form-builder{padding:12px}.form-builder-grid{grid-template-columns:1fr}.form-builder-grid .form-builder-wide,.form-builder-grid .form-builder-options{grid-column:auto}.form-builder-actions .button{flex:1}}
+
+/* Form submissions inbox */
+.submission-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end;margin:16px 0 22px;padding:16px;border:1px solid #e1e6ef;border-radius:12px;background:#fbfcfe}
+.submission-filters label{display:grid;gap:6px;min-width:0;font-weight:600}
+.submission-filters input,.submission-filters select{width:100%;min-width:0;padding:10px 11px;border:1px solid #dce2ed;border-radius:8px;background:#fff;font:inherit}
+.submission-filters .submission-search{grid-column:span 2}
+.submission-filters .button{width:auto;margin:0;text-align:center}
+.submission-list{display:grid;gap:12px}
+.submission-card{padding:16px;border:1px solid #e1e6ef;border-radius:12px;background:#fff}
+.submission-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.submission-card-head p{margin:6px 0 0;color:#68758a;font-size:13px}
+.submission-status{padding:5px 9px;border-radius:20px;background:#eef2f7;font-size:12px;font-weight:700;white-space:nowrap}
+.submission-status.status-new{background:#fff2d9;color:#885500}.submission-status.status-read{background:#e7f1ff;color:#24558c}.submission-status.status-archived{background:#edf0f3;color:#586273}
+.submission-details{margin-top:12px;padding:10px 0;border-top:1px solid #edf0f4;border-bottom:1px solid #edf0f4}
+.submission-details summary{cursor:pointer;font-weight:700}
+.submission-details dl{display:grid;grid-template-columns:minmax(120px,1fr) 3fr;gap:6px 12px;margin:12px 0 2px}
+.submission-details dt{font-weight:700;color:#59677d}.submission-details dd{margin:0;overflow-wrap:anywhere}
+.submission-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.submission-actions .button{width:auto;margin:0}
+@media(max-width:760px){.submission-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.submission-filters .submission-search{grid-column:span 2}}
+@media(max-width:480px){.submission-filters{grid-template-columns:1fr}.submission-filters .submission-search{grid-column:auto}.submission-card-head{flex-direction:column}.submission-details dl{grid-template-columns:1fr;gap:2px}.submission-details dd{margin-bottom:8px}}
