@@ -25,6 +25,7 @@ $assert(count($tm->tours(['status'=>'published','destination_id'=>$destination,'
 $departureDate=(new DateTimeImmutable('+2 days'))->format('Y-m-d\TH:i');
 $departure=$tm->saveDeparture(['tour_id'=>$tour,'departure_at'=>$departureDate,'seats_total'=>3,'status'=>'open']);
 $assert($departure>0&&count($tm->departures($tour,true))===1,'departure schedule created');
+$debugDeparture=$db->query('SELECT id,tour_id,departure_at,status,seats_total,seats_reserved FROM tm_departures WHERE id='.(int)$departure)->fetch(PDO::FETCH_ASSOC);echo 'DEPARTURE DEBUG '.json_encode($debugDeparture).' NOW '.date('Y-m-d H:i:s').PHP_EOL;
 $booking=$tm->createBooking(['tour_id'=>$tour,'departure_id'=>$departure,'name'=>'Test Müşteri','email'=>'customer@example.test','adults'=>2,'children'=>1,'message'=>'Bilgi rica ederim.'],'127.0.0.1');
 $assert($booking>0,'booking request created');
 $assert((int)$db->query('SELECT seats_reserved FROM tm_departures WHERE id='.(int)$departure)->fetchColumn()===3,'booking reserves seats');
