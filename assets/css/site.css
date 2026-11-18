@@ -43,3 +43,20 @@
 .form-translation-options{margin-top:16px;padding-top:12px;border-top:1px solid #e6eaf1}
 .form-translation-options>strong{display:block;color:#39465d}
 .form-translation-group legend small{font-weight:400;color:#68758b}
+
+/* Visual form builder */
+.form-builder{margin:18px 0;padding:18px;border:1px solid #dfe5ef;border-radius:12px;background:#fbfcfe}
+.form-builder>legend{padding:0 8px;font-weight:800;color:#263650}
+.form-builder-list{display:grid;gap:14px;margin:14px 0}
+.form-builder-item{min-width:0;padding:16px;border:1px solid #e1e6ef;border-radius:11px;background:#fff}
+.form-builder-item>legend{padding:0 8px;font-weight:800;color:#3455b5}
+.form-builder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.form-builder-grid label{min-width:0}
+.form-builder-grid input:not([type=checkbox]),.form-builder-grid select,.form-builder-grid textarea{display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid #dce2ed;border-radius:8px;background:#fff;font:inherit}
+.form-builder-grid .form-builder-wide,.form-builder-grid .form-builder-options{grid-column:1/-1}
+.form-builder-grid .form-builder-required{display:flex;align-items:center;gap:8px}
+.form-builder-grid .form-builder-required input{width:auto;margin:0}
+.form-builder-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.form-builder-actions .button{width:auto;margin:0;padding:9px 12px;font-size:12px}
+.form-builder [data-add-field]{width:auto}
+@media(max-width:600px){.form-builder{padding:12px}.form-builder-grid{grid-template-columns:1fr}.form-builder-grid .form-builder-wide,.form-builder-grid .form-builder-options{grid-column:auto}.form-builder-actions .button{flex:1}}
