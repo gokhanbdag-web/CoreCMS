@@ -18,7 +18,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: pdo, pdo_mysql, pdo_sqlite
+          extensions: pdo, pdo_mysql, curl, pdo_sqlite
       - name: PHP syntax checks
         run: |
           find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
@@ -119,6 +119,14 @@ jobs:
         with:
           php-version: '8.5'
           extensions: pdo, pdo_mysql
+      - name: Browser installer HTTP integration test
+        run: php tests/installer-http-integration.php
+        env:
+          CORECMS_DB_HOST: 127.0.0.1
+          CORECMS_DB_PORT: 3306
+          CORECMS_DB_USER: root
+          CORECMS_DB_PASSWORD: root
+          CORECMS_INSTALL_TEST_DB: corecms_installer_http_test
       - name: Fresh install, module install and upgrade integration tests
         run: php tests/mysql-integration.php
         env:
