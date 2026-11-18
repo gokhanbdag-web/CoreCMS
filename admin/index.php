@@ -62,8 +62,7 @@ try {
   if($action==='theme_save') { $themeManager->activate((string)($_POST['theme_module']??'')); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=appearance&saved=1')); exit; }
   if($action==='form_save') {
    if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
-   $fields=json_decode((string)($_POST['fields_json']??''),true);
-   if(!is_array($fields))throw new RuntimeException($translate('admin.forms.fields_json_invalid','Form fields must be a valid JSON array.'));
+   $fields=CoreCMS\Core\FormFieldEditor::fromPost($_POST['fields']??[]);
    $formId=$formManager->save((int)($_POST['id']??0)?:null,(string)($_POST['form_key']??''),(string)($_POST['name']??''),$fields,(string)($_POST['recipient_email']??''),(string)($_POST['description']??''),(string)($_POST['success_message']??''),isset($_POST['enabled']));
    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=forms&edit_form='.$formId.'&saved=1')); exit;
   }
@@ -311,8 +310,40 @@ if(!$pending&&isset($_GET['template_key'])){
 <label><?= $adminText('admin.forms.description','Description') ?><textarea name="description" rows="2" maxlength="1000"><?= $h($formEdit['description']??'') ?></textarea></label>
 <label><?= $adminText('admin.forms.recipient','Notification recipient') ?><input type="email" name="recipient_email" maxlength="190" value="<?= $h($formEdit['recipient_email']??'') ?>" placeholder="contact@example.com"></label>
 <label><?= $adminText('admin.forms.success_message','Success message') ?><input name="success_message" maxlength="500" value="<?= $h($formEdit['success_message']??'') ?>"></label>
-<label><?= $adminText('admin.forms.fields_json','Fields (JSON)') ?><textarea name="fields_json" rows="12" required spellcheck="false"><?= $h(json_encode($formEdit['fields']??[['key'=>'name','type'=>'text','label'=>'Name','required'=>true],['key'=>'email','type'=>'email','label'=>'Email','required'=>true]],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)) ?></textarea></label>
-<small class="editor-help"><?= $adminText('admin.forms.fields_help','Supported types: text, email, tel, textarea, select and checkbox. Select fields require an options array.') ?></small>
+<fieldset class="form-builder"><legend><?= $adminText('admin.forms.field_builder','Form fields') ?></legend>
+<p class="editor-help"><?= $adminText('admin.forms.field_builder_help','Add fields, choose their type, mark required fields and change their order. Select options: one option per line.') ?></p>
+<div class="form-builder-list" data-form-field-list>
+<?php $builderFields=$formEdit['fields']??[['key'=>'name','type'=>'text','label'=>'Name','required'=>true],['key'=>'email','type'=>'email','label'=>'Email','required'=>true]]; foreach($builderFields as $fieldIndex=>$builderField): ?>
+<fieldset class="form-builder-item" data-form-field><legend><?= $adminText('admin.forms.field','Field') ?> <span data-field-number><?= (int)$fieldIndex+1 ?></span></legend>
+<div class="form-builder-grid">
+<label><?= $adminText('admin.forms.field_key','Field key') ?><input name="fields[<?= (int)$fieldIndex ?>][key]" required maxlength="40" pattern="[a-z][a-z0-9_]{0,39}" value="<?= $h($builderField['key']??'') ?>" placeholder="full_name"></label>
+<label><?= $adminText('admin.forms.field_type','Field type') ?><select name="fields[<?= (int)$fieldIndex ?>][type]" data-field-type><?php foreach(['text'=>'Text','email'=>'Email','tel'=>'Phone','textarea'=>'Long text','select'=>'Dropdown','checkbox'=>'Checkbox'] as $typeValue=>$typeLabel): ?><option value="<?= $h($typeValue) ?>" <?= ($builderField['type']??'text')===$typeValue?'selected':'' ?>><?= $adminText('admin.forms.field_type_'.$typeValue,$typeLabel) ?></option><?php endforeach ?></select></label>
+<label class="form-builder-wide"><?= $adminText('admin.forms.field_label','Field label') ?><input name="fields[<?= (int)$fieldIndex ?>][label]" required maxlength="120" value="<?= $h($builderField['label']??'') ?>"></label>
+<label class="form-builder-required"><input type="checkbox" name="fields[<?= (int)$fieldIndex ?>][required]" value="1" <?= !empty($builderField['required'])?'checked':'' ?>> <?= $adminText('admin.forms.field_required','Required field') ?></label>
+<label class="form-builder-options" data-options-wrap style="<?= ($builderField['type']??'')==='select'?'':'display:none' ?>"><?= $adminText('admin.forms.field_options','Dropdown options') ?><textarea name="fields[<?= (int)$fieldIndex ?>][options_text]" rows="3"><?= $h(implode("\n",$builderField['options']??[])) ?></textarea></label>
+</div>
+<div class="form-builder-actions"><button type="button" class="button secondary" data-move-up><?= $adminText('admin.forms.move_up','Move up') ?></button><button type="button" class="button secondary" data-move-down><?= $adminText('admin.forms.move_down','Move down') ?></button><button type="button" class="button secondary" data-remove-field><?= $adminText('admin.forms.remove_field','Remove field') ?></button></div></fieldset>
+<?php endforeach ?></div>
+<button type="button" class="button secondary" data-add-field><?= $adminText('admin.forms.add_field','Add field') ?></button>
+<template id="form-builder-template"><fieldset class="form-builder-item" data-form-field><legend><?= $adminText('admin.forms.field','Field') ?> <span data-field-number></span></legend><div class="form-builder-grid">
+<label><?= $adminText('admin.forms.field_key','Field key') ?><input data-name="key" required maxlength="40" pattern="[a-z][a-z0-9_]{0,39}" placeholder="phone"></label>
+<label><?= $adminText('admin.forms.field_type','Field type') ?><select data-name="type" data-field-type><?php foreach(['text'=>'Text','email'=>'Email','tel'=>'Phone','textarea'=>'Long text','select'=>'Dropdown','checkbox'=>'Checkbox'] as $typeValue=>$typeLabel): ?><option value="<?= $h($typeValue) ?>"><?= $adminText('admin.forms.field_type_'.$typeValue,$typeLabel) ?></option><?php endforeach ?></select></label>
+<label class="form-builder-wide"><?= $adminText('admin.forms.field_label','Field label') ?><input data-name="label" required maxlength="120"></label>
+<label class="form-builder-required"><input type="checkbox" data-name="required" value="1"> <?= $adminText('admin.forms.field_required','Required field') ?></label>
+<label class="form-builder-options" data-options-wrap style="display:none"><?= $adminText('admin.forms.field_options','Dropdown options') ?><textarea data-name="options_text" rows="3"></textarea></label>
+</div><div class="form-builder-actions"><button type="button" class="button secondary" data-move-up><?= $adminText('admin.forms.move_up','Move up') ?></button><button type="button" class="button secondary" data-move-down><?= $adminText('admin.forms.move_down','Move down') ?></button><button type="button" class="button secondary" data-remove-field><?= $adminText('admin.forms.remove_field','Remove field') ?></button></div></fieldset></template></fieldset>
+<script>
+(function(){
+ const root=document.querySelector('[data-form-field-list]'); if(!root)return;
+ const template=document.getElementById('form-builder-template');
+ const reindex=()=>Array.from(root.querySelectorAll('[data-form-field]')).forEach((row,index)=>{row.querySelector('[data-field-number]').textContent=String(index+1);row.querySelectorAll('[name]').forEach(input=>{input.name=input.name.replace(/fields\[\d+\]/,'fields['+index+']');});});
+ const updateOptions=row=>{const select=row.querySelector('[data-field-type]');const wrap=row.querySelector('[data-options-wrap]');if(select&&wrap)wrap.style.display=select.value==='select'?'block':'none';};
+ root.addEventListener('change',event=>{if(event.target.matches('[data-field-type]'))updateOptions(event.target.closest('[data-form-field]'));});
+ root.addEventListener('click',event=>{const row=event.target.closest('[data-form-field]');if(!row)return;if(event.target.closest('[data-remove-field]')){row.remove();reindex();return;}if(event.target.closest('[data-move-up]')){if(row.previousElementSibling)root.insertBefore(row,row.previousElementSibling);reindex();return;}if(event.target.closest('[data-move-down]')){if(row.nextElementSibling)root.insertBefore(row.nextElementSibling,row);reindex();}});
+ document.querySelector('[data-add-field]')?.addEventListener('click',()=>{if(root.querySelectorAll('[data-form-field]').length>=30){alert('A form can contain at most 30 fields.');return;}const fragment=template.content.cloneNode(true);root.appendChild(fragment);reindex();});
+ reindex();
+})();
+</script>
 <label><input type="checkbox" name="enabled" value="1" <?= !$formEdit||(int)$formEdit['enabled']===1?'checked':'' ?>> <?= $adminText('admin.forms.enabled','Enabled') ?></label>
 <button class="button"><?= $adminText('admin.common.save','Save') ?></button></form></section>
 <?php if($formEdit): ?>
