@@ -35,7 +35,7 @@ return [
    ];
    $sql=$sqlite?"INSERT INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?) ON CONFLICT(locale_code,translation_key) DO UPDATE SET translation_value=excluded.translation_value,updated_at=CURRENT_TIMESTAMP":"INSERT INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?) ON DUPLICATE KEY UPDATE translation_value=VALUES(translation_value)";
    $insert=$db->prepare($sql);
-   foreach($labels as $key=>$values){$insert->execute(['tr',$key,$values[0]]);$insert->execute(['en',$key,$values[1]]);}
+   foreach($labels as $key=>$values){foreach(['tr'=>0,'en'=>1] as $locale=>$index){$language=$db->prepare('SELECT 1 FROM core_languages WHERE locale_code=?');$language->execute([$locale]);if($language->fetchColumn())$insert->execute([$locale,$key,$values[$index]]);}}
   }
  },
  'down' => static function (PDO $db): void {
