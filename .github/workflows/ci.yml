@@ -90,3 +90,38 @@ jobs:
         run: php tests/tourism-module.php
       - name: Hair salon module tests
         run: php tests/hair-salon-module.php
+
+  mysql-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database-image: ['mysql:8.0', 'mariadb:10.11']
+    services:
+      database:
+        image: ${{ matrix.database-image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: corecms_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo, pdo_mysql
+      - name: Fresh install, module install and upgrade integration tests
+        run: php tests/mysql-integration.php
+        env:
+          CORECMS_DB_HOST: 127.0.0.1
+          CORECMS_DB_PORT: 3306
+          CORECMS_DB_USER: root
+          CORECMS_DB_PASSWORD: root
+          CORECMS_DB_NAME: corecms_test
