@@ -10,6 +10,7 @@ final class RealEstateSiteShell
     private array $settings;
     private array $menus;
     private string $siteName;
+    private string $locale='tr';
 
     public function __construct(PDO $db)
     {
@@ -20,8 +21,8 @@ final class RealEstateSiteShell
         $this->settings=(new \\CoreCMS\\Core\\SiteSettings($db))->all();
         $this->siteName=trim((string)($this->settings['seo_org_name']??'')) ?: trim((string)($this->settings['site_name']??''));
         if($this->siteName==='')$this->siteName='Gayrimenkul Ofisi';
-        $locale=(new \\CoreCMS\\Core\\LocaleManager($db))->defaultCode();
-        $this->menus=(new \\CoreCMS\\Core\\ContentManager($db))->menusForLocale('main',$locale);
+        $this->locale=(new \\CoreCMS\\Core\\LocaleManager($db))->defaultCode();
+        $this->menus=(new \\CoreCMS\\Core\\ContentManager($db))->menusForLocale('main',$this->locale);
     }
 
     private function e(mixed $value): string
@@ -33,7 +34,7 @@ final class RealEstateSiteShell
     {
         $logo=trim((string)($this->settings['seo_logo_url']??''));
         $brand=$logo!==''?'<img src="'.$this->e($logo).'" alt="'.$this->e($this->siteName).'">':$this->e($this->siteName);
-        $html='<!doctype html><html lang="'.$this->e($this->settings['site_language']??'tr').'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$this->e($title).'</title><meta name="description" content="'.$this->e($description).'"><link rel="stylesheet" href="'.\\CoreCMS\\Core\\Url::to('/modules/real-estate/assets/css/real-estate.css').'"></head><body class="re-site"><header class="re-header"><a class="re-brand" href="'.$this->e($base).'">'.$brand.'</a><nav aria-label="Ana menü">';
+        $html='<!doctype html><html lang="'.$this->e($this->locale).'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$this->e($title).'</title><meta name="description" content="'.$this->e($description).'"><link rel="stylesheet" href="'.\\CoreCMS\\Core\\Url::to('/modules/real-estate/assets/css/real-estate.css').'"></head><body class="re-site"><header class="re-header"><a class="re-brand" href="'.$this->e($base).'">'.$brand.'</a><nav aria-label="Ana menü">';
         foreach($this->menus as $menu){
             $url=(string)($menu['url']??'');
             if($url==='')continue;
