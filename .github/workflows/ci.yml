@@ -34,6 +34,8 @@ jobs:
         run: php tests/auth-session.php
       - name: Admin login rate limit tests
         run: php tests/auth-login-rate-limit.php
+      - name: Application secret tests
+        run: php tests/app-secret.php
       - name: Module lifecycle tests
         run: php tests/module-lifecycle.php
       - name: Module update and rollback tests
