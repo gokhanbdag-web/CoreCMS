@@ -44,6 +44,39 @@ final class Auth
         return true;
     }
 
+    /**
+     * Revalidate an authenticated session against the current account record.
+     * This makes role changes and account deactivation effective immediately,
+     * rather than waiting for the user's session cookie to expire.
+     */
+    public static function refreshSession(PDO $db): bool
+    {
+        if (!self::check()) return false;
+
+        $userId = (int)$_SESSION['corecms_user_id'];
+        $stmt = $db->prepare('SELECT name, role, status FROM core_users WHERE id=? LIMIT 1');
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user || (string)$user['status'] !== 'active') {
+            self::logout();
+            return false;
+        }
+
+        $role = (string)$user['role'];
+        if ($role === '' || (!in_array($role, ['admin', 'super_admin'], true) && !(new RoleManager($db))->roleExists($role))) {
+            self::logout();
+            return false;
+        }
+
+        if ((string)($_SESSION['corecms_user_role'] ?? '') !== $role) {
+            $_SESSION['corecms_user_role'] = $role;
+            unset($_SESSION['_corecms_csrf']);
+        }
+        $_SESSION['corecms_user_name'] = (string)$user['name'];
+        return true;
+    }
+
     public static function check(): bool
     {
         return !empty($_SESSION['corecms_user_id'])

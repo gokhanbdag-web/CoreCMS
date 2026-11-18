@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 CoreCMS\Core\Auth::startSession();
+CoreCMS\Core\Auth::refreshSession($db);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, private');
 header('X-Content-Type-Options: nosniff');

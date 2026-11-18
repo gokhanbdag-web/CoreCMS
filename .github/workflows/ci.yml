@@ -30,6 +30,8 @@ jobs:
         run: php tests/core-foundation.php
       - name: Role and permission tests
         run: php tests/role-manager.php
+      - name: Authentication session revalidation tests
+        run: php tests/auth-session.php
       - name: Module lifecycle tests
         run: php tests/module-lifecycle.php
       - name: Module update and rollback tests

@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 require_once dirname(__DIR__) . '/app/Core/AdminErrorTranslator.php';
 $t = static fn(string $key, string $fallback): string => htmlspecialchars($translate($key, $fallback), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 CoreCMS\Core\Auth::startSession();
+CoreCMS\Core\Auth::refreshSession($db);
 CoreCMS\Core\Csrf::requireValidPost();
 CoreCMS\Core\Auth::requireAdmin();
 

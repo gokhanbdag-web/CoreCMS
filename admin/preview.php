@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/app/bootstrap.php';
 CoreCMS\Core\Auth::startSession();
+CoreCMS\Core\Auth::refreshSession($db);
 CoreCMS\Core\Csrf::requireValidPost();
 if (!CoreCMS\Core\Auth::check()) {
     http_response_code(403);
