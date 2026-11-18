@@ -15,15 +15,15 @@ $db->exec('CREATE TABLE core_menus(id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key
 $db->exec("INSERT INTO core_languages(locale_code,name,is_default,enabled) VALUES('tr','Türkçe',1,1),('en','English',0,1)");
 $db->exec("INSERT INTO core_settings(setting_key,setting_value) VALUES('site_name','Örnek Emlak'),('seo_org_name','Örnek Gayrimenkul'),('seo_logo_url','https://example.test/logo.png')");
 $db->exec("INSERT INTO core_menus(menu_key,label,url,sort_order) VALUES('main','Portföy','/emlak',10),('main','Hakkımızda','/hakkimizda',20)");
-$shell=new CoreCMS\\Modules\\RealEstate\\RealEstateSiteShell($db);
+$shell=new CoreCMS\Modules\RealEstate\RealEstateSiteShell($db);
 $header=$shell->header('İlan başlığı','Açıklama','/emlak');
 $footer=$shell->footer();
 $checks=[
- str_contains($header,'Örnek Gayrimenkul')=>'brand uses editable organization name',
- str_contains($header,'https://example.test/logo.png')=>'brand uses editable logo',
- str_contains($header,'/hakkimizda')=>'navigation uses CMS menu',
- str_contains($header,'lang="tr"')=>'shell uses default locale',
- str_contains($footer,'Örnek Gayrimenkul')=>'footer uses editable organization name',
+ 'brand uses editable organization name'=>str_contains($header,'Örnek Gayrimenkul'),
+ 'brand uses editable logo'=>str_contains($header,'https://example.test/logo.png'),
+ 'navigation uses CMS menu'=>str_contains($header,'/hakkimizda'),
+ 'shell uses default locale'=>str_contains($header,'lang="tr"'),
+ 'footer uses editable organization name'=>str_contains($footer,'Örnek Gayrimenkul'),
 ];
-foreach($checks as $ok=>$label){if(!$ok)throw new RuntimeException('FAIL: '.$label);}
+foreach($checks as $label=>$ok){if(!$ok)throw new RuntimeException('FAIL: '.$label);}
 echo 'Real estate site shell checks passed ('.count($checks).').'.PHP_EOL;
