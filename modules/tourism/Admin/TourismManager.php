@@ -72,7 +72,7 @@ final class TourismManager
   if($ipHash!==null){$sqlite=(string)$this->db->getAttribute(PDO::ATTR_DRIVER_NAME)==='sqlite';$limit=$this->db->prepare($sqlite?"SELECT COUNT(*) FROM tm_bookings WHERE ip_hash=? AND created_at>=datetime('now','-1 hour')":"SELECT COUNT(*) FROM tm_bookings WHERE ip_hash=? AND created_at>=DATE_SUB(NOW(),INTERVAL 1 HOUR)");$limit->execute([$ipHash]);if((int)$limit->fetchColumn()>=5)throw new RuntimeException('Çok fazla rezervasyon talebi gönderildi. Daha sonra tekrar deneyin.');}
   if(!$this->db->beginTransaction())throw new RuntimeException('Rezervasyon başlatılamadı.');
   try{
-   $seat=$this->db->prepare("UPDATE tm_departures SET seats_reserved=seats_reserved+? WHERE id=? AND tour_id=? AND status='open' AND departure_at>? AND seats_total-seats_reserved>=?");
+   $seat=$this->db->prepare("UPDATE tm_departures SET seats_reserved=seats_reserved+? WHERE id=? AND tour_id=? AND status='open' AND departure_at>? AND seats_total>=seats_reserved+?");
    $seat->execute([$adults+$children,$departure,$tour,date('Y-m-d H:i:s'),$adults+$children]);
    if($seat->rowCount()!==1)throw new RuntimeException('Seçilen kalkışta yeterli boş yer bulunmuyor.');
    $total=(float)$t['price']*($adults+$children);
@@ -87,7 +87,7 @@ final class TourismManager
   try{
    $q=$this->db->prepare('SELECT departure_id,adults,children,status FROM tm_bookings WHERE id=?');$q->execute([$id]);$b=$q->fetch(PDO::FETCH_ASSOC);if(!$b)throw new RuntimeException('Rezervasyon bulunamadı.');
    $wasReleased=in_array($b['status'],['cancelled','spam'],true);$willRelease=in_array($status,['cancelled','spam'],true);$seats=(int)$b['adults']+(int)$b['children'];$departure=(int)($b['departure_id']??0);
-   if($departure>0&&$wasReleased&&!$willRelease){$s=$this->db->prepare("UPDATE tm_departures SET seats_reserved=seats_reserved+? WHERE id=? AND status='open' AND departure_at>? AND seats_total-seats_reserved>=?");$s->execute([$seats,$departure,date('Y-m-d H:i:s'),$seats]);if($s->rowCount()!==1)throw new RuntimeException('Kalkışta tekrar yer ayırtılamıyor.');}
+   if($departure>0&&$wasReleased&&!$willRelease){$s=$this->db->prepare("UPDATE tm_departures SET seats_reserved=seats_reserved+? WHERE id=? AND status='open' AND departure_at>? AND seats_total>=seats_reserved+?");$s->execute([$seats,$departure,date('Y-m-d H:i:s'),$seats]);if($s->rowCount()!==1)throw new RuntimeException('Kalkışta tekrar yer ayırtılamıyor.');}
    if($departure>0&&!$wasReleased&&$willRelease){$s=$this->db->prepare('UPDATE tm_departures SET seats_reserved=CASE WHEN seats_reserved>=? THEN seats_reserved-? ELSE 0 END WHERE id=?');$s->execute([$seats,$seats,$departure]);}
    $s=$this->db->prepare('UPDATE tm_bookings SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?');$s->execute([$status,$id]);$this->db->commit();
   }catch(Throwable $e){if($this->db->inTransaction())$this->db->rollBack();throw $e;}
