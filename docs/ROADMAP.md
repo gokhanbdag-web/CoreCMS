@@ -35,7 +35,7 @@
 
 ## Sector modules
 - [x] Real estate: listings, agents, listing search/detail, lead forms
-- [ ] Tourism: tours, destinations, availability, booking enquiries
+- [x] Tourism: tours, destinations, availability, booking enquiries
 - [ ] Hair salon: services, staff, appointment requests
 - [ ] Each sector module owns its schema, admin screens, routes and frontend templates
 
