@@ -7,6 +7,7 @@ return static function (PDO $db): void {
         : 'INSERT INTO core_translations(locale_code,translation_key,translation_value) VALUES(?,?,?) ON DUPLICATE KEY UPDATE translation_value=VALUES(translation_value),updated_at=CURRENT_TIMESTAMP';
     $insert=$db->prepare($sql);
     $entries=[
+        'admin.settings.smtp_help'=>['PHP mail() yöntemini kullanabilir veya SMTP sunucusu tanımlayabilirsiniz. Parolayı korumak için alanı boş bırakın.','Use PHP mail() or configure an SMTP server. Leave the password field empty to keep the saved password.'],
         'admin.settings.smtp_enabled'=>['PHP mail() yerine SMTP kullan','Use SMTP instead of PHP mail()'],
         'admin.settings.smtp_host'=>['SMTP sunucusu','SMTP server'],
         'admin.settings.smtp_port'=>['SMTP portu','SMTP port'],
