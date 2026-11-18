@@ -17,6 +17,8 @@ if (!preg_match('/^[a-zA-Z0-9_]+$/', $database)) {
 $root = dirname(__DIR__);
 $configFile = $root . '/config.php';
 $lockFile = $configFile . '.install.lock';
+$retryMigrationFile = $root . '/database/migrations/9999_test_installer_retry.php';
+$retryMarkerFile = sys_get_temp_dir() . '/corecms-installer-retry-' . bin2hex(random_bytes(6)) . '.marker';
 $baseUrl = 'http://127.0.0.1:8081';
 $cookieFile = tempnam(sys_get_temp_dir(), 'corecms-cookie-');
 $subdirCookieFile = tempnam(sys_get_temp_dir(), 'corecms-subdir-cookie-');
@@ -25,6 +27,7 @@ $process = null;
 $createdDatabase = false;
 $createdConfig = false;
 $createdLock = false;
+$createdRetryMigration = false;
 $subdirRoot = $root . '/subdir_test';
 $subdirConfigFile = $subdirRoot . '/config.php';
 $subdirLockFile = $subdirConfigFile . '.install.lock';
@@ -84,6 +87,27 @@ try {
     $server = $connectServer();
     $server->exec('CREATE DATABASE `' . $database . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $createdDatabase = true;
+    if (is_file($retryMigrationFile)) throw new RuntimeException('Installer retry migration fixture already exists.');
+    putenv('CORECMS_INSTALL_RETRY_MARKER=' . $retryMarkerFile);
+    $retryMigration = <<<'PHP'
+<?php
+declare(strict_types=1);
+
+return static function (PDO $db): void {
+    $db->exec("CREATE TABLE IF NOT EXISTS corecms_installer_retry_fixture (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $marker = (string)getenv('CORECMS_INSTALL_RETRY_MARKER');
+    if ($marker !== '' && !is_file($marker)) {
+        file_put_contents($marker, 'first-attempt-failed');
+        throw new RuntimeException('Simulated one-time installer migration interruption.');
+    }
+};
+PHP;
+    if (file_put_contents($retryMigrationFile, $retryMigration) === false) {
+        throw new RuntimeException('Could not create interrupted migration test fixture.');
+    }
+    $createdRetryMigration = true;
 
     $descriptors = [
         0 => ['pipe', 'r'],
@@ -111,7 +135,7 @@ try {
         throw new RuntimeException('Installer CSRF token was not rendered.');
     }
 
-    [$postStatus, , $resultHtml] = $request($baseUrl . '/installer/', [
+    [$firstPostStatus, , $firstResultHtml] = $request($baseUrl . '/installer/', [
         '_csrf' => $matches[1],
         'db_host' => $host,
         'db_port' => (string)$port,
@@ -124,8 +148,49 @@ try {
     ]);
     $createdConfig = is_file($configFile);
     $createdLock = is_file($lockFile);
-    $assert($postStatus === 200 && str_contains($resultHtml, 'Kurulum tamamlandı'), 'browser installer completes successfully');
-    $assert($createdConfig, 'installer writes config.php');
+    $assert($firstPostStatus === 200 && str_contains($firstResultHtml, 'Kurulum tamamlanamadı'), 'first install attempt reports the simulated migration interruption');
+    $assert(!is_file($configFile), 'failed install removes only its newly-created config');
+
+    $partialDb = new PDO(
+        sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $host, $port, $database),
+        $user,
+        $password,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    $partialTable = $partialDb->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?');
+    $partialTable->execute(['corecms_installer_retry_fixture']);
+    $assert((int)$partialTable->fetchColumn() === 1, 'DDL completed before interruption remains available for safe retry');
+    $partialLedger = $partialDb->prepare('SELECT COUNT(*) FROM core_migrations WHERE migration=?');
+    $partialLedger->execute(['9999_test_installer_retry.php']);
+    $assert((int)$partialLedger->fetchColumn() === 0, 'failed migration is not marked as applied');
+
+    [$retryGetStatus, , $retryHtml] = $request($baseUrl . '/installer/');
+    $assert($retryGetStatus === 200, 'installer remains available after a failed migration');
+    if (!preg_match('/name="_csrf"\s+value="([a-f0-9]{64})"/', $retryHtml, $retryMatches)) {
+        throw new RuntimeException('Retry installer CSRF token was not rendered.');
+    }
+    [$postStatus, , $resultHtml] = $request($baseUrl . '/installer/', [
+        '_csrf' => $retryMatches[1],
+        'db_host' => $host,
+        'db_port' => (string)$port,
+        'db_name' => $database,
+        'db_user' => $user,
+        'db_pass' => $password,
+        'admin_name' => 'CoreCMS Integration Admin',
+        'admin_email' => 'installer-test@example.test',
+        'admin_password' => 'Integration-Test-Password-2026!',
+    ]);
+    $createdConfig = is_file($configFile);
+    $createdLock = is_file($lockFile) || $createdLock;
+    $assert($postStatus === 200 && str_contains($resultHtml, 'Kurulum tamamlandı'), 'browser installer succeeds when the interrupted migration is retried');
+    $assert($createdConfig, 'installer writes config.php after a successful retry');
+    $partialLedger->execute(['9999_test_installer_retry.php']);
+    $assert((int)$partialLedger->fetchColumn() === 1, 'retried migration is recorded exactly once');
+
+    if ($createdRetryMigration && is_file($retryMigrationFile)) @unlink($retryMigrationFile);
+    $createdRetryMigration = false;
+    if (is_file($retryMarkerFile)) @unlink($retryMarkerFile);
+    putenv('CORECMS_INSTALL_RETRY_MARKER');
 
     [$adminStatus, , $adminHtml] = $request($baseUrl . '/admin/');
     $assert($adminStatus === 200 && str_contains($adminHtml, 'name="email"'), 'installed admin login page is reachable');
@@ -231,6 +296,9 @@ try {
     if ($createdLock && is_file($lockFile)) @unlink($lockFile);
     if ($createdSubdirConfig && is_file($subdirConfigFile)) @unlink($subdirConfigFile);
     if ($createdSubdirLock && is_file($subdirLockFile)) @unlink($subdirLockFile);
+    if ($createdRetryMigration && is_file($retryMigrationFile)) @unlink($retryMigrationFile);
+    if (is_file($retryMarkerFile)) @unlink($retryMarkerFile);
+    putenv('CORECMS_INSTALL_RETRY_MARKER');
     if (is_file($cookieFile)) @unlink($cookieFile);
     if (is_file($subdirCookieFile)) @unlink($subdirCookieFile);
     if (is_file($logFile)) @unlink($logFile);
