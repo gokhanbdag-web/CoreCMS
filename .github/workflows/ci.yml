@@ -88,6 +88,8 @@ jobs:
         run: php tests/seo-bulk-editor.php
       - name: Real estate module tests
         run: php tests/real-estate-module.php
+      - name: Real estate site shell tests
+        run: php tests/real-estate-site-shell.php
       - name: Tourism module tests
         run: php tests/tourism-module.php
       - name: Hair salon module tests

@@ -4,16 +4,19 @@ declare(strict_types=1);
 use CoreCMS\Core\Csrf;
 use CoreCMS\Core\Url;
 use CoreCMS\Modules\RealEstate\RealEstateManager;
+use CoreCMS\Modules\RealEstate\RealEstateSiteShell;
 
 require_once dirname(__DIR__).'/Admin/RealEstateManager.php';
+require_once __DIR__.'/RealEstateSiteShell.php';
 
 return static function (PDO $db,array $params,array $request,array $module): string {
  $manager=new RealEstateManager($db);
  $base=Url::to('/emlak');
  $e=static fn($v)=>htmlspecialchars((string)$v,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
  $money=static fn($v,$currency)=>number_format((float)$v,0,',','.').' '.htmlspecialchars((string)$currency,ENT_QUOTES,'UTF-8');
- $header=static function(string $title,string $description='')use($e,$base):string{return '<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$e($title).'</title><meta name="description" content="'.$e($description).'"><link rel="stylesheet" href="'.Url::to('/modules/real-estate/assets/css/real-estate.css').'"></head><body class="re-site"><header class="re-header"><a class="re-brand" href="'.$base.'">Gayrimenkul <span>Portföyü</span></a><nav><a href="'.$base.'">İlanlar</a><a href="'.$base.'#danismanlar">Danışmanlarımız</a><a href="'.$base.'#iletisim">İletişim</a></nav></header><main class="re-container">';};
- $footer='</main><footer class="re-footer">Gayrimenkul portföyü · '.date('Y').'</footer></body></html>';
+ $shell=new RealEstateSiteShell($db);
+ $header=static fn(string $title,string $description='')=>$shell->header($title,$description,$base);
+ $footer=static fn()=>$shell->footer();
  $listingType=static fn($v)=>$v==='rent'?'Kiralık':'Satılık';
  $propertyType=static fn($v)=>['apartment'=>'Daire','villa'=>'Villa','house'=>'Müstakil ev','land'=>'Arsa','commercial'=>'Ticari','office'=>'Ofis','other'=>'Diğer'][$v]??'Gayrimenkul';
  if(isset($params['slug'])){
@@ -30,7 +33,7 @@ return static function (PDO $db,array $params,array $request,array $module): str
   $html.='</section><aside class="re-contact" id="iletisim"><h2>Bu ilanla ilgileniyor musunuz?</h2>';
   if($listing['agent_name'])$html.='<p><b>'.$e($listing['agent_name']).'</b><br>'.$e($listing['agent_title']).'</p>';
   $html.='<form method="post" action="'.$base.'/talep"><input type="hidden" name="listing_id" value="'.(int)$listing['id'].'"><label>Adınız<input name="name" maxlength="160" required></label><label>E-posta<input type="email" name="email" maxlength="190" required></label><label>Telefon<input name="phone" maxlength="60"></label><label>Mesajınız<textarea name="message" rows="4" maxlength="5000" required>Bu ilan hakkında bilgi almak istiyorum.</textarea></label><label class="re-honey">Web sitesi<input name="website" tabindex="-1" autocomplete="off"></label>'.Csrf::field().'<button class="re-button">Bilgi talep et</button></form></aside></div></article>';
-  return $html.$footer;
+  return $html.$footer();
  }
  $filters=['status'=>'published','listing_type'=>(string)($_GET['listing_type']??''),'property_type'=>(string)($_GET['property_type']??''),'city'=>(string)($_GET['city']??''),'district'=>(string)($_GET['district']??''),'q'=>(string)($_GET['q']??''),'min_price'=>(string)($_GET['min_price']??''),'max_price'=>(string)($_GET['max_price']??'')];
  $listings=$manager->listings($filters);$agents=array_values(array_filter($manager->agents(),static fn($a)=>$a['status']==='active'));
