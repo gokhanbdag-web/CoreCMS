@@ -21,6 +21,9 @@ $baseUrl = 'http://127.0.0.1:8081';
 $cookieFile = tempnam(sys_get_temp_dir(), 'corecms-cookie-');
 $logFile = tempnam(sys_get_temp_dir(), 'corecms-installer-log-');
 $process = null;
+$createdDatabase = false;
+$createdConfig = false;
+$createdLock = false;
 $checks = 0;
 
 $assert = static function (bool $condition, string $message) use (&$checks): void {
@@ -66,11 +69,11 @@ $request = static function (string $url, ?array $post = null) use ($cookieFile):
 };
 
 try {
-    if (is_file($configFile)) throw new RuntimeException('config.php already exists; refusing to overwrite an installation.');
+    if (is_file($configFile) || is_file($lockFile)) throw new RuntimeException('An existing installation or installer lock was found; refusing to modify it.');
 
     $server = $connectServer();
-    $server->exec('DROP DATABASE IF EXISTS `' . $database . '`');
     $server->exec('CREATE DATABASE `' . $database . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    $createdDatabase = true;
 
     $descriptors = [
         0 => ['pipe', 'r'],
@@ -109,8 +112,10 @@ try {
         'admin_email' => 'installer-test@example.test',
         'admin_password' => 'Integration-Test-Password-2026!',
     ]);
+    $createdConfig = is_file($configFile);
+    $createdLock = is_file($lockFile);
     $assert($postStatus === 200 && str_contains($resultHtml, 'Kurulum tamamlandı'), 'browser installer completes successfully');
-    $assert(is_file($configFile), 'installer writes config.php');
+    $assert($createdConfig, 'installer writes config.php');
 
     [$adminStatus, , $adminHtml] = $request($baseUrl . '/admin/');
     $assert($adminStatus === 200 && str_contains($adminHtml, 'name="email"'), 'installed admin login page is reachable');
@@ -137,13 +142,13 @@ try {
         proc_terminate($process);
         proc_close($process);
     }
-    if (is_file($configFile)) @unlink($configFile);
-    if (is_file($lockFile)) @unlink($lockFile);
+    if ($createdConfig && is_file($configFile)) @unlink($configFile);
+    if ($createdLock && is_file($lockFile)) @unlink($lockFile);
     if (is_file($cookieFile)) @unlink($cookieFile);
     if (is_file($logFile)) @unlink($logFile);
     try {
         $server = $connectServer();
-        $server->exec('DROP DATABASE IF EXISTS `' . $database . '`');
+        if ($createdDatabase) $server->exec('DROP DATABASE IF EXISTS `' . $database . '`');
     } catch (Throwable $e) {
         error_log('[CoreCMS] Installer integration cleanup failed: ' . $e->getMessage());
     }
