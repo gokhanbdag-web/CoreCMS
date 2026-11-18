@@ -336,11 +336,11 @@ if(!$pending&&isset($_GET['template_key'])){
 (function(){
  const root=document.querySelector('[data-form-field-list]'); if(!root)return;
  const template=document.getElementById('form-builder-template');
- const reindex=()=>Array.from(root.querySelectorAll('[data-form-field]')).forEach((row,index)=>{row.querySelector('[data-field-number]').textContent=String(index+1);row.querySelectorAll('[name]').forEach(input=>{input.name=input.name.replace(/fields\[\d+\]/,'fields['+index+']');});});
+ const reindex=()=>Array.from(root.querySelectorAll('[data-form-field]')).forEach((row,index)=>{row.querySelector('[data-field-number]').textContent=String(index+1);row.querySelectorAll('[data-name]').forEach(input=>{input.name='fields['+index+']['+input.dataset.name+']';});row.querySelectorAll('[name]').forEach(input=>{input.name=input.name.replace(/fields\[\d+\]/,'fields['+index+']');});});
  const updateOptions=row=>{const select=row.querySelector('[data-field-type]');const wrap=row.querySelector('[data-options-wrap]');if(select&&wrap)wrap.style.display=select.value==='select'?'block':'none';};
  root.addEventListener('change',event=>{if(event.target.matches('[data-field-type]'))updateOptions(event.target.closest('[data-form-field]'));});
  root.addEventListener('click',event=>{const row=event.target.closest('[data-form-field]');if(!row)return;if(event.target.closest('[data-remove-field]')){row.remove();reindex();return;}if(event.target.closest('[data-move-up]')){if(row.previousElementSibling)root.insertBefore(row,row.previousElementSibling);reindex();return;}if(event.target.closest('[data-move-down]')){if(row.nextElementSibling)root.insertBefore(row.nextElementSibling,row);reindex();}});
- document.querySelector('[data-add-field]')?.addEventListener('click',()=>{if(root.querySelectorAll('[data-form-field]').length>=30){alert('A form can contain at most 30 fields.');return;}const fragment=template.content.cloneNode(true);root.appendChild(fragment);reindex();});
+ document.querySelector('[data-add-field]')?.addEventListener('click',()=>{if(root.querySelectorAll('[data-form-field]').length>=30){alert(<?= $adminJs('admin.forms.max_fields','A form can contain at most 30 fields.') ?>);return;}const fragment=template.content.cloneNode(true);root.appendChild(fragment);reindex();});
  reindex();
 })();
 </script>
