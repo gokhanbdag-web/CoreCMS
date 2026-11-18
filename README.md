@@ -60,6 +60,7 @@ This repository starts with the CoreCMS foundation and installation pipeline. Se
 - Notifications use PHP `mail()` by default, or a native SMTP transport configured in Admin → Site settings.
 - SMTP supports STARTTLS, implicit SSL/TLS, optional AUTH LOGIN, verified TLS certificates, and bounded connection timeouts.
 - SMTP credentials are stored in the site's settings table; the password is never prefilled in the admin form, and leaving it blank preserves the saved value.
+- Admins can send a one-off test email from Site settings after saving SMTP configuration; the recipient is validated and SMTP errors are not exposed in the admin UI.
 - No Composer mailer dependency or command-line setup is required. Verify delivery with the hosting provider's SMTP service before production use.
 
 ## Security
