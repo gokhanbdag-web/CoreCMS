@@ -20,6 +20,10 @@ final class RoleManager
         'settings.manage' => 'Site ayarlarını yönetme',
         'users.manage' => 'Kullanıcı ve rolleri yönetme',
         'forms.manage' => 'Formları ve e-posta şablonlarını yönetme',
+        'listings.view' => 'Emlak ilanlarını görüntüleme',
+        'listings.manage' => 'Emlak ilanlarını yönetme',
+        'agents.manage' => 'Emlak danışmanlarını yönetme',
+        'leads.manage' => 'Emlak müşteri taleplerini yönetme',
     ];
 
     public function __construct(private PDO $db) {}

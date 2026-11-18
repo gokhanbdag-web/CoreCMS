@@ -80,3 +80,5 @@ jobs:
         run: php tests/seo-management.php
       - name: SEO bulk editor tests
         run: php tests/seo-bulk-editor.php
+      - name: Real estate module tests
+        run: php tests/real-estate-module.php
