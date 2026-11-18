@@ -19,6 +19,7 @@ $configFile = $root . '/config.php';
 $lockFile = $configFile . '.install.lock';
 $baseUrl = 'http://127.0.0.1:8081';
 $cookieFile = tempnam(sys_get_temp_dir(), 'corecms-cookie-');
+$subdirCookieFile = tempnam(sys_get_temp_dir(), 'corecms-subdir-cookie-');
 $logFile = tempnam(sys_get_temp_dir(), 'corecms-installer-log-');
 $process = null;
 $createdDatabase = false;
@@ -45,14 +46,15 @@ $connectServer = static function () use ($host, $port, $user, $password): PDO {
     ]);
 };
 
-$request = static function (string $url, ?array $post = null) use ($cookieFile): array {
+$request = static function (string $url, ?array $post = null, ?string $cookieJar = null) use ($cookieFile): array {
+    $cookieJar = $cookieJar ?? $cookieFile;
     $curl = curl_init($url);
     $options = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HEADER => true,
         CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_COOKIEJAR => $cookieFile,
-        CURLOPT_COOKIEFILE => $cookieFile,
+        CURLOPT_COOKIEJAR => $cookieJar,
+        CURLOPT_COOKIEFILE => $cookieJar,
         CURLOPT_CONNECTTIMEOUT => 3,
         CURLOPT_TIMEOUT => 20,
     ];
@@ -180,7 +182,7 @@ try {
     $server->exec('CREATE DATABASE `' . $subdirDatabase . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $createdSubdirDatabase = true;
     $subdirUrl = $baseUrl . '/subdir_test/installer/';
-    [$subdirGetStatus, , $subdirHtml] = $request($subdirUrl);
+    [$subdirGetStatus, , $subdirHtml] = $request($subdirUrl, null, $subdirCookieFile);
     $assert($subdirGetStatus === 200, 'installer page loads from a nested path');
     $assert(str_contains($subdirHtml, '/subdir_test/assets/css/site.css'), 'installer asset URLs retain the nested base path');
     if (!preg_match('/name="_csrf"\s+value="([a-f0-9]{64})"/', $subdirHtml, $subdirMatches)) {
@@ -197,13 +199,13 @@ try {
         'admin_name' => 'CoreCMS Subdirectory Admin',
         'admin_email' => 'subdir-installer-test@example.test',
         'admin_password' => 'Subdirectory-Test-Password-2026!',
-    ]);
+    ], $subdirCookieFile);
     $createdSubdirConfig = is_file($subdirConfigFile);
     $createdSubdirLock = is_file($subdirLockFile);
     $assert($subdirPostStatus === 200 && str_contains($subdirResult, 'Kurulum tamamlandı'), 'browser installer completes from a nested path');
     $assert($createdSubdirConfig, 'nested installer writes config.php inside its own directory');
 
-    [$subdirAdminStatus, , $subdirAdminHtml] = $request($baseUrl . '/subdir_test/admin/');
+    [$subdirAdminStatus, , $subdirAdminHtml] = $request($baseUrl . '/subdir_test/admin/', null, $subdirCookieFile);
     $assert($subdirAdminStatus === 200 && str_contains($subdirAdminHtml, 'name="email"'), 'nested admin login page is reachable');
 
     $subdirInstalledDb = new PDO(
@@ -216,7 +218,7 @@ try {
     $subdirAdmin->execute(['subdir-installer-test@example.test']);
     $assert((int)$subdirAdmin->fetchColumn() === 1, 'nested installer creates the active administrator account');
 
-    [$subdirSecondStatus, $subdirHeaders] = $request($subdirUrl);
+    [$subdirSecondStatus, $subdirHeaders] = $request($subdirUrl, null, $subdirCookieFile);
     $assert($subdirSecondStatus === 302 && stripos($subdirHeaders, 'Location: /subdir_test/admin/') !== false, 'nested installer redirects to the nested admin path after installation');
 
     echo 'Browser installer HTTP integration checks passed (' . $checks . ').' . PHP_EOL;
@@ -230,6 +232,7 @@ try {
     if ($createdSubdirConfig && is_file($subdirConfigFile)) @unlink($subdirConfigFile);
     if ($createdSubdirLock && is_file($subdirLockFile)) @unlink($subdirLockFile);
     if (is_file($cookieFile)) @unlink($cookieFile);
+    if (is_file($subdirCookieFile)) @unlink($subdirCookieFile);
     if (is_file($logFile)) @unlink($logFile);
     try {
         $server = $connectServer();
