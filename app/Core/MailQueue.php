@@ -5,7 +5,7 @@ namespace CoreCMS\Core;
 
 use Closure;
 use PDO;
-use RuntimeException;
+use RuntimeException;\n\nrequire_once __DIR__ . '/SmtpTransport.php';
 
 final class MailQueue
 {
@@ -46,7 +46,7 @@ final class MailQueue
             $fromHeader=$fromName!==''?'=?UTF-8?B?'.base64_encode($fromName).'?= <'.$from.'>':$from;
             $headers="From: ".$fromHeader."\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nX-Mailer: CoreCMS";
             $ok=false;
-            try{$ok=($this->sender)((string)$row['recipient'],$subject,(string)$row['body'],$headers);}catch(\Throwable $e){error_log('[CoreCMS] Mail transport failed: '.$e->getMessage());}
+            try{$ok=($this->sender)((string)$row['recipient'],(string)$row['subject'],(string)$row['body'],$headers,$settings);}catch(\Throwable $e){error_log('[CoreCMS] Mail transport failed: '.$e->getMessage());}
             $attempts=(int)$row['attempts']+1;
             if($ok){
                 $update=$this->db->prepare("UPDATE core_mail_queue SET status='sent',attempts=?,sent_at=CURRENT_TIMESTAMP,last_error=NULL WHERE id=?");
