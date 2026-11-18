@@ -2,6 +2,12 @@
 declare(strict_types=1);
 
 require dirname(__DIR__).'/app/Core/ModuleManager.php';
+require dirname(__DIR__).'/app/Core/Url.php';
+require dirname(__DIR__).'/app/Core/Auth.php';
+require dirname(__DIR__).'/app/Core/Csrf.php';
+require dirname(__DIR__).'/app/Core/SiteSettings.php';
+require dirname(__DIR__).'/app/Core/ContentManager.php';
+require dirname(__DIR__).'/app/Core/LocaleManager.php';
 require dirname(__DIR__).'/modules/real-estate/Admin/RealEstateManager.php';
 
 use CoreCMS\Core\ModuleManager;
@@ -35,10 +41,19 @@ $updated=$re->findListing($listingId);
 $assert($updated['title']==='Çankaya Satılık Daire Güncel'&&$updated['status']==='draft','listing updated and unpublished');
 $failed=false;try{$re->saveListing(['title'=>'Invalid','slug'=>'../bad','listing_type'=>'sale','property_type'=>'apartment','price'=>1,'city'=>'Ankara','district'=>'Çankaya','description'=>'x']);}catch(RuntimeException){$failed=true;}
 $assert($failed,'invalid slug rejected');
-$re->saveListing(['id'=>$listingId,'title'=>'Çankaya Satılık Daire','slug'=>'cankaya-satilik-daire','listing_type'=>'sale','property_type'=>'apartment','price'=>'4250000','currency'=>'TRY','city'=>'Ankara','district'=>'Çankaya','description'=>'Açıklama','status'=>'published']);
+$re->saveListing(['id'=>$listingId,'title'=>'Çankaya Satılık Daire','slug'=>'cankaya-satilik-daire','listing_type'=>'sale','property_type'=>'apartment','price'=>'4250000','currency'=>'TRY','city'=>'Ankara','district'=>'Çankaya','description'=>'Açıklama','agent_id'=>$agentId,'area_gross'=>'145','area_net'=>'125','bedrooms'=>'3','bathrooms'=>'1','features'=>"Balkon\nAsansör",'status'=>'published']);
 $leadId=$re->createLead(['listing_id'=>$listingId,'name'=>'Müşteri Adı','email'=>'customer@example.test','phone'=>'5551234567','message'=>'İlan hakkında bilgi almak istiyorum.'],'127.0.0.1');
 $assert($leadId>0&&count($re->leads())===1,'public lead stored');
 $re->updateLeadStatus($leadId,'contacted');$assert($re->leads()[0]['status']==='contacted','lead status updated');
+$db->exec('CREATE TABLE core_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT NOT NULL)');
+$db->exec('CREATE TABLE core_menus(id INTEGER PRIMARY KEY AUTOINCREMENT,menu_key TEXT,label TEXT,url TEXT,sort_order INTEGER)');
+$db->exec("INSERT INTO core_settings(setting_key,setting_value) VALUES('site_name','Test Emlak')");
+$detailHandler=require dirname(__DIR__).'/modules/real-estate/Frontend/detail.php';
+$detailHtml=$detailHandler($db,['slug'=>'cankaya-satilik-daire'],[],[]);
+$assert(str_contains($detailHtml,'Öne çıkan özellikler')&&str_contains($detailHtml,'Balkon'),'listing detail renders property features');
+$assert(str_contains($detailHtml,'Brüt m²')&&str_contains($detailHtml,'145'),'listing detail renders property specifications');
+$assert(str_contains($detailHtml,'Ayşe Danışman')&&str_contains($detailHtml,'Bilgi talep et'),'listing detail renders assigned agent and enquiry form');
+
 $failed=false;try{$re->createLead(['name'=>'Bad','email'=>'not-an-email','message'=>'x']);}catch(RuntimeException){$failed=true;}
 $assert($failed,'invalid lead rejected');
 for($i=0;$i<5;$i++)$re->createLead(['listing_id'=>$listingId,'name'=>'Rate Test '.$i,'email'=>'rate'.$i.'@example.test','message'=>'Rate limit test'],'127.0.0.2');
