@@ -106,7 +106,7 @@ if($page && preg_match('/\[\[form:[a-z][a-z0-9_-]{1,99}\]\]/',(string)$page['bod
             $formManager=new CoreCMS\Core\FormManager($db);
             $form=$formManager->findByKey($formKey,true);
             if(!$form)throw new RuntimeException('This form is not available.');
-            $service=new CoreCMS\Core\FormSubmissionService($db,(string)($config['database']['password']??''));
+            $service=new CoreCMS\Core\FormSubmissionService($db,$appSecret);
             $submissionId=$service->submit($formKey,$currentLocale,$_POST,(string)($_SERVER['REMOTE_ADDR']??''));
             if($submissionId!==null && !empty($form['recipient_email'])){
                 try{

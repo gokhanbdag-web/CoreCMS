@@ -18,6 +18,7 @@ require_once CORECMS_ROOT . '/app/Core/Auth.php';
 require_once CORECMS_ROOT . '/app/Core/RoleManager.php';
 require_once CORECMS_ROOT . '/app/Core/DemoPackageManager.php';
 require_once CORECMS_ROOT . '/app/Core/LocaleManager.php';
+require_once CORECMS_ROOT . '/app/Core/AppSecret.php';
 
 $db = CoreCMS\Core\Database::connect($config['database']);
 $settings = [];
@@ -27,6 +28,13 @@ try {
 } catch (Throwable $e) {
     error_log('[CoreCMS] Settings load failed: ' . $e->getMessage());
 }
+$appSecret = '';
+try {
+    $appSecret = CoreCMS\Core\AppSecret::ensure($db);
+} catch (Throwable $e) {
+    error_log('[CoreCMS] Application secret initialization failed: ' . $e->getMessage());
+}
+
 if (!empty($settings['timezone']) && in_array($settings['timezone'], DateTimeZone::listIdentifiers(), true)) {
     date_default_timezone_set($settings['timezone']);
 }
