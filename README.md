@@ -56,5 +56,11 @@ Every module has a `module.json` manifest with an ID, version, minimum core vers
 ## Development status
 This repository starts with the CoreCMS foundation and installation pipeline. Sector modules are being built incrementally; a manifest is not a claim that a sector module is feature-complete. See `docs/ROADMAP.md`.
 
+## Email delivery
+- Notifications use PHP `mail()` by default, or a native SMTP transport configured in Admin → Site settings.
+- SMTP supports STARTTLS, implicit SSL/TLS, optional AUTH LOGIN, verified TLS certificates, and bounded connection timeouts.
+- SMTP credentials are stored in the site's settings table; the password is never prefilled in the admin form, and leaving it blank preserves the saved value.
+- No Composer mailer dependency or command-line setup is required. Verify delivery with the hosting provider's SMTP service before production use.
+
 ## Security
 Do not expose `config.php`, installer files, logs or backups publicly. Use HTTPS in production. Review the security checklist before launch.
