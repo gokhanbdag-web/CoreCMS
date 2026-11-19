@@ -58,13 +58,27 @@ if(isset($_GET['edit_agent']))foreach($reAgents as $candidate)if((int)$candidate
 <label>Fotoğrafları seçin<input type="file" name="listing_images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple required></label>
 <button class="button" type="submit">Fotoğrafları yükle</button>
 </form>
+<?php if(isset($_GET['gallery_saved'])): ?><p class="success">Galeri güncellendi.</p><?php endif ?>
 <?php if($reEdit['gallery']): ?>
 <div class="module-grid">
-<?php foreach($reEdit['gallery'] as $imageUrl): ?>
-<article class="module-card"><img src="<?= $h($imageUrl) ?>" alt="İlan galerisi" loading="lazy" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px"><small><?= $h($imageUrl) ?></small></article>
+<?php foreach($reEdit['gallery'] as $imageIndex=>$imageUrl): ?>
+<article class="module-card">
+<img src="<?= $h($imageUrl) ?>" alt="İlan galerisi <?= (int)$imageIndex+1 ?>" loading="lazy" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px">
+<p><small><?= (int)$imageIndex+1 ?> / <?= count($reEdit['gallery']) ?><?= ($reEdit['cover_image']??'')===$imageUrl?' · Kapak fotoğrafı':'' ?></small></p>
+<form method="post" class="inline-form">
+<?= CoreCMS\Core\Csrf::field() ?>
+<input type="hidden" name="action" value="re_gallery_manage">
+<input type="hidden" name="id" value="<?= (int)$reEdit['id'] ?>">
+<input type="hidden" name="image" value="<?= $h($imageUrl) ?>">
+<button class="button secondary" name="operation" value="cover" type="submit" <?= ($reEdit['cover_image']??'')===$imageUrl?'disabled':'' ?>>Kapak yap</button>
+<button class="button secondary" name="operation" value="up" type="submit" <?= $imageIndex===0?'disabled':'' ?> aria-label="Fotoğrafı yukarı taşı">↑</button>
+<button class="button secondary" name="operation" value="down" type="submit" <?= $imageIndex===count($reEdit['gallery'])-1?'disabled':'' ?> aria-label="Fotoğrafı aşağı taşı">↓</button>
+<button class="link-button danger" name="operation" value="remove" type="submit" onclick="return confirm('Bu fotoğraf ilanın galerisinden kaldırılsın mı?')">Kaldır</button>
+</form>
+</article>
 <?php endforeach ?>
 </div>
-<p>Kapak fotoğrafını değiştirmek, görselleri kaldırmak veya sıralamak için yukarıdaki ilan formunun <strong>Kapak görseli</strong> ve <strong>Galeri görselleri</strong> alanlarını düzenleyip ilanı kaydedin.</p>
+<p>Fotoğraf kaldırma yalnızca ilan galerisini değiştirir; medya kütüphanesindeki dosya silinmez.</p>
 <?php endif ?>
 </section>
 <?php endif ?>

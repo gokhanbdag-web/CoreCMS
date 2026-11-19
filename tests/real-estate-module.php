@@ -40,6 +40,20 @@ $assert(count($re->findListing($listingId)['gallery'])===2,'duplicate gallery im
 $badImage=false;try{$re->addGalleryImages($listingId,['javascript:alert(1)']);}catch(RuntimeException){$badImage=true;}
 $assert($badImage,'unsafe gallery image URLs rejected');
 
+$re->manageGalleryImage($listingId,'/uploads/media/test2.jpg','up');
+$assert($re->findListing($listingId)['gallery'][0]==='/uploads/media/test2.jpg','gallery image can move up');
+$re->manageGalleryImage($listingId,'/uploads/media/test2.jpg','down');
+$assert($re->findListing($listingId)['gallery'][1]==='/uploads/media/test2.jpg','gallery image can move down');
+$re->manageGalleryImage($listingId,'/uploads/media/test2.jpg','cover');
+$assert($re->findListing($listingId)['cover_image']==='/uploads/media/test2.jpg','gallery image can become cover');
+$re->manageGalleryImage($listingId,'/uploads/media/test2.jpg','remove');
+$assert($re->findListing($listingId)['cover_image']==='/uploads/media/test1.jpg'&&count($re->findListing($listingId)['gallery'])===1,'removing cover selects remaining image');
+$badGalleryAction=false;try{$re->manageGalleryImage($listingId,'/uploads/media/test1.jpg','invalid');}catch(RuntimeException){$badGalleryAction=true;}
+$assert($badGalleryAction,'invalid gallery operation rejected');
+$badGalleryImage=false;try{$re->manageGalleryImage($listingId,'/uploads/media/not-in-gallery.jpg','remove');}catch(RuntimeException){$badGalleryImage=true;}
+$assert($badGalleryImage,'unknown gallery image rejected');
+
+
 $copyId=$re->duplicateListing($listingId);
 $copy=$re->findListing($copyId);
 $assert($copyId!==$listingId && $copy['status']==='draft' && (int)$copy['featured']===0 && $copy['published_at']===null,'copied listing is an unpublished, nonfeatured draft');
