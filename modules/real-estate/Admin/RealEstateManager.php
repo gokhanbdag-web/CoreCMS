@@ -63,6 +63,27 @@ final class RealEstateManager
   $q=$this->db->prepare('UPDATE re_listings SET gallery_json=?,cover_image=? WHERE id=?');
   $q->execute([json_encode($gallery,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),$cover,$id]);
  }
+ public function manageGalleryImage(int $id,string $image,string $operation): void {
+  $listing=$this->findListing($id);
+  if(!$listing)throw new RuntimeException('İlan bulunamadı.');
+  $gallery=$listing['gallery'];
+  $position=array_search($image,$gallery,true);
+  if($position===false)throw new RuntimeException('Görsel ilan galerisinde bulunamadı.');
+  if(!in_array($operation,['cover','up','down','remove'],true))throw new RuntimeException('Geçersiz galeri işlemi.');
+  $cover=(string)($listing['cover_image']??'');
+  if($operation==='cover')$cover=$image;
+  elseif($operation==='remove'){
+   array_splice($gallery,$position,1);
+   if($cover===$image)$cover=$gallery[0]??'';
+  }else{
+   $other=$operation==='up'?$position-1:$position+1;
+   if($other>=0&&$other<count($gallery)){
+    [$gallery[$position],$gallery[$other]]=[$gallery[$other],$gallery[$position]];
+   }
+  }
+  $q=$this->db->prepare('UPDATE re_listings SET gallery_json=?,cover_image=? WHERE id=?');
+  $q->execute([json_encode($gallery,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),$cover,$id]);
+ }
  public function duplicateListing(int $id): int {
   if($id<=0)throw new RuntimeException('İlan bulunamadı.');
   $source=$this->findListing($id);
