@@ -32,6 +32,17 @@ $agentId=$re->saveAgent(['name'=>'Ayşe Danışman','email'=>'ayse@example.test'
 $assert($agentId>0,'agent created');
 $listingId=$re->saveListing(['title'=>'Çankaya Satılık Daire','slug'=>'cankaya-satilik-daire','listing_type'=>'sale','property_type'=>'apartment','price'=>'4250000','currency'=>'TRY','city'=>'Ankara','district'=>'Çankaya','neighborhood'=>'Ayrancı','description'=>'Geniş ve aydınlık daire.','agent_id'=>$agentId,'bedrooms'=>'3','bathrooms'=>'1','area_gross'=>'145','area_net'=>'125','features'=>"Balkon\nAsansör",'status'=>'published','featured'=>'1']);
 $assert($listingId>0,'listing created');
+$copyId=$re->duplicateListing($listingId);
+$copy=$re->findListing($copyId);
+$assert($copyId!==$listingId && $copy['status']==='draft' && (int)$copy['featured']===0 && $copy['published_at']===null,'copied listing is an unpublished, nonfeatured draft');
+$assert($copy['slug']==='cankaya-satilik-daire-kopya' && $copy['title']==='Çankaya Satılık Daire' && $copy['agent_id']==$agentId,'copied listing retains property fields and agent');
+$copy2=$re->findListing($re->duplicateListing($listingId));
+$assert($copy2['slug']==='cankaya-satilik-daire-kopya-2','repeated duplication generates unique slug');
+$re->deleteListing((int)$copy['id']);
+$re->deleteListing((int)$copy2['id']);
+$invalidCopy=false;try{$re->duplicateListing(999999);}catch(RuntimeException){$invalidCopy=true;}
+$assert($invalidCopy,'missing listing cannot be duplicated');
+
 $listing=$re->findListing('cankaya-satilik-daire');
 $assert($listing!==null&&$listing['agent_name']==='Ayşe Danışman','listing detail and agent relation');
 $assert(count($listing['features'])===2,'listing features decoded');

@@ -49,6 +49,27 @@ final class RealEstateManager
   $s=$this->db->prepare($sql);$s->execute($values);return $id>0?$id:(int)$this->db->lastInsertId();
  }
  private function nullableInt(mixed $v): ?int { if($v===null||$v==='')return null;$n=filter_var($v,FILTER_VALIDATE_INT);if($n===false||$n<0||$n>100000)throw new RuntimeException('Sayısal özellik alanlarından biri geçersiz.');return $n; }
+ public function duplicateListing(int $id): int {
+  if($id<=0)throw new RuntimeException('İlan bulunamadı.');
+  $source=$this->findListing($id);
+  if(!$source)throw new RuntimeException('İlan bulunamadı.');
+  $base=substr((string)$source['slug'],0,175);
+  $slug='';
+  for($n=1;$n<=100;$n++){
+   $candidate=$base.'-kopya'.($n===1?'':'-'.$n);
+   $check=$this->db->prepare('SELECT 1 FROM re_listings WHERE slug=?');
+   $check->execute([$candidate]);
+   if(!$check->fetchColumn()){$slug=$candidate;break;}
+  }
+  if($slug==='')throw new RuntimeException('Yeni ilan bağlantısı oluşturulamadı.');
+  $fields=['agent_id','title','listing_type','property_type','price','currency','city','district','neighborhood','address','bedrooms','bathrooms','area_gross','area_net','building_age','floor_number','total_floors','heating','description','features_json','cover_image','gallery_json','seo_title','seo_description'];
+  $columns=implode(',',$fields);
+  $values=array_map(static fn(string $field)=>$source[$field],$fields);
+  $sql='INSERT INTO re_listings ('.$columns.',slug,status,featured,published_at) VALUES ('.implode(',',array_fill(0,count($fields),'?')).',?,\'draft\',0,NULL)';
+  $stmt=$this->db->prepare($sql);
+  $stmt->execute([...$values,$slug]);
+  return (int)$this->db->lastInsertId();
+ }
  public function deleteListing(int $id): void {$s=$this->db->prepare('DELETE FROM re_listings WHERE id=?');$s->execute([$id]);if(!$s->rowCount())throw new RuntimeException('İlan bulunamadı.');}
  public function agents(): array {return $this->db->query('SELECT * FROM re_agents ORDER BY status,name')->fetchAll(PDO::FETCH_ASSOC);}
  public function saveAgent(array $d): int {
