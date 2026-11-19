@@ -300,6 +300,14 @@ final class DemoPackageManager
         return $result;
     }
 
+    private function starterPortfolio(string $operation,string $moduleId,string $demoId): void
+    {
+        if ($moduleId!=='real-estate' || $demoId!=='starter') return;
+        require_once $this->moduleDirectory.'/real-estate/StarterPortfolio.php';
+        if ($operation==='install') \CoreCMS\Modules\RealEstate\StarterPortfolio::install($this->db);
+        else \CoreCMS\Modules\RealEstate\StarterPortfolio::remove($this->db);
+    }
+
     public function preview(string $moduleId, string $demoId): array
     {
         $package=$this->package($moduleId,$demoId);
@@ -324,6 +332,7 @@ final class DemoPackageManager
         $this->db->beginTransaction();
         try {
             $counts=$this->installContent($moduleId,$demoId,$package);
+            $this->starterPortfolio('install',$moduleId,$demoId);
             $stmt=$this->db->prepare('INSERT INTO core_demo_installs (module_id,demo_id) VALUES (?,?)');
             $stmt->execute([$moduleId,$demoId]);
             $this->db->commit();
@@ -345,8 +354,10 @@ final class DemoPackageManager
         if (!$stmt->fetchColumn()) throw new RuntimeException('Önce demo paketini kurun.');
         $this->db->beginTransaction();
         try {
+            $this->starterPortfolio('remove',$moduleId,$demoId);
             $removed=$this->removeContent($moduleId,$demoId);
             $created=$this->installContent($moduleId,$demoId,$package);
+            $this->starterPortfolio('install',$moduleId,$demoId);
             $stmt=$this->db->prepare('INSERT INTO core_demo_installs (module_id,demo_id) VALUES (?,?)');
             $stmt->execute([$moduleId,$demoId]);
             $this->db->commit();
@@ -366,6 +377,7 @@ final class DemoPackageManager
         if (!$stmt->fetchColumn()) throw new RuntimeException('Demo paketi kurulu değil.');
         $this->db->beginTransaction();
         try {
+            $this->starterPortfolio('remove',$moduleId,$demoId);
             $result=$this->removeContent($moduleId,$demoId);
             $this->db->commit();
             return $result;
