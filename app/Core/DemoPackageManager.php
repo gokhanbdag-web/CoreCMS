@@ -304,8 +304,8 @@ final class DemoPackageManager
     {
         if ($moduleId!=='real-estate' || $demoId!=='starter') return;
         require_once $this->moduleDirectory.'/real-estate/StarterPortfolio.php';
-        if ($operation==='install') \\CoreCMS\\Modules\\RealEstate\\StarterPortfolio::install($this->db);
-        else \\CoreCMS\\Modules\\RealEstate\\StarterPortfolio::remove($this->db);
+        if ($operation==='install') \CoreCMS\Modules\RealEstate\StarterPortfolio::install($this->db);
+        else \CoreCMS\Modules\RealEstate\StarterPortfolio::remove($this->db);
     }
 
     public function preview(string $moduleId, string $demoId): array
