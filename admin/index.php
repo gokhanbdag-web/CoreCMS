@@ -96,7 +96,7 @@ try {
     }
     if(!$urls)throw new RuntimeException('Lütfen en az bir görsel seçin.');
     $reManager->addGalleryImages($listingId,$urls);
-    header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=real_estate&edit_listing='.$listingId.'&uploaded=1'));exit;
+    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=real_estate&edit_listing='.$listingId.'&uploaded=1'));exit;
    }
    elseif($action==='re_listing_save')$reManager->saveListing($_POST);
    elseif($action==='re_listing_duplicate')$reManager->duplicateListing((int)($_POST['id']??0));
