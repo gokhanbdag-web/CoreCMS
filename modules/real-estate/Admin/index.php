@@ -46,6 +46,28 @@ if(isset($_GET['edit_agent']))foreach($reAgents as $candidate)if((int)$candidate
 <label><?= $adminText('re.admin.seo_description','SEO açıklaması') ?><textarea name="seo_description" rows="2" maxlength="320"><?= $h($reEdit['seo_description']??'') ?></textarea></label>
 <div class="form-grid"><label><?= $adminText('re.admin.status','Yayın durumu') ?><select name="status"><option value="draft" <?= ($reEdit['status']??'draft')==='draft'?'selected':'' ?>><?= $adminText('re.admin.draft','Taslak') ?></option><option value="published" <?= ($reEdit['status']??'')==='published'?'selected':'' ?>><?= $adminText('re.admin.published','Yayında') ?></option></select></label><label><input type="checkbox" name="featured" value="1" <?= !empty($reEdit['featured'])?'checked':'' ?>> <?= $adminText('re.admin.featured','Öne çıkar') ?></label></div>
 <button class="button"><?= $adminText('re.admin.save_listing','İlanı kaydet') ?></button><?php if($reEdit): ?> <a class="button secondary" href="<?= $h(CoreCMS\Core\Url::to('/admin/?section=real_estate')) ?>"><?= $adminText('re.admin.cancel','Vazgeç') ?></a><?php endif ?></form></section>
+<?php if($reEdit): ?>
+<section class="content-admin">
+<h2>İlan fotoğrafları</h2>
+<p>Bilgisayarınızdan veya telefonunuzdan birden fazla fotoğraf yükleyebilirsiniz. Her görsel en fazla 8 MB olabilir (JPEG, PNG, GIF veya WebP). İlk yüklenen fotoğraf, kapak görseli boşsa otomatik kapak yapılır.</p>
+<?php if(isset($_GET['uploaded'])): ?><p class="success">Fotoğraflar galeriye eklendi.</p><?php endif ?>
+<form method="post" enctype="multipart/form-data" class="editor-form">
+<?= CoreCMS\Core\Csrf::field() ?>
+<input type="hidden" name="action" value="re_listing_media_upload">
+<input type="hidden" name="id" value="<?= (int)$reEdit['id'] ?>">
+<label>Fotoğrafları seçin<input type="file" name="listing_images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple required></label>
+<button class="button" type="submit">Fotoğrafları yükle</button>
+</form>
+<?php if($reEdit['gallery']): ?>
+<div class="module-grid">
+<?php foreach($reEdit['gallery'] as $imageUrl): ?>
+<article class="module-card"><img src="<?= $h($imageUrl) ?>" alt="İlan galerisi" loading="lazy" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px"><small><?= $h($imageUrl) ?></small></article>
+<?php endforeach ?>
+</div>
+<p>Kapak fotoğrafını değiştirmek, görselleri kaldırmak veya sıralamak için yukarıdaki ilan formunun <strong>Kapak görseli</strong> ve <strong>Galeri görselleri</strong> alanlarını düzenleyip ilanı kaydedin.</p>
+<?php endif ?>
+</section>
+<?php endif ?>
 <section class="content-admin"><h2><?= $adminText('re.admin.listing_list','İlan portföyü') ?></h2>
 <form method="get" class="editor-form" aria-label="İlan portföyü filtreleri">
 <input type="hidden" name="section" value="real_estate">
