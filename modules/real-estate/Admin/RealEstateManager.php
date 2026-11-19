@@ -49,6 +49,20 @@ final class RealEstateManager
   $s=$this->db->prepare($sql);$s->execute($values);return $id>0?$id:(int)$this->db->lastInsertId();
  }
  private function nullableInt(mixed $v): ?int { if($v===null||$v==='')return null;$n=filter_var($v,FILTER_VALIDATE_INT);if($n===false||$n<0||$n>100000)throw new RuntimeException('Sayısal özellik alanlarından biri geçersiz.');return $n; }
+ public function addGalleryImages(int $id,array $urls): void {
+  $listing=$this->findListing($id);
+  if(!$listing)throw new RuntimeException('İlan bulunamadı.');
+  $gallery=$listing['gallery'];
+  foreach($urls as $url){
+   if(!is_string($url)||!preg_match('#^(https://|/)(?!/)[^\\r\\n]*$#i',$url))throw new RuntimeException('Geçersiz görsel yolu.');
+   if(!in_array($url,$gallery,true))$gallery[]=$url;
+  }
+  if(count($gallery)>20)throw new RuntimeException('Bir ilanda en fazla 20 galeri görseli olabilir.');
+  $cover=(string)($listing['cover_image']??'');
+  if($cover==='' && $gallery)$cover=$gallery[0];
+  $q=$this->db->prepare('UPDATE re_listings SET gallery_json=?,cover_image=? WHERE id=?');
+  $q->execute([json_encode($gallery,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),$cover,$id]);
+ }
  public function duplicateListing(int $id): int {
   if($id<=0)throw new RuntimeException('İlan bulunamadı.');
   $source=$this->findListing($id);

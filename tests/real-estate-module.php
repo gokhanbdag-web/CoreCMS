@@ -32,6 +32,14 @@ $agentId=$re->saveAgent(['name'=>'Ayşe Danışman','email'=>'ayse@example.test'
 $assert($agentId>0,'agent created');
 $listingId=$re->saveListing(['title'=>'Çankaya Satılık Daire','slug'=>'cankaya-satilik-daire','listing_type'=>'sale','property_type'=>'apartment','price'=>'4250000','currency'=>'TRY','city'=>'Ankara','district'=>'Çankaya','neighborhood'=>'Ayrancı','description'=>'Geniş ve aydınlık daire.','agent_id'=>$agentId,'bedrooms'=>'3','bathrooms'=>'1','area_gross'=>'145','area_net'=>'125','features'=>"Balkon\nAsansör",'status'=>'published','featured'=>'1']);
 $assert($listingId>0,'listing created');
+$re->addGalleryImages($listingId,['/uploads/media/test1.jpg','/uploads/media/test2.jpg']);
+$galleryListing=$re->findListing($listingId);
+$assert(count($galleryListing['gallery'])===2 && $galleryListing['cover_image']==='/uploads/media/test1.jpg','gallery uploads append and first image becomes cover');
+$re->addGalleryImages($listingId,['/uploads/media/test2.jpg']);
+$assert(count($re->findListing($listingId)['gallery'])===2,'duplicate gallery images are ignored');
+$badImage=false;try{$re->addGalleryImages($listingId,['javascript:alert(1)']);}catch(RuntimeException){$badImage=true;}
+$assert($badImage,'unsafe gallery image URLs rejected');
+
 $copyId=$re->duplicateListing($listingId);
 $copy=$re->findListing($copyId);
 $assert($copyId!==$listingId && $copy['status']==='draft' && (int)$copy['featured']===0 && $copy['published_at']===null,'copied listing is an unpublished, nonfeatured draft');
