@@ -54,7 +54,7 @@ $pending=$migrator->pending(); $notice=$error=null; $action=(string)($_POST['act
 if(!$pending){try{$mailQueue->process($siteSettings->all(),3);}catch(Throwable $mailError){error_log('[CoreCMS] Mail queue processing failed: '.$mailError->getMessage());}}
 $roleManager=new CoreCMS\Core\RoleManager($db);
 $role=(string)($_SESSION['corecms_user_role']??'');
-$actionPermissions=['re_listing_save'=>'listings.manage','re_listing_duplicate'=>'listings.manage','re_listing_delete'=>'listings.manage','re_agent_save'=>'agents.manage','re_agent_delete'=>'agents.manage','re_lead_status'=>'leads.manage','tm_tour_save'=>'tours.manage','tm_tour_delete'=>'tours.manage','tm_destination_save'=>'destinations.manage','tm_destination_delete'=>'destinations.manage','tm_departure_save'=>'departures.manage','tm_departure_delete'=>'departures.manage','tm_booking_status'=>'bookings.manage','hs_service_save'=>'services.manage','hs_service_delete'=>'services.manage','hs_staff_save'=>'staff.manage','hs_staff_delete'=>'staff.manage','hs_appointment_status'=>'appointments.manage','media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','smtp_test_email'=>'settings.manage','locale_save'=>'settings.manage','locale_default'=>'settings.manage','translation_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage','uninstall'=>'modules.manage','update'=>'modules.manage','rollback'=>'modules.manage','demo_install'=>'demos.manage','demo_reset'=>'demos.manage','demo_remove'=>'demos.manage','form_save'=>'forms.manage','form_translation_save'=>'forms.manage','form_delete'=>'forms.manage','submission_status'=>'forms.manage','email_template_save'=>'forms.manage','mail_queue_retry'=>'forms.manage'];
+$actionPermissions=['re_listing_media_upload'=>'listings.manage','re_listing_save'=>'listings.manage','re_listing_duplicate'=>'listings.manage','re_listing_delete'=>'listings.manage','re_agent_save'=>'agents.manage','re_agent_delete'=>'agents.manage','re_lead_status'=>'leads.manage','tm_tour_save'=>'tours.manage','tm_tour_delete'=>'tours.manage','tm_destination_save'=>'destinations.manage','tm_destination_delete'=>'destinations.manage','tm_departure_save'=>'departures.manage','tm_departure_delete'=>'departures.manage','tm_booking_status'=>'bookings.manage','hs_service_save'=>'services.manage','hs_service_delete'=>'services.manage','hs_staff_save'=>'staff.manage','hs_staff_delete'=>'staff.manage','hs_appointment_status'=>'appointments.manage','media_upload'=>'media.manage','media_delete'=>'media.manage','site_settings_save'=>'settings.manage','smtp_test_email'=>'settings.manage','locale_save'=>'settings.manage','locale_default'=>'settings.manage','translation_save'=>'settings.manage','theme_save'=>'appearance.manage','page_save'=>'pages.manage','page_revision_restore'=>'pages.manage','page_detach'=>'pages.manage','page_delete'=>'pages.manage','seo_bulk_update'=>'seo.manage','redirect_save'=>'seo.manage','redirect_delete'=>'seo.manage','menu_save'=>'menus.manage','menu_detach'=>'menus.manage','menu_delete'=>'menus.manage','install'=>'modules.manage','enable'=>'modules.manage','disable'=>'modules.manage','uninstall'=>'modules.manage','update'=>'modules.manage','rollback'=>'modules.manage','demo_install'=>'demos.manage','demo_reset'=>'demos.manage','demo_remove'=>'demos.manage','form_save'=>'forms.manage','form_translation_save'=>'forms.manage','form_delete'=>'forms.manage','submission_status'=>'forms.manage','email_template_save'=>'forms.manage','mail_queue_retry'=>'forms.manage'];
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST' && isset($actionPermissions[$action]) && !$roleManager->can($role,$actionPermissions[$action])) { http_response_code(403); exit($translate('admin.access.action_forbidden','You are not allowed to perform this action.')); }
 if($action==='run_core_migrations' && !in_array($role,['admin','super_admin'],true)) { http_response_code(403); exit($translate('admin.access.migrations_admin_only','Only administrators can apply database updates.')); }
 try {
@@ -70,12 +70,35 @@ try {
    catch(Throwable $smtpError) { error_log('[CoreCMS] SMTP test email failed ('.get_class($smtpError).').'); header('Location: '.CoreCMS\Core\Url::to('/admin/?section=settings&smtp_test=failed')); exit; }
    header('Location: '.CoreCMS\Core\Url::to('/admin/?section=settings&smtp_test=sent')); exit;
   }
-  if(in_array($action,['re_listing_save','re_listing_duplicate','re_listing_delete','re_agent_save','re_agent_delete','re_lead_status'],true)) {
+  if(in_array($action,['re_listing_media_upload','re_listing_save','re_listing_duplicate','re_listing_delete','re_agent_save','re_agent_delete','re_lead_status'],true)) {
    if($pending)throw new RuntimeException($translate('admin.error.apply_pending_migrations','Apply pending database migrations first.'));
    $reModuleStatus=$modules->status('real-estate');
    if(!$reModuleStatus['enabled'])throw new RuntimeException('Emlak modülü etkin değil.');
    $reManager=new CoreCMS\Modules\RealEstate\RealEstateManager($db);
-   if($action==='re_listing_save')$reManager->saveListing($_POST);
+   if($action==='re_listing_media_upload') {
+    $listingId=(int)($_POST['id']??0);
+    $listing=$reManager->findListing($listingId);
+    if(!$listing)throw new RuntimeException('İlan bulunamadı.');
+    $files=$_FILES['listing_images']??[];
+    $names=$files['name']??[];
+    if(!is_array($names)||count($names)<1||count($names)>20)throw new RuntimeException('En fazla 20 görsel seçebilirsiniz.');
+    $urls=[];
+    foreach(array_keys($names) as $i){
+     if(($files['error'][$i]??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE)continue;
+     $file=[];
+     foreach(['name','type','tmp_name','error','size'] as $field)$file[$field]=$files[$field][$i]??null;
+     $mediaId=$mediaLibrary->upload($file,(int)($_SESSION['corecms_user_id']??0),$listing['title']);
+     $media=$db->prepare('SELECT file_path FROM core_media WHERE id=?');
+     $media->execute([$mediaId]);
+     $url=$mediaLibrary->url((string)$media->fetchColumn());
+     if($url==='')throw new RuntimeException('Yüklenen görselin adresi alınamadı.');
+     $urls[]=$url;
+    }
+    if(!$urls)throw new RuntimeException('Lütfen en az bir görsel seçin.');
+    $reManager->addGalleryImages($listingId,$urls);
+    header('Location: '.CoreCMS\\Core\\Url::to('/admin/?section=real_estate&edit_listing='.$listingId.'&uploaded=1'));exit;
+   }
+   elseif($action==='re_listing_save')$reManager->saveListing($_POST);
    elseif($action==='re_listing_duplicate')$reManager->duplicateListing((int)($_POST['id']??0));
    elseif($action==='re_listing_delete')$reManager->deleteListing((int)($_POST['id']??0));
    elseif($action==='re_agent_save')$reManager->saveAgent($_POST);
